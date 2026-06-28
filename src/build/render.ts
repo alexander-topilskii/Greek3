@@ -1,4 +1,5 @@
 import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
+import { renderMarkdown } from './markdown';
 
 const SITE_CONFIG: SiteConfig = {
   title: 'Greek3',
@@ -385,7 +386,7 @@ export function renderWord(
       (s) => `
       <section class="extra-section fade-in">
         <h2>${escapeHtml(s.title)}</h2>
-        <pre class="extra-content">${escapeHtml(s.lines.join('\n').trim())}</pre>
+        <div class="extra-content">${renderMarkdown(s.lines.join('\n'))}</div>
       </section>`,
     )
     .join('');

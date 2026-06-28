@@ -789,11 +789,68 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 1rem;
-  font-family: var(--font-greek);
-  font-size: 0.875rem;
-  white-space: pre-wrap;
+  padding: 1rem 1.125rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   overflow-x: auto;
+}
+
+.extra-content :first-child {
+  margin-top: 0;
+}
+
+.extra-content :last-child {
+  margin-bottom: 0;
+}
+
+.extra-content p {
+  margin: 0.75rem 0;
+}
+
+.extra-content strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.extra-content ul,
+.extra-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.extra-content li {
+  margin: 0.35rem 0;
+}
+
+.extra-content li::marker {
+  color: var(--text-muted);
+}
+
+.extra-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+
+.extra-content th,
+.extra-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.extra-content th {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.extra-content .greek,
+.extra-content td,
+.extra-content li {
+  font-family: var(--font-greek);
 }
 
 .page-intro {
