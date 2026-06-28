@@ -1,0 +1,21 @@
+---
+description: Контекст проекта Greek3 — сайт для изучения греческого из MD-файлов
+alwaysApply: true
+---
+
+# Greek3
+
+Перед работой прочитай `agents/AGENTS.md` и связанные файлы в `agents/`.
+
+## Принципы
+
+- Контент слов — только в `words/**/*.md`
+- Mobile-first, светлая тема, CSS-анимации
+- Сборка: `npm run build:site` → `dist/`
+- Не коммитить `dist/`
+
+## Ключевые пути
+
+- Генератор: `src/build/`
+- Статика: `site/css/`, `site/js/`
+- CI: `.github/workflows/deploy.yml`

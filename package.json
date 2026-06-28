@@ -1,0 +1,16 @@
+{
+  "name": "Greek3",
+  "version": "1.0.0",
+  "description": "Изучение и практика современного греческого языка",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:site": "npm run build && node dist/build/index.js",
+    "dev": "npm run build:site && npx --yes serve dist -l 3000",
+    "watch": "tsc -p tsconfig.build.json --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.5.3"
+  }
+}
