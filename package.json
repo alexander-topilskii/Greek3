@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:site": "npm run build && node dist/build/index.js",
+    "build:pages": "SITE_BASE_URL=/Greek3 npm run build:site",
     "dev": "npm run build:site && npx --yes serve dist -l 3000",
     "watch": "tsc -p tsconfig.build.json --watch"
   },

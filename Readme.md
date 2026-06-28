@@ -32,6 +32,14 @@ Push в `main` → GitHub Action собирает и публикует на **G
 
 Настройки репозитория: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
+CI автоматически задаёт `SITE_BASE_URL=/<имя-репозитория>` (для этого проекта: `/Greek3`).
+
+Локальная проверка как на GitHub Pages:
+
+```bash
+npm run build:pages && npx serve dist
+```
+
 ## Разделы
 
 - [Глаголы](words/readme.md)
