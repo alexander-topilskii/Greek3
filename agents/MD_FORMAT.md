@@ -70,10 +70,16 @@
 
 ```
 words/
-├── readme.md          # Оглавление словаря (не публикуется отдельно)
-└── verbs/
-    ├── readme.md      # → words/verbs/index.html
-    └── *.md           # → words/verbs/<имя>.html
+├── readme.md          # → words/index.html (оглавление словаря)
+├── verbs/
+├── nouns/
+├── adjectives/
+├── pronouns/
+├── numbers/
+├── cases/
+└── particles/
+    ├── readme.md      # → words/<категория>/index.html
+    └── *.md           # → words/<категория>/<имя>.html
 ```
 
 Планируются: `cases/` (падежи), `particles/` (частицы) — см. корневой `Readme.md`.

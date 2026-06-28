@@ -27,6 +27,26 @@ export function sitePath(relativePath: string): string {
   return base ? `${base}/${encoded}` : `/${encoded}`;
 }
 
+function embedJson(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/&/g, '\\u0026');
+}
+
+function progressBarMarkup(slug: string): string {
+  return `
+        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}">
+          <div class="word-progress-track">
+            <div class="word-progress-half word-progress-half--left">
+              <div class="word-progress-fill progress-word"></div>
+            </div>
+            <div class="word-progress-half word-progress-half--right">
+              <div class="word-progress-fill progress-forms"></div>
+            </div>
+          </div>
+        </div>`;
+}
+
 function flashcardMarkup(id = 'flashcard-root'): string {
   return `
     <div class="flashcard-root" id="${id}">
@@ -61,33 +81,31 @@ function flashcardMarkup(id = 'flashcard-root'): string {
 function settingsPanel(scope: 'word' | 'deck'): string {
   if (scope === 'word') {
     return `
-    <section class="settings-panel fade-in">
-      <h2 class="settings-title">Настройки прогресса</h2>
+    <details class="settings-panel fade-in">
+      <summary class="settings-summary">Настройки прогресса</summary>
       <div class="settings-body">
-        <p class="settings-desc">Прогресс хранится локально в браузере.</p>
         <button type="button" class="btn btn-secondary btn-reset-word">Сбросить этот глагол</button>
       </div>
-    </section>`;
+    </details>`;
   }
   return `
-    <section class="settings-panel fade-in" id="deck-settings">
-      <h2 class="settings-title">Настройки прогресса</h2>
+    <details class="settings-panel fade-in" id="deck-settings">
+      <summary class="settings-summary">Настройки прогресса</summary>
       <div class="settings-body">
-        <p class="settings-desc">Spaced Repetition: сначала несколько слов, по мере изучения добавляются новые.</p>
         <label class="settings-field">
-          <span>Начальный размер группы</span>
+          <span>Начальная группа</span>
           <input type="number" id="setting-initial-batch" min="1" max="30" value="5">
         </label>
         <label class="settings-field">
-          <span>Активных слов сейчас</span>
+          <span>Активных слов</span>
           <input type="number" id="setting-active-limit" min="1" max="62" value="5">
         </label>
         <div class="settings-actions">
           <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
-          <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить весь прогресс</button>
+          <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
         </div>
       </div>
-    </section>`;
+    </details>`;
 }
 
 function layout(
@@ -129,7 +147,7 @@ function layout(
         <span class="logo-text">${escapeHtml(SITE_CONFIG.title)}</span>
       </a>
       <nav class="site-nav">
-        <a href="${sitePath('words/verbs/index.html')}">Глаголы</a>
+        <a href="${sitePath('words/index.html')}">Словарь</a>
       </nav>
     </div>
   </header>
@@ -188,29 +206,20 @@ export function renderIndex(
           <span class="word-link-label">${escapeHtml(link.label)}</span>
           <span class="word-link-arrow" aria-hidden="true">→</span>
         </div>
-        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}">
-          <div class="word-progress-track">
-            <div class="word-progress-half word-progress-half--left">
-              <div class="word-progress-fill progress-word"></div>
-            </div>
-            <div class="word-progress-half word-progress-half--right">
-              <div class="word-progress-fill progress-forms"></div>
-            </div>
-          </div>
-        </div>
+        ${progressBarMarkup(slug)}
       </a>`;
     })
     .join('');
 
   const catalogJson = catalog
-    ? `<script type="application/json" id="verbs-catalog">${escapeHtml(JSON.stringify(catalog))}</script>`
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
     : '';
 
   const content = `
     <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${catalog ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-all">Практиковать</button>` : ''}
+        ${catalog && catalog.words.length > 0 ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-all">Практиковать</button>` : ''}
       </div>
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
@@ -228,14 +237,84 @@ export function renderIndex(
       ${catalogJson}
     </section>`;
 
-  return layout(content, page.title, breadcrumbs, catalog ? ['assets/js/list-practice.js'] : []);
+  return layout(content, page.title, breadcrumbs, catalog && catalog.words.length > 0 ? ['assets/js/list-practice.js'] : []);
+}
+
+export function renderCasesIndex(
+  page: IndexPage,
+  pageOutputDir: string,
+  breadcrumbs: { label: string; href?: string }[],
+  catalog: VerbCatalog | undefined,
+  gameData: unknown,
+): string {
+  const links = page.links
+    .map((link: IndexLink) => {
+      const word = catalog?.words.find((w) => w.href === link.href);
+      const slug = word?.slug ?? '';
+      return `
+      <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
+        <div class="word-link-main">
+          <span class="word-link-label">${escapeHtml(link.label)}</span>
+          <span class="word-link-arrow" aria-hidden="true">→</span>
+        </div>
+        ${progressBarMarkup(slug)}
+      </a>`;
+    })
+    .join('');
+
+  const catalogJson = catalog
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
+    : '';
+
+  const gameJson = `<script type="application/json" id="cases-game-data">${embedJson(gameData)}</script>`;
+
+  const content = `
+    <section class="verbs-list-page cases-page" data-deck-id="cases">
+      <div class="page-head fade-in list-head">
+        <h1>${escapeHtml(page.title)}</h1>
+        <p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила — затем потренируйтесь в мини-игре.</p>
+      </div>
+
+      <section class="links-list" id="verbs-links">
+        ${links}
+      </section>
+
+      <section class="cases-game fade-in" id="cases-game" aria-label="Практика падежей">
+        <div class="cases-game-head">
+          <h2>Мини-игра: перевод фраз</h2>
+          <p class="cases-game-desc">Русская фраза — выберите правильный греческий перевод. Простая лексика A1–A2.</p>
+          <p class="cases-game-score">Счёт: <span data-cases-score>0 / 0</span></p>
+        </div>
+        <div class="cases-game-card">
+          <span class="cases-game-badge" data-cases-badge>—</span>
+          <p class="cases-game-hint" data-cases-hint></p>
+          <p class="cases-game-ru" data-cases-ru>—</p>
+          <div class="cases-game-options" data-cases-options></div>
+          <p class="cases-game-feedback" data-cases-feedback hidden></p>
+          <div class="cases-game-actions">
+            <button type="button" class="btn btn-primary" data-cases-next hidden>Дальше →</button>
+            <button type="button" class="btn btn-secondary" data-cases-restart hidden>Начать заново</button>
+          </div>
+        </div>
+      </section>
+      ${catalogJson}
+      ${gameJson}
+    </section>`;
+
+  const scripts = ['assets/js/cases-game.js'];
+  if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
+
+  return layout(content, page.title, breadcrumbs, scripts);
 }
 
 export function renderWord(
   word: WordEntry,
   breadcrumbs: { label: string; href?: string }[],
 ): string {
-  const tenseLabels = ['прош.', 'наст.', 'буд.'];
+  const tenseLabels =
+    word.category === 'cases'
+      ? ['название', 'роль', 'артикли']
+      : ['прош.', 'наст.', 'буд.'];
   const translation = word.translation || word.title;
   const deckId = word.category || 'default';
 
@@ -291,6 +370,7 @@ export function renderWord(
       data-forms="${formsJson}">
       <header class="word-header fade-in">
         ${summaryHtml}
+        ${progressBarMarkup(word.slug)}
       </header>
 
       <section class="practice-panel practice-panel--wide fade-in">

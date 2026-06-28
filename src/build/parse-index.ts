@@ -3,6 +3,9 @@ import path from 'path';
 import type { IndexLink, IndexPage } from './types';
 
 function mdLinkToHtml(href: string): string {
+  if (href.toLowerCase().endsWith('readme.md')) {
+    return href.replace(/readme\.md$/i, 'index.html');
+  }
   if (href.endsWith('.md')) {
     return href.replace(/\.md$/i, '.html');
   }

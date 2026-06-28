@@ -13,7 +13,8 @@
   let catalog;
   try {
     catalog = JSON.parse(catalogEl.textContent ?? '{}');
-  } catch {
+  } catch (e) {
+    console.error('Catalog parse error', e);
     return;
   }
 
@@ -33,19 +34,26 @@
 
   let currentPick = null;
   let startWithRussian = false;
+  let fc = null;
+
+  function initFlashcard() {
+    if (fc) return fc;
+    const root = document.getElementById('list-flashcard-root');
+    if (!root) return null;
+    fc = flash.init({
+      root,
+      onGrade: (remembered) => {
+        gradeAndNext(remembered);
+      },
+    });
+    return fc;
+  }
 
   async function gradeAndNext(remembered) {
     await gradeCurrent(remembered);
-    updateProgressUI();
+    await updateProgressUI();
     pickAndShowNext();
   }
-
-  const fc = flash.init({
-    root: document.getElementById('list-flashcard-root'),
-    onGrade: (remembered) => {
-      gradeAndNext(remembered);
-    },
-  });
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnForget = practiceControls?.querySelector('.btn-forget');
@@ -67,15 +75,12 @@
       const slug = el.getAttribute('data-progress-slug');
       if (!slug) return;
       const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
-      const wordFill = el.querySelector('.progress-word');
-      const formsFill = el.querySelector('.progress-forms');
-      if (wordFill) wordFill.style.width = `${st.wordPct}%`;
-      if (formsFill) formsFill.style.width = `${st.formsPct}%`;
+      srs.applyProgressBar(el, st.wordPct, st.formsPct);
     });
   }
 
   function showCardContent(pick) {
-    if (!pick) return;
+    if (!fc || !pick) return;
     const word = pick.word;
 
     if (pick.type === 'summary' || pick.isNew || (pick.card && pick.card.type === 'summary')) {
@@ -125,19 +130,26 @@
   }
 
   async function pickAndShowNext() {
+    const card = initFlashcard();
+    if (!card) return;
+
     currentPick = await srs.pickNextCard(deckId, catalog, db, { summaryOnly: true });
     if (!currentPick) {
-      fc.showPair('—', 'Все карточки изучены! Загляните позже.');
+      card.showPair('—', 'Все карточки изучены! Загляните позже.');
       return;
     }
     showCardContent(currentPick);
   }
 
   function openPractice() {
+    const card = initFlashcard();
+    if (!card) return;
+
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     linksSection?.classList.add('hidden');
     btnPractice?.classList.add('hidden');
+    card.setLangButton(btnLang);
     pickAndShowNext();
   }
 
@@ -146,6 +158,7 @@
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
     btnPractice?.classList.remove('hidden');
+    updateProgressUI();
   }
 
   btnPractice?.addEventListener('click', openPractice);
@@ -153,7 +166,9 @@
 
   btnRandom?.addEventListener('click', pickAndShowNext);
   btnLang?.addEventListener('click', () => {
-    startWithRussian = fc.toggleLang(btnLang);
+    const card = initFlashcard();
+    if (!card) return;
+    startWithRussian = card.toggleLang(btnLang);
     if (currentPick) showCardContent(currentPick);
   });
 
@@ -177,7 +192,6 @@
     if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();
   });
 
-  fc.setLangButton(btnLang);
   loadSettingsUI();
   updateProgressUI();
 })();

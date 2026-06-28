@@ -43,6 +43,11 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 
 ## Разделы
 
-- [Глаголы](words/readme.md)
-- Падежи (скоро)
-- Частицы (скоро)
+- [Словарь](words/readme.md)
+- [Глаголы](words/verbs/readme.md)
+- [Существительные](words/nouns/readme.md)
+- [Прилагательные](words/adjectives/readme.md)
+- [Местоимения](words/pronouns/readme.md)
+- [Числа](words/numbers/readme.md)
+- [Падежи](words/cases/readme.md)
+- [Частицы](words/particles/readme.md)

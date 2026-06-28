@@ -100,7 +100,15 @@
 
   async function gradeAndNext(remembered) {
     await gradeCurrent(remembered);
+    await updateWordProgress();
     randomMixed();
+  }
+
+  async function updateWordProgress() {
+    const cards = await db.getWordCards(wordSlug);
+    const st = srs.statsForWord(cards, wordSlug, forms.length);
+    const bar = document.querySelector('.word-header [data-progress-slug]');
+    srs.applyProgressBar(bar, st.wordPct, st.formsPct);
   }
 
   btnForget?.addEventListener('click', () => gradeAndNext(false));
@@ -115,9 +123,11 @@
   btnReset?.addEventListener('click', async () => {
     if (!confirm('Сбросить прогресс этого глагола?')) return;
     await db.deleteWordCards(wordSlug);
+    await updateWordProgress();
     randomMixed();
   });
 
   fc.setLangButton(btnLang);
+  updateWordProgress();
   randomMixed();
 })();

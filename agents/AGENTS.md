@@ -19,7 +19,7 @@
 | Задача | Где менять |
 |--------|------------|
 | Добавить слово | `words/<кат>/<имя>.md` + ссылка в `readme.md` |
-| Новый раздел | Папка в `words/` + `readme.md` + ссылка в корневом `Readme.md` |
+| Новый раздел | Папка в `words/` + `readme.md` + ссылка в `words/readme.md` и `Readme.md`; карточка на главной — `homeSections` в `src/build/index.ts` |
 | Стили/анимации | `site/css/main.css` |
 | Интерактив практики | `site/js/practice.js` |
 | Шаблон страницы | `src/build/render.ts` |

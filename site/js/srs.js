@@ -51,24 +51,45 @@
     return reps > 0 && reps < DEFAULTS.masteryReps;
   }
 
-  function getProgressStats(cards, totalFormsByWord) {
-    const byWord = {};
-    for (const card of cards) {
-      if (!byWord[card.wordSlug]) {
-        byWord[card.wordSlug] = { forms: [], summary: null };
-      }
-      if (card.type === 'summary') byWord[card.wordSlug].summary = card;
-      else byWord[card.wordSlug].forms.push(card);
+  function statsForWord(cards, slug, formCount) {
+    const M = DEFAULTS.masteryReps;
+    const summary = cards.find((c) => c.wordSlug === slug && c.type === 'summary');
+    const formCards = cards.filter((c) => c.wordSlug === slug && c.type === 'form');
+    const wordPct = Math.min(
+      100,
+      Math.round(((summary?.repetitions ?? 0) / M) * 100),
+    );
+    let formsPct = 0;
+    if (formCount > 0) {
+      const total = formCards.reduce(
+        (sum, c) => sum + Math.min(100, ((c.repetitions ?? 0) / M) * 100),
+        0,
+      );
+      formsPct = Math.round(total / formCount);
     }
+    return { wordPct, formsPct };
+  }
 
+  function applyProgressBar(el, wordPct, formsPct) {
+    if (!el) return;
+    const wordFill = el.querySelector('.progress-word');
+    const formsFill = el.querySelector('.progress-forms');
+    if (wordFill) wordFill.style.width = `${wordPct}%`;
+    if (formsFill) formsFill.style.width = `${formsPct}%`;
+  }
+
+  function getProgressStats(cards, totalFormsByWord) {
     const result = {};
-    for (const [slug, data] of Object.entries(byWord)) {
-      const totalForms = totalFormsByWord[slug] ?? data.forms.length;
-      const formsLearned = data.forms.filter((c) => (c.repetitions ?? 0) >= 2).length;
-      const formsPct = totalForms ? Math.round((formsLearned / totalForms) * 100) : 0;
-      const summaryReps = data.summary?.repetitions ?? 0;
-      const wordPct = Math.min(100, Math.round((summaryReps / DEFAULTS.masteryReps) * 100));
-      result[slug] = { formsPct, wordPct, formsLearned, totalForms, summaryReps };
+    const slugs = new Set([
+      ...Object.keys(totalFormsByWord),
+      ...cards.map((c) => c.wordSlug),
+    ]);
+    for (const slug of slugs) {
+      result[slug] = statsForWord(
+        cards,
+        slug,
+        totalFormsByWord[slug] ?? 0,
+      );
     }
     return result;
   }
@@ -193,6 +214,8 @@
     isDue,
     isMastered,
     isLearning,
+    statsForWord,
+    applyProgressBar,
     getProgressStats,
     pickNextCard,
     loadDeckSettings,
