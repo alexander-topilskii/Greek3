@@ -55,10 +55,14 @@ function writeHtml(relativePath: string, html: string): void {
 }
 
 function breadcrumbsForWord(entry: WordEntry) {
+  const categoryLabels: Record<string, string> = { verbs: 'Глаголы' };
   return [
     { label: 'Главная', href: sitePath('index.html') },
     ...(entry.category
-      ? [{ label: entry.category, href: sitePath(`words/${entry.category}/index.html`) }]
+      ? [{
+          label: categoryLabels[entry.category] ?? entry.category,
+          href: sitePath(`words/${entry.category}/index.html`),
+        }]
       : []),
     { label: entry.translation || entry.title },
   ];

@@ -28,6 +28,24 @@ function send(res, status, body, type) {
   res.end(body);
 }
 
+function tryResolve(filePath) {
+  if (!filePath.startsWith(DIST)) return null;
+
+  if (fs.existsSync(filePath)) {
+    const stat = fs.statSync(filePath);
+    if (stat.isFile()) return filePath;
+    if (stat.isDirectory()) {
+      const indexPath = path.join(filePath, 'index.html');
+      if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) return indexPath;
+    }
+  }
+
+  const withHtml = `${filePath}.html`;
+  if (fs.existsSync(withHtml) && fs.statSync(withHtml).isFile()) return withHtml;
+
+  return null;
+}
+
 function resolveFile(urlPath) {
   let p = urlPath;
   if (BASE && (p === BASE || p === `${BASE}/`)) {
@@ -39,15 +57,7 @@ function resolveFile(urlPath) {
   if (p === '/' || p === '') p = '/index.html';
   if (p.endsWith('/')) p += 'index.html';
 
-  const filePath = path.join(DIST, p);
-  if (!filePath.startsWith(DIST)) return null;
-
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) return filePath;
-
-  const withHtml = `${filePath}.html`;
-  if (fs.existsSync(withHtml) && fs.statSync(withHtml).isFile()) return withHtml;
-
-  return null;
+  return tryResolve(path.join(DIST, p));
 }
 
 if (!fs.existsSync(path.join(DIST, 'index.html'))) {

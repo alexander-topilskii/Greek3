@@ -22,23 +22,21 @@
   if (!forms.length) return;
 
   const root = document.getElementById('flashcard-root');
-  const btnPrev = root?.parentElement?.querySelector('.btn-prev');
-  const btnNext = root?.parentElement?.querySelector('.btn-next');
-  const btnRandom = root?.parentElement?.querySelector('.btn-random');
-  const btnLang = root?.parentElement?.querySelector('.btn-lang');
+  const panel = root?.closest('.practice-panel');
+  const btnForget = panel?.querySelector('.btn-forget');
+  const btnRemember = panel?.querySelector('.btn-remember');
+  const btnRandom = panel?.querySelector('.btn-random');
+  const btnLang = panel?.querySelector('.btn-lang');
   const btnReset = document.querySelector('.btn-reset-word');
   const formRows = document.querySelectorAll('.form-row');
 
   let currentIndex = 0;
-  let mode = 'forms'; // 'forms' | 'summary'
+  let mode = 'forms';
 
   const fc = flash.init({
     root,
     onGrade: (remembered) => {
-      gradeCurrent(remembered).then(() => {
-        if (mode === 'summary') randomSummary();
-        else randomForm();
-      });
+      gradeAndNext(remembered);
     },
   });
 
@@ -95,17 +93,18 @@
     showForm(next);
   }
 
-  function randomSummary() {
-    showSummary();
-  }
-
   function randomMixed() {
     if (Math.random() < 0.3 && baseForms.length) showSummary();
     else randomForm();
   }
 
-  btnPrev?.addEventListener('click', () => showForm(currentIndex - 1));
-  btnNext?.addEventListener('click', () => showForm(currentIndex + 1));
+  async function gradeAndNext(remembered) {
+    await gradeCurrent(remembered);
+    randomMixed();
+  }
+
+  btnForget?.addEventListener('click', () => gradeAndNext(false));
+  btnRemember?.addEventListener('click', () => gradeAndNext(true));
   btnRandom?.addEventListener('click', randomMixed);
   btnLang?.addEventListener('click', () => {
     fc.toggleLang(btnLang);
@@ -116,9 +115,9 @@
   btnReset?.addEventListener('click', async () => {
     if (!confirm('Сбросить прогресс этого глагола?')) return;
     await db.deleteWordCards(wordSlug);
-    showForm(0);
+    randomMixed();
   });
 
   fc.setLangButton(btnLang);
-  showForm(0);
+  randomMixed();
 })();

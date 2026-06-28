@@ -34,19 +34,22 @@
   let currentPick = null;
   let startWithRussian = false;
 
+  async function gradeAndNext(remembered) {
+    await gradeCurrent(remembered);
+    updateProgressUI();
+    pickAndShowNext();
+  }
+
   const fc = flash.init({
     root: document.getElementById('list-flashcard-root'),
     onGrade: (remembered) => {
-      gradeCurrent(remembered).then(() => {
-        updateProgressUI();
-        pickAndShowNext();
-      });
+      gradeAndNext(remembered);
     },
   });
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
-  const btnPrev = practiceControls?.querySelector('.btn-prev');
-  const btnNext = practiceControls?.querySelector('.btn-next');
+  const btnForget = practiceControls?.querySelector('.btn-forget');
+  const btnRemember = practiceControls?.querySelector('.btn-remember');
   const btnRandom = practiceControls?.querySelector('.btn-random');
   const btnLang = practiceControls?.querySelector('.btn-lang');
 
@@ -66,12 +69,8 @@
       const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
       const wordFill = el.querySelector('.progress-word');
       const formsFill = el.querySelector('.progress-forms');
-      const wordPct = el.querySelector('.progress-word-pct');
-      const formsPct = el.querySelector('.progress-forms-pct');
       if (wordFill) wordFill.style.width = `${st.wordPct}%`;
       if (formsFill) formsFill.style.width = `${st.formsPct}%`;
-      if (wordPct) wordPct.textContent = `${st.wordPct}%`;
-      if (formsPct) formsPct.textContent = `${st.formsPct}%`;
     });
   }
 
@@ -158,8 +157,8 @@
     if (currentPick) showCardContent(currentPick);
   });
 
-  btnPrev?.addEventListener('click', pickAndShowNext);
-  btnNext?.addEventListener('click', pickAndShowNext);
+  btnForget?.addEventListener('click', () => gradeAndNext(false));
+  btnRemember?.addEventListener('click', () => gradeAndNext(true));
 
   btnSaveSettings?.addEventListener('click', async () => {
     await srs.saveDeckSettings(deckId, db, {

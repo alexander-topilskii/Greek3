@@ -51,29 +51,29 @@ function flashcardMarkup(id = 'flashcard-root'): string {
       <p class="flashcard-swipe-note">Свайп ← не помню · помню → · тап — перевернуть</p>
     </div>
     <div class="practice-controls">
-      <button type="button" class="btn btn-secondary btn-prev" aria-label="Предыдущая">←</button>
+      <button type="button" class="btn btn-secondary btn-forget" aria-label="Не помню">←</button>
       <button type="button" class="btn btn-primary btn-random">Случайная</button>
       <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
-      <button type="button" class="btn btn-secondary btn-next" aria-label="Следующая">→</button>
+      <button type="button" class="btn btn-secondary btn-remember" aria-label="Помню">→</button>
     </div>`;
 }
 
-function settingsPanel(scope: 'word' | 'deck', deckId?: string): string {
+function settingsPanel(scope: 'word' | 'deck'): string {
   if (scope === 'word') {
     return `
-    <details class="settings-panel fade-in">
-      <summary>Настройки прогресса</summary>
+    <section class="settings-panel fade-in">
+      <h2 class="settings-title">Настройки прогресса</h2>
       <div class="settings-body">
-        <p class="settings-desc">Прогресс хранится локально в браузере (IndexedDB).</p>
+        <p class="settings-desc">Прогресс хранится локально в браузере.</p>
         <button type="button" class="btn btn-secondary btn-reset-word">Сбросить этот глагол</button>
       </div>
-    </details>`;
+    </section>`;
   }
   return `
-    <details class="settings-panel fade-in" id="deck-settings">
-      <summary>Настройки прогресса</summary>
+    <section class="settings-panel fade-in" id="deck-settings">
+      <h2 class="settings-title">Настройки прогресса</h2>
       <div class="settings-body">
-        <p class="settings-desc">Spaced Repetition: сначала ${5} слов, по мере изучения добавляются новые.</p>
+        <p class="settings-desc">Spaced Repetition: сначала несколько слов, по мере изучения добавляются новые.</p>
         <label class="settings-field">
           <span>Начальный размер группы</span>
           <input type="number" id="setting-initial-batch" min="1" max="30" value="5">
@@ -87,7 +87,7 @@ function settingsPanel(scope: 'word' | 'deck', deckId?: string): string {
           <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить весь прогресс</button>
         </div>
       </div>
-    </details>`;
+    </section>`;
 }
 
 function layout(
@@ -189,15 +189,13 @@ export function renderIndex(
           <span class="word-link-arrow" aria-hidden="true">→</span>
         </div>
         <div class="word-progress" data-progress-slug="${escapeHtml(slug)}">
-          <div class="word-progress-row">
-            <span class="word-progress-label">Слово</span>
-            <div class="progress-bar"><div class="progress-bar-fill progress-word" style="width:0%"></div></div>
-            <span class="progress-pct progress-word-pct">0%</span>
-          </div>
-          <div class="word-progress-row">
-            <span class="word-progress-label">Формы</span>
-            <div class="progress-bar"><div class="progress-bar-fill progress-forms" style="width:0%"></div></div>
-            <span class="progress-pct progress-forms-pct">0%</span>
+          <div class="word-progress-track">
+            <div class="word-progress-half word-progress-half--left">
+              <div class="word-progress-fill progress-word"></div>
+            </div>
+            <div class="word-progress-half word-progress-half--right">
+              <div class="word-progress-fill progress-forms"></div>
+            </div>
           </div>
         </div>
       </a>`;
@@ -212,7 +210,7 @@ export function renderIndex(
     <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${catalog ? `<button type="button" class="btn btn-primary" id="btn-practice-all">Практиковать</button>` : ''}
+        ${catalog ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-all">Практиковать</button>` : ''}
       </div>
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
@@ -222,7 +220,7 @@ export function renderIndex(
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
       </section>
 
-      ${catalog ? settingsPanel('deck', catalog.deckId) : ''}
+      ${catalog ? settingsPanel('deck') : ''}
 
       <section class="links-list" id="verbs-links">
         ${links || '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>'}
