@@ -34,10 +34,11 @@ Push в `main` → GitHub Action собирает и публикует на **G
 
 CI автоматически задаёт `SITE_BASE_URL=/<имя-репозитория>` (для этого проекта: `/Greek3`).
 
-Локальная проверка как на GitHub Pages:
+Локальная разработка:
 
 ```bash
-npm run build:pages && npx serve dist
+npm run dev          # сборка + http://localhost:3000/
+npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3/
 ```
 
 ## Разделы
