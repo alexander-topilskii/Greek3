@@ -20,8 +20,15 @@ export interface IndexLink {
   href: string;
 }
 
+export interface IndexSection {
+  title: string;
+  links: IndexLink[];
+}
+
 export interface IndexPage {
   title: string;
+  intro: string;
+  sections: IndexSection[];
   links: IndexLink[];
   sourcePath: string;
 }

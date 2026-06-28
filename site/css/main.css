@@ -247,6 +247,29 @@ body {
 .links-list {
   display: flex;
   flex-direction: column;
+  gap: 1.75rem;
+}
+
+.links-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.links-group-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.links-group-items {
+  display: flex;
+  flex-direction: column;
   gap: 0.625rem;
 }
 

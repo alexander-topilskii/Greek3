@@ -190,17 +190,14 @@ export function renderHome(sections: { title: string; href: string; description:
   return layout(content, 'Главная');
 }
 
-export function renderIndex(
-  page: IndexPage,
+function renderIndexLink(
+  link: IndexLink,
   pageOutputDir: string,
-  breadcrumbs: { label: string; href?: string }[],
-  catalog?: VerbCatalog,
+  catalog: VerbCatalog | undefined,
 ): string {
-  const links = page.links
-    .map((link: IndexLink) => {
-      const word = catalog?.words.find((w) => w.href === link.href);
-      const slug = word?.slug ?? '';
-      return `
+  const word = catalog?.words.find((w) => w.href === link.href);
+  const slug = word?.slug ?? '';
+  return `
       <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
         <div class="word-link-main">
           <span class="word-link-label">${escapeHtml(link.label)}</span>
@@ -208,8 +205,49 @@ export function renderIndex(
         </div>
         ${progressBarMarkup(slug)}
       </a>`;
+}
+
+function renderGroupedLinks(
+  page: IndexPage,
+  pageOutputDir: string,
+  catalog: VerbCatalog | undefined,
+): string {
+  const sections =
+    page.sections.length > 0
+      ? page.sections.filter((s) => s.links.length > 0)
+      : [{ title: '', links: page.links }];
+
+  if (!sections.length || !page.links.length) {
+    return '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>';
+  }
+
+  return sections
+    .map((section) => {
+      const items = section.links
+        .map((link) => renderIndexLink(link, pageOutputDir, catalog))
+        .join('');
+      const heading = section.title
+        ? `<h2 class="links-group-title">${escapeHtml(section.title)}</h2>`
+        : '';
+      return `
+      <div class="links-group">
+        ${heading}
+        <div class="links-group-items">${items}</div>
+      </div>`;
     })
     .join('');
+}
+
+export function renderIndex(
+  page: IndexPage,
+  pageOutputDir: string,
+  breadcrumbs: { label: string; href?: string }[],
+  catalog?: VerbCatalog,
+): string {
+  const links = renderGroupedLinks(page, pageOutputDir, catalog);
+  const intro = page.intro
+    ? `<p class="page-intro">${escapeHtml(page.intro).replace(/\n/g, '<br>')}</p>`
+    : '';
 
   const catalogJson = catalog
     ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
@@ -219,6 +257,7 @@ export function renderIndex(
     <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
+        ${intro}
         ${catalog && catalog.words.length > 0 ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-all">Практиковать</button>` : ''}
       </div>
 
@@ -232,7 +271,7 @@ export function renderIndex(
       ${catalog ? settingsPanel('deck') : ''}
 
       <section class="links-list" id="verbs-links">
-        ${links || '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>'}
+        ${links}
       </section>
       ${catalogJson}
     </section>`;
@@ -247,20 +286,10 @@ export function renderCasesIndex(
   catalog: VerbCatalog | undefined,
   gameData: unknown,
 ): string {
-  const links = page.links
-    .map((link: IndexLink) => {
-      const word = catalog?.words.find((w) => w.href === link.href);
-      const slug = word?.slug ?? '';
-      return `
-      <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
-        <div class="word-link-main">
-          <span class="word-link-label">${escapeHtml(link.label)}</span>
-          <span class="word-link-arrow" aria-hidden="true">→</span>
-        </div>
-        ${progressBarMarkup(slug)}
-      </a>`;
-    })
-    .join('');
+  const links = renderGroupedLinks(page, pageOutputDir, catalog);
+  const intro = page.intro
+    ? `<p class="page-intro">${escapeHtml(page.intro).replace(/\n/g, '<br>')}</p>`
+    : '';
 
   const catalogJson = catalog
     ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
@@ -272,7 +301,7 @@ export function renderCasesIndex(
     <section class="verbs-list-page cases-page" data-deck-id="cases">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        <p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила — затем потренируйтесь в мини-игре.</p>
+        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила — затем потренируйтесь в мини-игре.</p>'}
       </div>
 
       <section class="links-list" id="verbs-links">

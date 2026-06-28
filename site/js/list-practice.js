@@ -77,6 +77,42 @@
       const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
       srs.applyProgressBar(el, st.wordPct, st.formsPct);
     });
+
+    sortWordLinks(stats, cards);
+  }
+
+  /** Lower rank = higher in list (unknown first, mastered last). */
+  function wordSortRank(slug, stats, cards) {
+    const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
+    const combined = (st.wordPct + st.formsPct) / 2;
+    const summary = cards.find((c) => c.wordSlug === slug && c.type === 'summary');
+    const reps = summary?.repetitions ?? 0;
+
+    if (!summary || reps === 0) return combined;
+    if (srs.isMastered(summary)) return 20000 + combined;
+    return 1000 + combined;
+  }
+
+  function sortWordLinks(stats, cards) {
+    document.querySelectorAll('.links-group-items').forEach((container) => {
+      const links = [...container.querySelectorAll('.word-link[data-word-slug]')].filter(
+        (el) => el.getAttribute('data-word-slug'),
+      );
+      if (links.length < 2) return;
+
+      links.sort((a, b) => {
+        const slugA = a.getAttribute('data-word-slug');
+        const slugB = b.getAttribute('data-word-slug');
+        const diff = wordSortRank(slugA, stats, cards) - wordSortRank(slugB, stats, cards);
+        if (diff !== 0) return diff;
+        return (a.querySelector('.word-link-label')?.textContent ?? '').localeCompare(
+          b.querySelector('.word-link-label')?.textContent ?? '',
+          'ru',
+        );
+      });
+
+      links.forEach((link) => container.appendChild(link));
+    });
   }
 
   function showCardContent(pick) {
