@@ -1,10 +1,12 @@
-import type { IndexLink, IndexPage, SiteConfig, WordEntry } from './types';
+import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
 
 const SITE_CONFIG: SiteConfig = {
   title: 'Greek3',
   description: 'Изучение и практика современного греческого языка',
   baseUrl: process.env.SITE_BASE_URL ?? '',
 };
+
+const SHARED_SCRIPTS = ['assets/js/db.js', 'assets/js/srs.js', 'assets/js/flashcard.js'];
 
 function escapeHtml(text: string): string {
   return text
@@ -25,10 +27,74 @@ export function sitePath(relativePath: string): string {
   return base ? `${base}/${encoded}` : `/${encoded}`;
 }
 
+function flashcardMarkup(id = 'flashcard-root'): string {
+  return `
+    <div class="flashcard-root" id="${id}">
+      <div class="flashcard-hints" aria-hidden="true">
+        <span class="flashcard-hint flashcard-hint--left">Не помню</span>
+        <span class="flashcard-hint flashcard-hint--right">Помню</span>
+      </div>
+      <div class="flashcard" tabindex="0" role="button" aria-label="Карточка — тап перевернуть, свайп оценить">
+        <div class="flashcard-drag">
+          <div class="flashcard-inner">
+            <div class="flashcard-front">
+              <span class="flashcard-label" data-flash-front-label>Греческий</span>
+              <p class="flashcard-text" data-flash-front-text>—</p>
+            </div>
+            <div class="flashcard-back">
+              <span class="flashcard-label" data-flash-back-label>Перевод</span>
+              <p class="flashcard-text" data-flash-back-text>—</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="flashcard-swipe-note">Свайп ← не помню · помню → · тап — перевернуть</p>
+    </div>
+    <div class="practice-controls">
+      <button type="button" class="btn btn-secondary btn-prev" aria-label="Предыдущая">←</button>
+      <button type="button" class="btn btn-primary btn-random">Случайная</button>
+      <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
+      <button type="button" class="btn btn-secondary btn-next" aria-label="Следующая">→</button>
+    </div>`;
+}
+
+function settingsPanel(scope: 'word' | 'deck', deckId?: string): string {
+  if (scope === 'word') {
+    return `
+    <details class="settings-panel fade-in">
+      <summary>Настройки прогресса</summary>
+      <div class="settings-body">
+        <p class="settings-desc">Прогресс хранится локально в браузере (IndexedDB).</p>
+        <button type="button" class="btn btn-secondary btn-reset-word">Сбросить этот глагол</button>
+      </div>
+    </details>`;
+  }
+  return `
+    <details class="settings-panel fade-in" id="deck-settings">
+      <summary>Настройки прогресса</summary>
+      <div class="settings-body">
+        <p class="settings-desc">Spaced Repetition: сначала ${5} слов, по мере изучения добавляются новые.</p>
+        <label class="settings-field">
+          <span>Начальный размер группы</span>
+          <input type="number" id="setting-initial-batch" min="1" max="30" value="5">
+        </label>
+        <label class="settings-field">
+          <span>Активных слов сейчас</span>
+          <input type="number" id="setting-active-limit" min="1" max="62" value="5">
+        </label>
+        <div class="settings-actions">
+          <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
+          <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить весь прогресс</button>
+        </div>
+      </div>
+    </details>`;
+}
+
 function layout(
   content: string,
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
+  extraScripts: string[] = [],
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -37,6 +103,10 @@ function layout(
         : `<span class="crumb-current">${escapeHtml(c.label)}</span>`,
     )
     .join('<span class="crumb-sep">/</span>') ?? '';
+
+  const scripts = [...SHARED_SCRIPTS, ...extraScripts]
+    .map((s) => `<script src="${sitePath(s)}" defer></script>`)
+    .join('\n  ');
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -72,6 +142,7 @@ function layout(
       <p>Учим греческий вместе · ${escapeHtml(SITE_CONFIG.title)}</p>
     </div>
   </footer>
+  ${scripts}
 </body>
 </html>`;
 }
@@ -105,26 +176,61 @@ export function renderIndex(
   page: IndexPage,
   pageOutputDir: string,
   breadcrumbs: { label: string; href?: string }[],
+  catalog?: VerbCatalog,
 ): string {
   const links = page.links
-    .map(
-      (link: IndexLink) => `
-      <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in">
-        <span class="word-link-label">${escapeHtml(link.label)}</span>
-        <span class="word-link-arrow" aria-hidden="true">→</span>
-      </a>`,
-    )
+    .map((link: IndexLink) => {
+      const word = catalog?.words.find((w) => w.href === link.href);
+      const slug = word?.slug ?? '';
+      return `
+      <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
+        <div class="word-link-main">
+          <span class="word-link-label">${escapeHtml(link.label)}</span>
+          <span class="word-link-arrow" aria-hidden="true">→</span>
+        </div>
+        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}">
+          <div class="word-progress-row">
+            <span class="word-progress-label">Слово</span>
+            <div class="progress-bar"><div class="progress-bar-fill progress-word" style="width:0%"></div></div>
+            <span class="progress-pct progress-word-pct">0%</span>
+          </div>
+          <div class="word-progress-row">
+            <span class="word-progress-label">Формы</span>
+            <div class="progress-bar"><div class="progress-bar-fill progress-forms" style="width:0%"></div></div>
+            <span class="progress-pct progress-forms-pct">0%</span>
+          </div>
+        </div>
+      </a>`;
+    })
     .join('');
 
+  const catalogJson = catalog
+    ? `<script type="application/json" id="verbs-catalog">${escapeHtml(JSON.stringify(catalog))}</script>`
+    : '';
+
   const content = `
-    <section class="page-head fade-in">
-      <h1>${escapeHtml(page.title)}</h1>
-    </section>
-    <section class="links-list">
-      ${links || '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>'}
+    <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
+      <div class="page-head fade-in list-head">
+        <h1>${escapeHtml(page.title)}</h1>
+        ${catalog ? `<button type="button" class="btn btn-primary" id="btn-practice-all">Практиковать</button>` : ''}
+      </div>
+
+      <section class="list-practice hidden" id="list-practice" aria-hidden="true">
+        <div class="practice-panel practice-panel--wide fade-in">
+          ${flashcardMarkup('list-flashcard-root')}
+        </div>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
+      </section>
+
+      ${catalog ? settingsPanel('deck', catalog.deckId) : ''}
+
+      <section class="links-list" id="verbs-links">
+        ${links || '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>'}
+      </section>
+      ${catalogJson}
     </section>`;
 
-  return layout(content, page.title, breadcrumbs);
+  return layout(content, page.title, breadcrumbs, catalog ? ['assets/js/list-practice.js'] : []);
 }
 
 export function renderWord(
@@ -133,6 +239,7 @@ export function renderWord(
 ): string {
   const tenseLabels = ['прош.', 'наст.', 'буд.'];
   const translation = word.translation || word.title;
+  const deckId = word.category || 'default';
 
   const summaryHtml = word.baseForms.length
     ? `
@@ -155,6 +262,7 @@ export function renderWord(
     : `<h1 class="word-title">${escapeHtml(translation)}</h1>`;
 
   const formsJson = escapeHtml(JSON.stringify(word.forms));
+  const baseFormsJson = escapeHtml(JSON.stringify(word.baseForms));
 
   const formsRows = word.forms
     .map(
@@ -177,31 +285,21 @@ export function renderWord(
     .join('');
 
   const content = `
-    <article class="word-page" data-forms="${formsJson}">
+    <article class="word-page"
+      data-word-slug="${escapeHtml(word.slug)}"
+      data-deck-id="${escapeHtml(deckId)}"
+      data-translation="${escapeHtml(translation)}"
+      data-base-forms="${baseFormsJson}"
+      data-forms="${formsJson}">
       <header class="word-header fade-in">
         ${summaryHtml}
       </header>
 
-      <section class="practice-panel fade-in">
-        <div class="flashcard" id="flashcard" tabindex="0" role="button" aria-label="Карточка — нажмите, чтобы перевернуть">
-          <div class="flashcard-inner">
-            <div class="flashcard-front">
-              <span class="flashcard-label" id="flash-front-label">Греческий</span>
-              <p class="flashcard-text greek" id="flash-front-text">—</p>
-            </div>
-            <div class="flashcard-back">
-              <span class="flashcard-label" id="flash-back-label">Перевод</span>
-              <p class="flashcard-text" id="flash-back-text">—</p>
-            </div>
-          </div>
-        </div>
-        <div class="practice-controls">
-          <button type="button" class="btn btn-secondary" id="btn-prev" aria-label="Предыдущая форма">←</button>
-          <button type="button" class="btn btn-primary" id="btn-random">Случайная</button>
-          <button type="button" class="btn btn-secondary btn-lang" id="btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
-          <button type="button" class="btn btn-secondary" id="btn-next" aria-label="Следующая форма">→</button>
-        </div>
+      <section class="practice-panel practice-panel--wide fade-in">
+        ${flashcardMarkup('flashcard-root')}
       </section>
+
+      ${settingsPanel('word')}
 
       ${
         word.forms.length
@@ -221,10 +319,9 @@ export function renderWord(
       }
 
       ${extraHtml}
-    </article>
-    <script src="${sitePath('assets/js/practice.js')}" defer></script>`;
+    </article>`;
 
-  return layout(content, word.translation || word.title, breadcrumbs);
+  return layout(content, word.translation || word.title, breadcrumbs, ['assets/js/practice.js']);
 }
 
 export function wordOutputPath(slug: string): string {
@@ -245,4 +342,17 @@ export function depthForOutput(relativeHtmlPath: string): number {
   const dir = relativeHtmlPath.replace(/[^/]+$/, '');
   if (!dir) return 0;
   return dir.split('/').filter(Boolean).length;
+}
+
+export function buildCatalogWord(word: WordEntry, href: string, label: string): CatalogWord {
+  return {
+    slug: word.slug,
+    translation: word.translation || word.title,
+    verbType: word.verbType,
+    baseForms: word.baseForms,
+    href,
+    label,
+    formCount: word.forms.length,
+    forms: word.forms,
+  };
 }

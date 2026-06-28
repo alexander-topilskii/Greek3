@@ -26,6 +26,22 @@ export interface IndexPage {
   sourcePath: string;
 }
 
+export interface CatalogWord {
+  slug: string;
+  translation: string;
+  verbType: string;
+  baseForms: string[];
+  href: string;
+  label: string;
+  formCount: number;
+  forms: WordForm[];
+}
+
+export interface VerbCatalog {
+  deckId: string;
+  words: CatalogWord[];
+}
+
 export interface SiteConfig {
   title: string;
   description: string;

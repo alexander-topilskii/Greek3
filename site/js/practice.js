@@ -2,88 +2,89 @@
   const page = document.querySelector('.word-page');
   if (!page) return;
 
-  const raw = page.getAttribute('data-forms');
-  if (!raw) return;
+  const db = window.GreekDB;
+  const srs = window.GreekSRS;
+  const flash = window.GreekFlashcard;
+  if (!db || !srs || !flash) return;
+
+  const wordSlug = page.getAttribute('data-word-slug') ?? '';
+  const deckId = page.getAttribute('data-deck-id') ?? 'verbs';
+  const translation = page.getAttribute('data-translation') ?? '';
 
   let forms;
+  let baseForms;
   try {
-    forms = JSON.parse(raw);
+    forms = JSON.parse(page.getAttribute('data-forms') ?? '[]');
+    baseForms = JSON.parse(page.getAttribute('data-base-forms') ?? '[]');
   } catch {
     return;
   }
-
   if (!forms.length) return;
 
-  let currentIndex = 0;
-  let flipped = false;
-  let startWithRussian = false;
-
-  const flashcard = document.getElementById('flashcard');
-  const flashFrontLabel = document.getElementById('flash-front-label');
-  const flashBackLabel = document.getElementById('flash-back-label');
-  const flashFrontText = document.getElementById('flash-front-text');
-  const flashBackText = document.getElementById('flash-back-text');
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
-  const btnRandom = document.getElementById('btn-random');
-  const btnLang = document.getElementById('btn-lang');
+  const root = document.getElementById('flashcard-root');
+  const btnPrev = root?.parentElement?.querySelector('.btn-prev');
+  const btnNext = root?.parentElement?.querySelector('.btn-next');
+  const btnRandom = root?.parentElement?.querySelector('.btn-random');
+  const btnLang = root?.parentElement?.querySelector('.btn-lang');
+  const btnReset = document.querySelector('.btn-reset-word');
   const formRows = document.querySelectorAll('.form-row');
 
-  function updateLangButton() {
-    if (!btnLang) return;
-    btnLang.textContent = startWithRussian ? '⇄ EL' : '⇄ RU';
-    btnLang.setAttribute('aria-pressed', String(startWithRussian));
-    btnLang.title = startWithRussian
-      ? 'Показывать сначала по-гречески'
-      : 'Показывать сначала по-русски';
+  let currentIndex = 0;
+  let mode = 'forms'; // 'forms' | 'summary'
+
+  const fc = flash.init({
+    root,
+    onGrade: (remembered) => {
+      gradeCurrent(remembered).then(() => {
+        if (mode === 'summary') randomSummary();
+        else randomForm();
+      });
+    },
+  });
+
+  async function ensureFormCard(index) {
+    const id = db.cardId(wordSlug, 'form', index);
+    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'form', formIndex: index });
   }
 
-  function applyCardFaces(form) {
-    const greek = form.greek;
-    const translation = form.translation;
+  async function ensureSummaryCard() {
+    const id = db.cardId(wordSlug, 'summary');
+    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'summary' });
+  }
 
-    if (startWithRussian) {
-      if (flashFrontLabel) flashFrontLabel.textContent = 'Русский';
-      if (flashBackLabel) flashBackLabel.textContent = 'Греческий';
-      if (flashFrontText) {
-        flashFrontText.textContent = translation;
-        flashFrontText.classList.remove('greek');
-      }
-      if (flashBackText) {
-        flashBackText.textContent = greek;
-        flashBackText.classList.add('greek');
-      }
-    } else {
-      if (flashFrontLabel) flashFrontLabel.textContent = 'Греческий';
-      if (flashBackLabel) flashBackLabel.textContent = 'Перевод';
-      if (flashFrontText) {
-        flashFrontText.textContent = greek;
-        flashFrontText.classList.add('greek');
-      }
-      if (flashBackText) {
-        flashBackText.textContent = translation;
-        flashBackText.classList.remove('greek');
-      }
+  async function gradeCurrent(remembered) {
+    if (mode === 'summary') {
+      const card = await ensureSummaryCard();
+      await db.putCard(srs.gradeCard(card, remembered));
+      return;
     }
+    const card = await ensureFormCard(currentIndex);
+    await db.putCard(srs.gradeCard(card, remembered));
   }
 
-  function showForm(index) {
-    currentIndex = ((index % forms.length) + forms.length) % forms.length;
-    const form = forms[currentIndex];
-
-    applyCardFaces(form);
-
-    flipped = false;
-    flashcard?.classList.remove('is-flipped');
-
+  function highlightRow() {
     formRows.forEach((row, i) => {
-      row.classList.toggle('is-active', i === currentIndex);
+      row.classList.toggle('is-active', mode === 'forms' && i === currentIndex);
     });
   }
 
-  function toggleFlip() {
-    flipped = !flipped;
-    flashcard?.classList.toggle('is-flipped', flipped);
+  function showForm(index) {
+    mode = 'forms';
+    currentIndex = ((index % forms.length) + forms.length) % forms.length;
+    const form = forms[currentIndex];
+    fc.showPair(form.greek, form.translation);
+    highlightRow();
+  }
+
+  function showSummary() {
+    mode = 'summary';
+    const greekLines = baseForms.length ? baseForms : forms.slice(0, 3).map((f) => f.greek);
+    if (fc.startWithRussian) {
+      fc.showMultiLine([translation], greekLines, false, true);
+    } else {
+      fc.showMultiLine(greekLines, [translation], true, false);
+    }
+    formRows.forEach((row) => row.classList.remove('is-active'));
   }
 
   function randomForm() {
@@ -94,25 +95,30 @@
     showForm(next);
   }
 
-  function toggleLang() {
-    startWithRussian = !startWithRussian;
-    updateLangButton();
-    showForm(currentIndex);
+  function randomSummary() {
+    showSummary();
   }
 
-  flashcard?.addEventListener('click', toggleFlip);
-  flashcard?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleFlip();
-    }
-  });
+  function randomMixed() {
+    if (Math.random() < 0.3 && baseForms.length) showSummary();
+    else randomForm();
+  }
 
   btnPrev?.addEventListener('click', () => showForm(currentIndex - 1));
   btnNext?.addEventListener('click', () => showForm(currentIndex + 1));
-  btnRandom?.addEventListener('click', randomForm);
-  btnLang?.addEventListener('click', toggleLang);
+  btnRandom?.addEventListener('click', randomMixed);
+  btnLang?.addEventListener('click', () => {
+    fc.toggleLang(btnLang);
+    if (mode === 'summary') showSummary();
+    else showForm(currentIndex);
+  });
 
-  updateLangButton();
+  btnReset?.addEventListener('click', async () => {
+    if (!confirm('Сбросить прогресс этого глагола?')) return;
+    await db.deleteWordCards(wordSlug);
+    showForm(0);
+  });
+
+  fc.setLangButton(btnLang);
   showForm(0);
 })();
