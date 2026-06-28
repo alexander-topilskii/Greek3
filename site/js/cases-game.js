@@ -15,6 +15,7 @@
   if (!items.length) return;
 
   const ruEl = root.querySelector('[data-cases-ru]');
+  const metaEl = root.querySelector('[data-cases-meta]');
   const hintEl = root.querySelector('[data-cases-hint]');
   const badgeEl = root.querySelector('[data-cases-badge]');
   const optionsEl = root.querySelector('[data-cases-options]');
@@ -46,6 +47,7 @@
     locked = false;
     feedbackEl.hidden = true;
     feedbackEl.className = 'cases-game-feedback';
+    hideCaseMeta();
     btnRestart.hidden = true;
     btnNext.hidden = true;
     updateScore();
@@ -60,15 +62,26 @@
     scoreEl.textContent = `${score} / ${answered}`;
   }
 
+  function hideCaseMeta() {
+    if (metaEl) metaEl.hidden = true;
+  }
+
+  function revealCaseMeta(q) {
+    if (!metaEl || !badgeEl || !hintEl) return;
+    badgeEl.textContent = q.caseLabel;
+    badgeEl.dataset.case = q.case;
+    badgeEl.setAttribute('aria-hidden', 'false');
+    hintEl.textContent = q.hint;
+    metaEl.hidden = false;
+  }
+
   function showQuestion() {
     locked = false;
     feedbackEl.hidden = true;
     btnNext.hidden = true;
+    hideCaseMeta();
 
     const q = current();
-    badgeEl.textContent = q.caseLabel;
-    badgeEl.dataset.case = q.case;
-    hintEl.textContent = q.hint;
     ruEl.textContent = q.ru;
 
     const options = shuffle([q.correct, ...q.wrong.slice(0, 3)]);
@@ -90,6 +103,7 @@
 
   function showFeedback(correct, q) {
     locked = true;
+    revealCaseMeta(q);
     feedbackEl.hidden = false;
     feedbackEl.className = `cases-game-feedback cases-game-feedback--${correct ? 'ok' : 'bad'}`;
 

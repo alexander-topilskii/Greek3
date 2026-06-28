@@ -316,10 +316,12 @@ export function renderCasesIndex(
           <p class="cases-game-score">Счёт: <span data-cases-score>0 / 0</span></p>
         </div>
         <div class="cases-game-card">
-          <span class="cases-game-badge" data-cases-badge>—</span>
-          <p class="cases-game-hint" data-cases-hint></p>
           <p class="cases-game-ru" data-cases-ru>—</p>
           <div class="cases-game-options" data-cases-options></div>
+          <div class="cases-game-meta" data-cases-meta hidden>
+            <span class="cases-game-badge" data-cases-badge aria-hidden="true"></span>
+            <p class="cases-game-hint" data-cases-hint></p>
+          </div>
           <p class="cases-game-feedback" data-cases-feedback hidden></p>
           <div class="cases-game-actions">
             <button type="button" class="btn btn-primary" data-cases-next hidden>Дальше →</button>
