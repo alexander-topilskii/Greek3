@@ -3,6 +3,13 @@ export interface WordForm {
   translation: string;
 }
 
+export interface WordMeta {
+  level: string;
+  topics: string[];
+  tags: string[];
+  recordType: string;
+}
+
 export interface WordEntry {
   slug: string;
   title: string;
@@ -13,6 +20,8 @@ export interface WordEntry {
   forms: WordForm[];
   extraSections: { title: string; lines: string[] }[];
   sourcePath: string;
+  meta: WordMeta;
+  primaryGreek: string;
 }
 
 export interface IndexLink {
@@ -44,6 +53,12 @@ export interface CatalogWord {
   label: string;
   formCount: number;
   forms: WordForm[];
+  level: string;
+  topics: string[];
+  tags: string[];
+  recordType: string;
+  primaryGreek: string;
+  category: string;
 }
 
 export interface VerbCatalog {
@@ -55,4 +70,15 @@ export interface SiteConfig {
   title: string;
   description: string;
   baseUrl: string;
+}
+
+export interface TopicAggregate {
+  slug: string;
+  title: string;
+  words: CatalogWord[];
+}
+
+export interface LevelAggregate {
+  level: string;
+  words: CatalogWord[];
 }
