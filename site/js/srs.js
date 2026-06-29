@@ -173,7 +173,8 @@
   }
 
   function collectCandidates(settings, catalog, cards, db, now, options) {
-    const { summaryOnly = false } = options;
+    const { summaryOnly = false, direction: directionFilter = null } = options;
+    const directions = directionFilter ? [directionFilter] : DIRECTIONS;
     const wordSlugs = catalog.words.map((w) => w.slug);
     const poolEnd = Math.min(settings.activeLimit, wordSlugs.length);
     const frontierIndex = findFrontierIndex(wordSlugs, poolEnd, cards, db);
@@ -185,7 +186,7 @@
       const word = catalog.words[wi];
       const age = wordAge(wi, frontierIndex);
 
-      for (const direction of DIRECTIONS) {
+      for (const direction of directions) {
         const summaryCard = getSummaryCard(cards, word.slug, direction, db);
 
         if (!summaryCard) {
@@ -224,7 +225,7 @@
       if (summaryOnly) continue;
 
       for (let fi = 0; fi < word.formCount; fi++) {
-        for (const direction of DIRECTIONS) {
+        for (const direction of directions) {
           const formId = db.cardId(word.slug, 'form', fi, direction);
           let formCard = cards.find((c) => c.id === formId);
           if (!formCard && direction === 'el-ru') {
