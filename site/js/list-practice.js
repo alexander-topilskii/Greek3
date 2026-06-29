@@ -37,6 +37,7 @@
   let currentPick = null;
   /** Fixed for the session: 'el-ru' (русский) or 'ru-el' (греческий). */
   let practiceDirection = null;
+  let practiceDueOnly = false;
   let fc = null;
 
   function showRussianFirst() {
@@ -91,7 +92,38 @@
       srs.applyProgressBar(el, st.wordPct, st.formsPct);
     });
 
+    updateDeckSummary(stats, cards);
     sortWordLinks(stats, cards);
+  }
+
+  function updateDeckSummary(stats, cards) {
+    const summaryEl = document.getElementById('deck-summary');
+    if (!summaryEl || !catalog.words.length) return;
+
+    const now = Date.now();
+    let mastered = 0;
+    let learning = 0;
+    let due = 0;
+
+    for (const word of catalog.words) {
+      const st = stats[word.slug] ?? { wordPct: 0, formsPct: 0 };
+      const combined = (st.wordPct + st.formsPct) / 2;
+      if (combined >= 95) mastered += 1;
+      else if (combined > 0) learning += 1;
+
+      for (const direction of srs.DIRECTIONS) {
+        const card = cards.find(
+          (c) =>
+            c.wordSlug === word.slug &&
+            c.type === 'summary' &&
+            (c.direction ?? 'el-ru') === direction,
+        );
+        if (card && srs.isDue(card, now) && (card.repetitions ?? 0) > 0) due += 1;
+      }
+    }
+
+    const fresh = catalog.words.length - mastered - learning;
+    summaryEl.textContent = `${fresh} новых · ${learning} учу · ${due} к повторению · ${mastered} выучено`;
   }
 
   /** Lower rank = higher in list (unknown first, mastered last). */
@@ -220,6 +252,7 @@
       currentPick = await srs.pickNextCard(deckId, catalog, db, {
         summaryOnly: true,
         direction: practiceDirection,
+        dueOnly: practiceDueOnly,
       });
       const s = await srs.loadDeckSettings(deckId, db);
       if (inputActive) inputActive.value = String(s.activeLimit);
@@ -238,11 +271,12 @@
     showCardContent(currentPick);
   }
 
-  function openPractice(direction) {
+  function openPractice(direction, dueOnly = false) {
     const card = initFlashcard();
     if (!card) return;
 
     practiceDirection = direction;
+    practiceDueOnly = dueOnly;
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     linksSection?.classList.add('hidden');
@@ -253,6 +287,7 @@
 
   function closePractice() {
     practiceDirection = null;
+    practiceDueOnly = false;
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
@@ -260,8 +295,9 @@
     updateProgressUI();
   }
 
-  btnPracticeEl?.addEventListener('click', () => openPractice('ru-el'));
-  btnPracticeRu?.addEventListener('click', () => openPractice('el-ru'));
+  btnPracticeEl?.addEventListener('click', () => openPractice('ru-el', false));
+  btnPracticeRu?.addEventListener('click', () => openPractice('el-ru', false));
+  document.getElementById('btn-practice-due')?.addEventListener('click', () => openPractice('ru-el', true));
   btnClose?.addEventListener('click', closePractice);
 
   btnRandom?.addEventListener('click', pickAndShowNext);
