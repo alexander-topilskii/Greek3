@@ -352,6 +352,13 @@ body {
   max-width: none;
 }
 
+.list-practice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .list-practice-btn {
   flex-shrink: 0;
   margin: 0;
@@ -368,6 +375,10 @@ body {
 .btn-close-practice {
   width: 100%;
   margin-bottom: 1.5rem;
+}
+
+.list-practice .btn-lang {
+  display: none;
 }
 
 .settings-panel {
@@ -605,13 +616,6 @@ body {
 .flashcard-root.is-swipe-left .flashcard-hint--left,
 .flashcard-root.is-swipe-right .flashcard-hint--right {
   opacity: 1;
-}
-
-.flashcard-swipe-note {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: 0.625rem 0 0;
 }
 
 /* Flashcard */

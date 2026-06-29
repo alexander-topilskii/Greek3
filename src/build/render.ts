@@ -69,7 +69,6 @@ function flashcardMarkup(id = 'flashcard-root'): string {
           </div>
         </div>
       </div>
-      <p class="flashcard-swipe-note">Свайп ← не помню · помню → · тап — перевернуть</p>
     </div>
     <div class="practice-controls">
       <button type="button" class="btn btn-secondary btn-forget" aria-label="Не помню">←</button>
@@ -279,7 +278,10 @@ export function renderIndex(
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
         ${intro}
-        ${catalog && catalog.words.length > 0 ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-all">Практиковать</button>` : ''}
+        ${catalog && catalog.words.length > 0 ? `<div class="list-practice-actions">
+          <button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el">Практика: греческий</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru">Практика: русский</button>
+        </div>` : ''}
       </div>
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">

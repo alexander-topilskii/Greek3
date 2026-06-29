@@ -23,7 +23,9 @@
     catalog.words.map((w) => [w.slug, w.formCount]),
   );
 
-  const btnPractice = document.getElementById('btn-practice-all');
+  const practiceActions = document.querySelector('.list-practice-actions');
+  const btnPracticeEl = document.getElementById('btn-practice-el');
+  const btnPracticeRu = document.getElementById('btn-practice-ru');
   const btnClose = document.getElementById('btn-close-practice');
   const practiceSection = document.getElementById('list-practice');
   const linksSection = document.getElementById('verbs-links');
@@ -33,8 +35,19 @@
   const inputActive = document.getElementById('setting-active-limit');
 
   let currentPick = null;
-  let startWithRussian = false;
+  /** Fixed for the session: 'el-ru' (русский) or 'ru-el' (греческий). */
+  let practiceDirection = null;
   let fc = null;
+
+  function showRussianFirst() {
+    return practiceDirection === 'ru-el';
+  }
+
+  function syncCardDisplay() {
+    if (!fc) return;
+    fc.startWithRussian = showRussianFirst();
+    fc.setLangButton(btnLang);
+  }
 
   function initFlashcard() {
     if (fc) return fc;
@@ -138,7 +151,7 @@
 
     if (pick.type === 'summary' || pick.isNew || (pick.card && pick.card.type === 'summary')) {
       const greekLines = greekSummaryLines(word);
-      if (startWithRussian) {
+      if (showRussianFirst()) {
         fc.showMultiLine([word.translation], greekLines, false, true);
       } else {
         fc.showMultiLine(greekLines, [word.translation], true, false);
@@ -154,7 +167,7 @@
     }
 
     const greekLines = greekSummaryLines(word);
-    if (startWithRussian) {
+    if (showRussianFirst()) {
       fc.showMultiLine([word.translation], greekLines, false, true);
     } else {
       fc.showMultiLine(greekLines, [word.translation], true, false);
@@ -162,8 +175,7 @@
   }
 
   async function ensurePickCard(pick) {
-    const direction =
-      pick.direction ?? (startWithRussian ? 'ru-el' : 'el-ru');
+    const direction = practiceDirection ?? pick.direction ?? 'el-ru';
 
     if (pick.isNew) {
       return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
@@ -200,16 +212,21 @@
 
   async function pickAndShowNext() {
     const card = initFlashcard();
-    if (!card) return;
+    if (!card || !practiceDirection) return;
+
+    syncCardDisplay();
 
     try {
-      currentPick = await srs.pickNextCard(deckId, catalog, db, { summaryOnly: true });
+      currentPick = await srs.pickNextCard(deckId, catalog, db, {
+        summaryOnly: true,
+        direction: practiceDirection,
+      });
       const s = await srs.loadDeckSettings(deckId, db);
       if (inputActive) inputActive.value = String(s.activeLimit);
     } catch (err) {
       console.error('Practice pick error', err);
       currentPick = catalog.words[0]
-        ? { word: catalog.words[0], isNew: true, type: 'summary', direction: 'el-ru' }
+        ? { word: catalog.words[0], isNew: true, type: 'summary', direction: practiceDirection }
         : null;
     }
 
@@ -218,43 +235,36 @@
       return;
     }
 
-    const direction = currentPick.direction ?? 'el-ru';
-    startWithRussian = direction === 'ru-el';
-    card.startWithRussian = startWithRussian;
-    card.setLangButton(btnLang);
     showCardContent(currentPick);
   }
 
-  function openPractice() {
+  function openPractice(direction) {
     const card = initFlashcard();
     if (!card) return;
 
+    practiceDirection = direction;
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     linksSection?.classList.add('hidden');
-    btnPractice?.classList.add('hidden');
-    card.setLangButton(btnLang);
+    practiceActions?.classList.add('hidden');
+    syncCardDisplay();
     pickAndShowNext();
   }
 
   function closePractice() {
+    practiceDirection = null;
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
-    btnPractice?.classList.remove('hidden');
+    practiceActions?.classList.remove('hidden');
     updateProgressUI();
   }
 
-  btnPractice?.addEventListener('click', openPractice);
+  btnPracticeEl?.addEventListener('click', () => openPractice('ru-el'));
+  btnPracticeRu?.addEventListener('click', () => openPractice('el-ru'));
   btnClose?.addEventListener('click', closePractice);
 
   btnRandom?.addEventListener('click', pickAndShowNext);
-  btnLang?.addEventListener('click', () => {
-    const card = initFlashcard();
-    if (!card) return;
-    startWithRussian = card.toggleLang(btnLang);
-    if (currentPick) showCardContent(currentPick);
-  });
 
   btnForget?.addEventListener('click', () => gradeAndNext(false));
   btnRemember?.addEventListener('click', () => gradeAndNext(true));
