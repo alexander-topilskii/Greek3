@@ -173,7 +173,7 @@
   }
 
   function collectCandidates(settings, catalog, cards, db, now, options) {
-    const { summaryOnly = false, direction: directionFilter = null } = options;
+    const { summaryOnly = false, direction: directionFilter = null, dueOnly = false } = options;
     const directions = directionFilter ? [directionFilter] : DIRECTIONS;
     const wordSlugs = catalog.words.map((w) => w.slug);
     const poolEnd = Math.min(settings.activeLimit, wordSlugs.length);
@@ -190,6 +190,7 @@
         const summaryCard = getSummaryCard(cards, word.slug, direction, db);
 
         if (!summaryCard) {
+          if (dueOnly) continue;
           candidates.push({
             card: null,
             word,
@@ -267,7 +268,9 @@
    */
   async function pickNextCard(deckId, catalog, db, options = {}) {
     const settings = await loadDeckSettings(deckId, db);
-    const allCards = await db.getDeckCards(deckId);
+    const allCards = options.crossDeck
+      ? await db.getAllCards()
+      : await db.getDeckCards(deckId);
     const now = Date.now();
     const wordSlugs = catalog.words.map((w) => w.slug);
     const workingSettings = { ...settings };

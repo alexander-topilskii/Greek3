@@ -105,6 +105,16 @@
       });
     },
 
+    async getAllCards() {
+      return tx('cards', 'readonly', (store) => {
+        return new Promise((resolve, reject) => {
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result ?? []);
+          req.onerror = () => reject(req.error);
+        });
+      });
+    },
+
     async getWordCards(wordSlug) {
       return tx('cards', 'readonly', (store) => {
         return new Promise((resolve, reject) => {
