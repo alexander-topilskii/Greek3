@@ -69,7 +69,7 @@
 
   async function updateProgressUI() {
     const cards = await db.getDeckCards(deckId);
-    const stats = srs.getProgressStats(cards, totalFormsByWord);
+    const stats = srs.getProgressStats(cards, totalFormsByWord, db);
 
     document.querySelectorAll('[data-progress-slug]').forEach((el) => {
       const slug = el.getAttribute('data-progress-slug');
@@ -85,11 +85,22 @@
   function wordSortRank(slug, stats, cards) {
     const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
     const combined = (st.wordPct + st.formsPct) / 2;
-    const summary = cards.find((c) => c.wordSlug === slug && c.type === 'summary');
-    const reps = summary?.repetitions ?? 0;
+    const elRu = cards.find(
+      (c) =>
+        c.wordSlug === slug &&
+        c.type === 'summary' &&
+        (c.direction ?? 'el-ru') === 'el-ru',
+    );
+    const ruEl = cards.find(
+      (c) => c.wordSlug === slug && c.type === 'summary' && c.direction === 'ru-el',
+    );
+    const hasAny = (elRu?.repetitions ?? 0) > 0 || (ruEl?.repetitions ?? 0) > 0;
 
-    if (!summary || reps === 0) return combined;
-    if (srs.isMastered(summary)) return 20000 + combined;
+    if (!elRu && !ruEl) return combined;
+    if (!hasAny) return combined;
+    if (elRu && ruEl && srs.isMastered(elRu) && srs.isMastered(ruEl)) {
+      return 20000 + combined;
+    }
     return 1000 + combined;
   }
 
@@ -135,27 +146,33 @@
   }
 
   async function ensurePickCard(pick) {
+    const direction =
+      pick.direction ?? (startWithRussian ? 'ru-el' : 'el-ru');
+
     if (pick.isNew) {
-      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary'), {
+      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
         deckId,
         wordSlug: pick.word.slug,
         type: 'summary',
+        direction,
       });
     }
     if (pick.card) return pick.card;
     if (pick.type === 'summary') {
-      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary'), {
+      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
         deckId,
         wordSlug: pick.word.slug,
         type: 'summary',
+        direction,
       });
     }
     const idx = pick.formIndex ?? 0;
-    return db.getOrCreateCard(db.cardId(pick.word.slug, 'form', idx), {
+    return db.getOrCreateCard(db.cardId(pick.word.slug, 'form', idx, direction), {
       deckId,
       wordSlug: pick.word.slug,
       type: 'form',
       formIndex: idx,
+      direction,
     });
   }
 
@@ -177,6 +194,11 @@
       card.showPair('—', 'Весь словарь пройден. Повторения — по расписанию, загляните позже.');
       return;
     }
+
+    const direction = currentPick.direction ?? 'el-ru';
+    startWithRussian = direction === 'ru-el';
+    card.startWithRussian = startWithRussian;
+    card.setLangButton(btnLang);
     showCardContent(currentPick);
   }
 
@@ -231,6 +253,8 @@
     if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();
   });
 
-  loadSettingsUI();
-  updateProgressUI();
+  db.migrateLegacyCards().then(() => {
+    loadSettingsUI();
+    updateProgressUI();
+  });
 })();

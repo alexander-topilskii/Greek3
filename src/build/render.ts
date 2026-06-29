@@ -402,8 +402,9 @@ export function renderWord(
       : ['прош.', 'наст.', 'буд.'];
   const translation = word.translation || word.title;
   const deckId = word.category || 'default';
+  const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers';
 
-  const summaryHtml = word.baseForms.length
+  const summaryHtml = showVerbSummary
     ? `
       <div class="verb-summary">
         <div class="verb-summary-head">

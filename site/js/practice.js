@@ -40,14 +40,26 @@
     },
   });
 
+  function getDirection() {
+    return fc.startWithRussian ? 'ru-el' : 'el-ru';
+  }
+
   async function ensureFormCard(index) {
-    const id = db.cardId(wordSlug, 'form', index);
-    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'form', formIndex: index });
+    const direction = getDirection();
+    const id = db.cardId(wordSlug, 'form', index, direction);
+    return db.getOrCreateCard(id, {
+      deckId,
+      wordSlug,
+      type: 'form',
+      formIndex: index,
+      direction,
+    });
   }
 
   async function ensureSummaryCard() {
-    const id = db.cardId(wordSlug, 'summary');
-    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'summary' });
+    const direction = getDirection();
+    const id = db.cardId(wordSlug, 'summary', null, direction);
+    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'summary', direction });
   }
 
   async function gradeCurrent(remembered) {
@@ -106,7 +118,7 @@
 
   async function updateWordProgress() {
     const cards = await db.getWordCards(wordSlug);
-    const st = srs.statsForWord(cards, wordSlug, forms.length);
+    const st = srs.statsForWord(cards, wordSlug, forms.length, db);
     const bar = document.querySelector('.word-header [data-progress-slug]');
     srs.applyProgressBar(bar, st.wordPct, st.formsPct);
   }
@@ -128,6 +140,8 @@
   });
 
   fc.setLangButton(btnLang);
-  updateWordProgress();
-  randomMixed();
+  db.migrateLegacyCards().then(() => {
+    updateWordProgress();
+    randomMixed();
+  });
 })();

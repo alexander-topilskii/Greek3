@@ -1,6 +1,8 @@
 (function (global) {
   const DB_NAME = 'greek3-progress';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
+
+  const DIRECTIONS = ['el-ru', 'ru-el'];
 
   let dbPromise = null;
 
@@ -40,13 +42,14 @@
     });
   }
 
-  function defaultCard(id, deckId, wordSlug, type, formIndex) {
+  function defaultCard(id, deckId, wordSlug, type, formIndex, direction) {
     return {
       id,
       deckId,
       wordSlug,
       type,
       formIndex: formIndex ?? null,
+      direction: direction ?? 'el-ru',
       ease: 2.5,
       interval: 0,
       repetitions: 0,
@@ -71,7 +74,14 @@
     async getOrCreateCard(id, meta) {
       const existing = await this.getCard(id);
       if (existing) return existing;
-      const card = defaultCard(id, meta.deckId, meta.wordSlug, meta.type, meta.formIndex);
+      const card = defaultCard(
+        id,
+        meta.deckId,
+        meta.wordSlug,
+        meta.type,
+        meta.formIndex,
+        meta.direction,
+      );
       await this.putCard(card);
       return card;
     },
@@ -132,9 +142,40 @@
       );
     },
 
-    cardId(wordSlug, type, formIndex) {
+    cardId(wordSlug, type, formIndex, direction = 'el-ru') {
+      if (type === 'summary') return `${wordSlug}#summary#${direction}`;
+      return `${wordSlug}#form#${formIndex}#${direction}`;
+    },
+
+    legacyCardId(wordSlug, type, formIndex) {
       if (type === 'summary') return `${wordSlug}#summary`;
       return `${wordSlug}#form#${formIndex}`;
+    },
+
+    DIRECTIONS,
+
+    async migrateLegacyCards() {
+      const done = await this.getSetting('migration:direction-v2', false);
+      if (done) return;
+
+      const all = await tx('cards', 'readonly', (store) => {
+        return new Promise((resolve, reject) => {
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result ?? []);
+          req.onerror = () => reject(req.error);
+        });
+      });
+
+      for (const card of all) {
+        if (card.direction) continue;
+        const direction = 'el-ru';
+        const newId = this.cardId(card.wordSlug, card.type, card.formIndex, direction);
+        const updated = { ...card, id: newId, direction };
+        await this.putCard(updated);
+        if (newId !== card.id) await this.deleteCard(card.id);
+      }
+
+      await this.setSetting('migration:direction-v2', true);
     },
   };
 
