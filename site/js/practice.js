@@ -19,7 +19,10 @@
   } catch {
     return;
   }
-  if (!forms.length) return;
+  if (!forms.length && !baseForms.length) return;
+  if (!forms.length) {
+    forms = baseForms.map((greek) => ({ greek, translation }));
+  }
 
   const root = document.getElementById('flashcard-root');
   const panel = root?.closest('.practice-panel');
@@ -39,6 +42,7 @@
       gradeAndNext(remembered);
     },
   });
+  if (!fc) return;
 
   function getDirection() {
     return fc.startWithRussian ? 'ru-el' : 'el-ru';
@@ -140,8 +144,9 @@
   });
 
   fc.setLangButton(btnLang);
-  db.migrateLegacyCards().then(() => {
-    updateWordProgress();
-    randomMixed();
-  });
+  randomMixed();
+
+  db.migrateLegacyCards()
+    .then(() => updateWordProgress())
+    .catch(() => {});
 })();
