@@ -10,6 +10,7 @@ alwaysApply: true
 ## Принципы
 
 - Контент слов — только в `words/**/*.md`
+- Уроки (`words/lessons/`) — только ссылки; файл слова всегда в тематической категории (см. `agents/MD_FORMAT.md` → «Уроки»)
 - Mobile-first, светлая тема, CSS-анимации
 - Сборка: `npm run build:site` → `dist/`
 - Не коммитить `dist/`

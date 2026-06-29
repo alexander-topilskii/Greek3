@@ -150,6 +150,7 @@ function layout(
       </a>
       <nav class="site-nav">
         <a href="${sitePath('words/index.html')}">Словарь</a>
+        <a href="${sitePath('words/lessons/index.html')}">Уроки</a>
       </nav>
     </div>
   </header>
@@ -192,20 +193,38 @@ export function renderHome(sections: { title: string; href: string; description:
   return layout(content, 'Главная');
 }
 
+function normalizeSitePath(...parts: string[]): string {
+  const stack: string[] = [];
+  for (const part of parts.join('/').split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/');
+}
+
+function indexLinkSitePath(pageOutputDir: string, link: IndexLink): string {
+  if (link.resolvedHref && !/^(https?:)?\/\//.test(link.resolvedHref)) {
+    return sitePath(normalizeSitePath('words', link.resolvedHref));
+  }
+  return sitePath(normalizeSitePath(pageOutputDir, link.href));
+}
+
 function renderIndexLink(
   link: IndexLink,
   pageOutputDir: string,
   catalog: VerbCatalog | undefined,
 ): string {
-  const word = catalog?.words.find((w) => w.href === link.href);
+  const catalogKey = link.resolvedHref ?? link.href;
+  const word = catalog?.words.find((w) => w.href === catalogKey);
   const slug = word?.slug ?? '';
   return `
-      <a href="${escapeHtml(sitePath(`${pageOutputDir}/${link.href}`))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
+      <a href="${escapeHtml(indexLinkSitePath(pageOutputDir, link))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
         <div class="word-link-main">
           <span class="word-link-label">${escapeHtml(link.label)}</span>
           <span class="word-link-arrow" aria-hidden="true">→</span>
         </div>
-        ${progressBarMarkup(slug)}
+        ${slug ? progressBarMarkup(slug) : ''}
       </a>`;
 }
 

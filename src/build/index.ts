@@ -12,7 +12,7 @@ import {
   sitePath,
   wordOutputPath,
 } from './render';
-import type { VerbCatalog, WordEntry } from './types';
+import type { IndexLink, VerbCatalog, WordEntry } from './types';
 
 const ROOT = path.resolve(__dirname, '../..');
 const WORDS_DIR = path.join(ROOT, 'words');
@@ -63,7 +63,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   numbers: 'Числа',
   cases: 'Падежи',
   particles: 'Частицы',
+  lessons: 'Уроки',
 };
+
+function wordFromIndexLink(
+  link: IndexLink,
+  wordsBySlug: Map<string, WordEntry>,
+  wordsByHref: Map<string, WordEntry>,
+): WordEntry | null {
+  const key = link.resolvedHref.replace(/\.html$/i, '');
+  const bySlug = wordsBySlug.get(key);
+  if (bySlug) return bySlug;
+  const base = path.basename(link.resolvedHref);
+  return wordsByHref.get(base) ?? null;
+}
 
 function breadcrumbsForWord(entry: WordEntry) {
   return [
@@ -92,6 +105,14 @@ function breadcrumbsForIndex(
   }
 
   const category = relativePath.split('/')[0];
+  if (category === 'lessons') {
+    if (relativePath.toLowerCase() !== 'lessons/readme.md') {
+      crumbs.push({ label: 'Уроки', href: sitePath('words/lessons/index.html') });
+    }
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
   if (category && CATEGORY_LABELS[category]) {
     crumbs.push({ label: 'Словарь', href: sitePath('words/index.html') });
   }
@@ -117,6 +138,7 @@ function main(): void {
   const mdFiles = walkMdFiles(WORDS_DIR);
   const words: WordEntry[] = [];
   const wordsByHref = new Map<string, WordEntry>();
+  const wordsBySlug = new Map<string, WordEntry>();
 
   const casesGamePath = path.join(SITE_DIR, 'data', 'cases-game.json');
   const casesGameData = fs.existsSync(casesGamePath)
@@ -133,6 +155,7 @@ function main(): void {
     if (isWordFile(relative)) {
       const word = parseWordFile(file, WORDS_DIR);
       words.push(word);
+      wordsBySlug.set(word.slug, word);
       const href = `${path.basename(file).replace(/\.md$/i, '')}.html`;
       wordsByHref.set(href, word);
       const out = wordOutputPath(word.slug);
@@ -153,15 +176,16 @@ function main(): void {
         ? 'words/index.html'
         : `words/${indexOutputPath(relative)}`;
     const pageDir = outputDirFor(out);
-    const deckId = pageDir.split('/').pop() ?? 'default';
+    const deckId =
+      pageDir.replace(/^words\/?/, '').replace(/\//g, '-') || 'default';
 
     const catalog: VerbCatalog = {
       deckId,
       words: index.links
         .map((link) => {
-          const word = wordsByHref.get(link.href);
+          const word = wordFromIndexLink(link, wordsBySlug, wordsByHref);
           if (!word) return null;
-          return buildCatalogWord(word, link.href, link.label);
+          return buildCatalogWord(word, link.resolvedHref, link.label);
         })
         .filter(Boolean) as VerbCatalog['words'],
     };
@@ -192,6 +216,11 @@ function main(): void {
   }
 
   const homeSections = [
+    {
+      title: 'Уроки',
+      href: 'words/lessons/index.html',
+      description: 'Слова по занятиям с репетитором',
+    },
     {
       title: 'Глаголы',
       href: 'words/verbs/index.html',

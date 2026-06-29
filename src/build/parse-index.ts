@@ -12,6 +12,15 @@ function mdLinkToHtml(href: string): string {
   return href;
 }
 
+export function resolveIndexLinkHref(href: string, indexRelativePath: string): string {
+  const htmlHref = mdLinkToHtml(href.trim());
+  if (/^(https?:)?\/\//.test(htmlHref) || htmlHref.startsWith('/')) {
+    return htmlHref;
+  }
+  const indexDir = path.dirname(indexRelativePath.replace(/\\/g, '/'));
+  return path.normalize(path.join(indexDir, htmlHref)).replace(/\\/g, '/');
+}
+
 function ensureSection(sections: IndexSection[], current: IndexSection | null, title = ''): IndexSection {
   if (current && current.title === title) return current;
   const section: IndexSection = { title, links: [] };
@@ -21,7 +30,7 @@ function ensureSection(sections: IndexSection[], current: IndexSection | null, t
 
 export function parseIndexFile(filePath: string, wordsRoot: string): IndexPage {
   const raw = fs.readFileSync(filePath, 'utf-8');
-  const relativePath = path.relative(wordsRoot, filePath);
+  const relativePath = path.relative(wordsRoot, filePath).replace(/\\/g, '/');
   const lines = raw.split('\n');
 
   let title = 'Раздел';
@@ -49,9 +58,11 @@ export function parseIndexFile(filePath: string, wordsRoot: string): IndexPage {
 
     const linkMatch = trimmed.match(/\[([^\]]+)\]\(([^)]+)\)/);
     if (linkMatch) {
+      const rawHref = linkMatch[2].trim();
       const link: IndexLink = {
         label: linkMatch[1].trim(),
-        href: mdLinkToHtml(linkMatch[2].trim()),
+        href: mdLinkToHtml(rawHref),
+        resolvedHref: resolveIndexLinkHref(rawHref, relativePath),
       };
       links.push(link);
 

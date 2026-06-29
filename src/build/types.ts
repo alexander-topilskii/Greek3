@@ -18,6 +18,8 @@ export interface WordEntry {
 export interface IndexLink {
   label: string;
   href: string;
+  /** Path relative to words/ root, e.g. nouns/дом σπίτι.html */
+  resolvedHref: string;
 }
 
 export interface IndexSection {
