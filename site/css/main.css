@@ -869,6 +869,70 @@ body {
 }
 
 /* Cases mini-game */
+/* Cases cheat sheet */
+.cases-cheatsheet {
+  margin-bottom: 1.5rem;
+}
+
+.cases-cheatsheet h2 {
+  margin: 0 0 0.625rem;
+  font-size: 1.125rem;
+}
+
+.cases-cheatsheet-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.cases-cheatsheet-table {
+  width: 100%;
+  min-width: 18rem;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.cases-cheatsheet-table th,
+.cases-cheatsheet-table td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.cases-cheatsheet-table th {
+  background: var(--bg);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.cases-cheatsheet-th span {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.cases-cheatsheet-th--nom { color: #1d4ed8; }
+.cases-cheatsheet-th--gen { color: #b45309; }
+.cases-cheatsheet-th--acc { color: #15803d; }
+
+.cases-cheatsheet-gender {
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  width: 3.25rem;
+}
+
+.cases-cheatsheet-cell {
+  font-family: var(--font-greek);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .cases-game {
   margin-top: 2rem;
 }

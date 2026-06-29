@@ -281,6 +281,56 @@ export function renderIndex(
   return layout(content, page.title, breadcrumbs, catalog && catalog.words.length > 0 ? ['assets/js/list-practice.js'] : []);
 }
 
+function casesCheatSheetCell(text: string): string {
+  return `<td class="greek cases-cheatsheet-cell">${escapeHtml(text)}</td>`;
+}
+
+function casesCheatSheetRow(
+  gender: string,
+  nom: string,
+  gen: string,
+  acc: string,
+): string {
+  return `
+            <tr>
+              <td class="cases-cheatsheet-gender">${escapeHtml(gender)}</td>
+              ${casesCheatSheetCell(nom)}
+              ${casesCheatSheetCell(gen)}
+              ${casesCheatSheetCell(acc)}
+            </tr>`;
+}
+
+function casesCheatSheetMarkup(): string {
+  const rows: [string, string, string, string][] = [
+    ['м.р. ед.', 'ο …−ος / −ας', 'του …−ου', 'τον …−ο'],
+    ['ж.р. ед.', 'η …−η / −α', 'της …−ης / −ας', 'την …−η / −α'],
+    ['с.р. ед.', 'το …−ο / −ι / −μα', 'του …−ου / −ιού', 'το …−ο / −ι / −μα'],
+    ['м.р. мн.', 'οι …−οι / −ες', 'των …−ων', 'τους …−ους / −ες'],
+    ['ж.р. мн.', 'οι …−ες', 'των …−ων', 'τις …−ες'],
+    ['с.р. мн.', 'τα …−α / −ια / −ματα', 'των …−ων', 'τα …−α / −ια / −ματα'],
+  ];
+
+  const body = rows.map(([g, n, ge, a]) => casesCheatSheetRow(g, n, ge, a)).join('');
+
+  return `
+    <section class="cases-cheatsheet fade-in" aria-label="Шпаргалка по падежам">
+      <h2>Шпаргалка</h2>
+      <div class="cases-cheatsheet-scroll">
+        <table class="cases-cheatsheet-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ.<span>кто? что?</span></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--gen">Γεν.<span>кого? чего?</span></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--acc">Αιτ.<span>кого? что?</span></th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
 export function renderCasesIndex(
   page: IndexPage,
   pageOutputDir: string,
@@ -305,6 +355,8 @@ export function renderCasesIndex(
         <h1>${escapeHtml(page.title)}</h1>
         ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила — затем потренируйтесь в мини-игре.</p>'}
       </div>
+
+      ${casesCheatSheetMarkup()}
 
       <section class="links-list" id="verbs-links">
         ${links}
