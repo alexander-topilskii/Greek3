@@ -170,8 +170,11 @@
     if (!card) return;
 
     currentPick = await srs.pickNextCard(deckId, catalog, db, { summaryOnly: true });
+    const s = await srs.loadDeckSettings(deckId, db);
+    if (inputActive) inputActive.value = String(s.activeLimit);
+
     if (!currentPick) {
-      card.showPair('—', 'Все карточки изучены! Загляните позже.');
+      card.showPair('—', 'Весь словарь пройден. Повторения — по расписанию, загляните позже.');
       return;
     }
     showCardContent(currentPick);
@@ -221,7 +224,7 @@
   });
 
   btnResetDeck?.addEventListener('click', async () => {
-    if (!confirm('Сбросить весь прогресс по глаголам?')) return;
+    if (!confirm('Сбросить весь прогресс по этому разделу?')) return;
     await db.deleteDeckCards(deckId);
     await db.setSetting(`deck:${deckId}:activeLimit`, parseInt(inputInitial?.value ?? '5', 10));
     updateProgressUI();

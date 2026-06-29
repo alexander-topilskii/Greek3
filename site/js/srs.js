@@ -5,8 +5,14 @@
   const DEFAULTS = {
     initialBatchSize: 5,
     batchIncrement: 3,
-    maxActive: 20,
     masteryReps: 3,
+  };
+
+  const WEIGHT = {
+    newWord: 100,
+    learningSummary: 75,
+    learningForm: 65,
+    newForm: 55,
   };
 
   /** SM-2 inspired scheduling */
@@ -94,92 +100,138 @@
     return result;
   }
 
-  /**
-   * Pick next card using spaced repetition + expanding batch.
-   * @param {{ summaryOnly?: boolean }} options
-   */
-  async function pickNextCard(deckId, catalog, db, options = {}) {
-    const { summaryOnly = false } = options;
-    const settings = await loadDeckSettings(deckId, db);
-    const allCards = await db.getDeckCards(deckId);
-    const now = Date.now();
-    const cardMap = new Map(allCards.map((c) => [c.id, c]));
-
-    const wordSlugs = catalog.words.map((w) => w.slug);
-    const activeLimit = settings.activeLimit;
-
-    const activeWords = wordSlugs.slice(0, activeLimit);
-    const masteredWords = activeWords.filter((slug) => {
-      const summaryId = db.cardId(slug, 'summary');
-      const card = cardMap.get(summaryId);
-      return card && isMastered(card);
-    });
-
-    if (
-      masteredWords.length >= activeWords.length - 1 &&
-      activeLimit < wordSlugs.length
-    ) {
-      const newLimit = Math.min(
-        wordSlugs.length,
-        activeLimit + settings.batchIncrement,
-      );
-      if (newLimit > activeLimit) {
-        await db.setSetting(`deck:${deckId}:activeLimit`, newLimit);
-        settings.activeLimit = newLimit;
-      }
+  /** Индекс «переднего края» — первое ещё не выученное слово в пуле. */
+  function findFrontierIndex(wordSlugs, poolEnd, cardMap, db) {
+    for (let i = 0; i < poolEnd; i++) {
+      const slug = wordSlugs[i];
+      const card = cardMap.get(db.cardId(slug, 'summary'));
+      if (!card || !isMastered(card)) return i;
     }
+    return Math.max(0, poolEnd - 1);
+  }
 
-    const poolSlugs = wordSlugs.slice(0, settings.activeLimit);
+  function wordAge(wordIndex, frontierIndex) {
+    return Math.max(0, frontierIndex - wordIndex);
+  }
+
+  /** Чем дальше слово от текущего фронта — тем реже попадает в практику. */
+  function reviewWeight(age) {
+    return 35 / (1 + age * 0.35);
+  }
+
+  function pickWeighted(candidates) {
+    if (!candidates.length) return null;
+    let total = 0;
+    for (const c of candidates) total += c.weight;
+    if (total <= 0) return candidates[0];
+    let r = Math.random() * total;
+    for (const c of candidates) {
+      r -= c.weight;
+      if (r <= 0) return c;
+    }
+    return candidates[candidates.length - 1];
+  }
+
+  function collectCandidates(settings, catalog, cardMap, db, now, options) {
+    const { summaryOnly = false } = options;
+    const wordSlugs = catalog.words.map((w) => w.slug);
+    const poolEnd = Math.min(settings.activeLimit, wordSlugs.length);
+    const frontierIndex = findFrontierIndex(wordSlugs, poolEnd, cardMap, db);
     const candidates = [];
 
-    for (const word of catalog.words) {
-      if (!poolSlugs.includes(word.slug)) continue;
+    for (let wi = 0; wi < catalog.words.length; wi++) {
+      if (wi >= poolEnd) continue;
 
+      const word = catalog.words[wi];
+      const age = wordAge(wi, frontierIndex);
       const summaryId = db.cardId(word.slug, 'summary');
       const summaryCard = cardMap.get(summaryId);
-      if (summaryCard && isDue(summaryCard, now)) {
-        candidates.push({ card: summaryCard, priority: 1, word });
-      }
-
-      for (let i = 0; i < word.formCount; i++) {
-        if (summaryOnly) break;
-        const formId = db.cardId(word.slug, 'form', i);
-        const formCard = cardMap.get(formId);
-        if (formCard && isDue(formCard, now)) {
-          candidates.push({ card: formCard, priority: formCard.repetitions ? 2 : 3, word, formIndex: i });
-        }
-      }
 
       if (!summaryCard) {
         candidates.push({
           card: null,
-          priority: 4,
           word,
           isNew: true,
           type: 'summary',
+          weight: WEIGHT.newWord,
         });
+        continue;
+      }
+
+      if (isDue(summaryCard, now)) {
+        if (isLearning(summaryCard)) {
+          candidates.push({
+            card: summaryCard,
+            word,
+            type: 'summary',
+            weight: WEIGHT.learningSummary,
+          });
+        } else if (isMastered(summaryCard)) {
+          candidates.push({
+            card: summaryCard,
+            word,
+            type: 'summary',
+            weight: reviewWeight(age),
+          });
+        }
+      }
+
+      if (summaryOnly) continue;
+
+      for (let fi = 0; fi < word.formCount; fi++) {
+        const formId = db.cardId(word.slug, 'form', fi);
+        const formCard = cardMap.get(formId);
+        if (!formCard || !isDue(formCard, now)) continue;
+
+        let weight;
+        if (isMastered(formCard)) {
+          weight = reviewWeight(age) * 0.85;
+        } else if (formCard.repetitions) {
+          weight = WEIGHT.learningForm;
+        } else {
+          weight = WEIGHT.newForm;
+        }
+        candidates.push({ card: formCard, word, formIndex: fi, weight });
       }
     }
 
-    candidates.sort((a, b) => a.priority - b.priority);
+    return candidates;
+  }
 
-    const dueReview = candidates.find(
-      (c) => c.card && (c.card.repetitions ?? 0) >= DEFAULTS.masteryReps,
-    );
-    if (dueReview) return dueReview;
+  /**
+   * Выбор карточки: новые слова + повторения по SRS.
+   * Если в текущем пуле нечего учить — автоматически расширяет activeLimit.
+   */
+  async function pickNextCard(deckId, catalog, db, options = {}) {
+    const settings = await loadDeckSettings(deckId, db);
+    const allCards = await db.getDeckCards(deckId);
+    const now = Date.now();
+    const cardMap = new Map(allCards.map((c) => [c.id, c]));
+    const wordSlugs = catalog.words.map((w) => w.slug);
+    const workingSettings = { ...settings };
 
-    const dueLearning = candidates.find(
-      (c) => c.card && isLearning(c.card),
-    );
-    if (dueLearning) return dueLearning;
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const candidates = collectCandidates(
+        workingSettings,
+        catalog,
+        cardMap,
+        db,
+        now,
+        options,
+      );
+      const pick = pickWeighted(candidates);
+      if (pick) return pick;
 
-    const brandNew = candidates.find((c) => c.isNew);
-    if (brandNew) return brandNew;
+      if (workingSettings.activeLimit >= wordSlugs.length) break;
 
-    const anyDue = candidates.find((c) => c.card);
-    if (anyDue) return anyDue;
+      workingSettings.activeLimit = Math.min(
+        wordSlugs.length,
+        workingSettings.activeLimit + workingSettings.batchIncrement,
+      );
+      await db.setSetting(`deck:${deckId}:activeLimit`, workingSettings.activeLimit);
+    }
 
-    return candidates[0] ?? null;
+    return null;
   }
 
   async function loadDeckSettings(deckId, db) {
@@ -196,7 +248,7 @@
       activeLimit = initialBatchSize;
       await db.setSetting(`deck:${deckId}:activeLimit`, activeLimit);
     }
-    return { initialBatchSize, batchIncrement, activeLimit, maxActive: DEFAULTS.maxActive };
+    return { initialBatchSize, batchIncrement, activeLimit };
   }
 
   async function saveDeckSettings(deckId, db, settings) {

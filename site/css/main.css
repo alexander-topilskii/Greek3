@@ -416,6 +416,13 @@ body {
   width: 4rem;
 }
 
+.settings-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .settings-actions {
   display: flex;
   flex-wrap: wrap;

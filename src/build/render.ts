@@ -79,7 +79,7 @@ function flashcardMarkup(id = 'flashcard-root'): string {
     </div>`;
 }
 
-function settingsPanel(scope: 'word' | 'deck'): string {
+function settingsPanel(scope: 'word' | 'deck', maxWords = 999): string {
   if (scope === 'word') {
     return `
     <details class="settings-panel fade-in">
@@ -99,8 +99,9 @@ function settingsPanel(scope: 'word' | 'deck'): string {
         </label>
         <label class="settings-field">
           <span>Активных слов</span>
-          <input type="number" id="setting-active-limit" min="1" max="62" value="5">
+          <input type="number" id="setting-active-limit" min="1" max="${maxWords}" value="5">
         </label>
+        <p class="settings-hint">После выучивания группы новые слова добавляются автоматически. Старые повторяются реже, но по расписанию SRS.</p>
         <div class="settings-actions">
           <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
           <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
@@ -269,7 +270,7 @@ export function renderIndex(
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
       </section>
 
-      ${catalog ? settingsPanel('deck') : ''}
+      ${catalog ? settingsPanel('deck', catalog.words.length) : ''}
 
       <section class="links-list" id="verbs-links">
         ${links}

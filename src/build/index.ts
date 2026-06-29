@@ -225,7 +225,7 @@ function main(): void {
     {
       title: 'Частицы',
       href: 'words/particles/index.html',
-      description: 'Служебные слова и частицы',
+      description: 'Связки для письма: и, но, поэтому, потом…',
     },
   ];
 
