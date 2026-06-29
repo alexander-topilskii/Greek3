@@ -8,6 +8,10 @@
 
   function openDb() {
     if (dbPromise) return dbPromise;
+    if (typeof indexedDB === 'undefined') {
+      dbPromise = Promise.reject(new Error('IndexedDB unavailable'));
+      return dbPromise;
+    }
     dbPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onerror = () => reject(req.error);

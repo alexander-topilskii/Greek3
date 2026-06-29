@@ -126,12 +126,18 @@
     });
   }
 
+  function greekSummaryLines(word) {
+    if (word.baseForms?.length) return word.baseForms;
+    if (word.forms?.length) return word.forms.slice(0, 3).map((f) => f.greek);
+    return [];
+  }
+
   function showCardContent(pick) {
     if (!fc || !pick) return;
     const word = pick.word;
 
     if (pick.type === 'summary' || pick.isNew || (pick.card && pick.card.type === 'summary')) {
-      const greekLines = word.baseForms?.length ? word.baseForms : [];
+      const greekLines = greekSummaryLines(word);
       if (startWithRussian) {
         fc.showMultiLine([word.translation], greekLines, false, true);
       } else {
@@ -142,7 +148,17 @@
 
     const formIndex = pick.formIndex ?? pick.card?.formIndex ?? 0;
     const form = word.forms?.[formIndex];
-    if (form) fc.showPair(form.greek, form.translation);
+    if (form) {
+      fc.showPair(form.greek, form.translation);
+      return;
+    }
+
+    const greekLines = greekSummaryLines(word);
+    if (startWithRussian) {
+      fc.showMultiLine([word.translation], greekLines, false, true);
+    } else {
+      fc.showMultiLine(greekLines, [word.translation], true, false);
+    }
   }
 
   async function ensurePickCard(pick) {
@@ -186,9 +202,16 @@
     const card = initFlashcard();
     if (!card) return;
 
-    currentPick = await srs.pickNextCard(deckId, catalog, db, { summaryOnly: true });
-    const s = await srs.loadDeckSettings(deckId, db);
-    if (inputActive) inputActive.value = String(s.activeLimit);
+    try {
+      currentPick = await srs.pickNextCard(deckId, catalog, db, { summaryOnly: true });
+      const s = await srs.loadDeckSettings(deckId, db);
+      if (inputActive) inputActive.value = String(s.activeLimit);
+    } catch (err) {
+      console.error('Practice pick error', err);
+      currentPick = catalog.words[0]
+        ? { word: catalog.words[0], isNew: true, type: 'summary', direction: 'el-ru' }
+        : null;
+    }
 
     if (!currentPick) {
       card.showPair('—', 'Весь словарь пройден. Повторения — по расписанию, загляните позже.');
