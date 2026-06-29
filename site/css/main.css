@@ -341,8 +341,15 @@ body {
 
 .list-head h1 {
   margin: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.list-head .page-intro {
+  flex: 1 1 100%;
+  width: 100%;
+  margin: 0.25rem 0 0;
+  max-width: none;
 }
 
 .list-practice-btn {
