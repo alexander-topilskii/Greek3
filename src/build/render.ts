@@ -349,8 +349,8 @@ export function renderIndex(
         <h1>${escapeHtml(page.title)}</h1>
         ${intro}
         ${catalog && catalog.words.length > 0 ? `<div class="list-practice-actions">
-          <button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el">Практика: греческий</button>
-          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru">Практика: русский</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
           <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
         </div>` : ''}
       </div>
