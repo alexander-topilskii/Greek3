@@ -43,6 +43,16 @@
     return practiceDirection === 'ru-el';
   }
 
+  function syncPracticeButtons() {
+    [btnPracticeEl, btnPracticeRu].forEach((btn) => {
+      if (!btn) return;
+      const active = btn.getAttribute('data-practice-direction') === practiceDirection;
+      btn.classList.toggle('btn-primary', active);
+      btn.classList.toggle('btn-secondary', !active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
   function syncCardDisplay() {
     if (!fc) return;
     fc.startWithRussian = showRussianFirst();
@@ -243,6 +253,7 @@
     if (!card) return;
 
     practiceDirection = direction;
+    syncPracticeButtons();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     linksSection?.classList.add('hidden');
@@ -252,7 +263,6 @@
   }
 
   function closePractice() {
-    practiceDirection = null;
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
