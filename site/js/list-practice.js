@@ -19,6 +19,8 @@
   }
 
   const deckId = catalog.deckId ?? listPage.getAttribute('data-deck-id') ?? 'verbs';
+  const globalDeckId = db.GLOBAL_DECK_ID ?? 'global';
+  const catalogSlugs = catalog.words.map((w) => w.slug);
   const totalFormsByWord = Object.fromEntries(
     catalog.words.map((w) => [w.slug, w.formCount]),
   );
@@ -33,6 +35,8 @@
   const btnResetDeck = document.getElementById('btn-reset-deck');
   const inputInitial = document.getElementById('setting-initial-batch');
   const inputActive = document.getElementById('setting-active-limit');
+  const practiceComplete = document.getElementById('practice-complete');
+  const btnRepeatSession = document.getElementById('btn-repeat-session');
 
   let currentPick = null;
   /** Fixed for the session: 'el-ru' (русский) or 'ru-el' (греческий). */
@@ -57,6 +61,13 @@
     if (!fc) return;
     fc.startWithRussian = showRussianFirst();
     fc.setLangButton(btnLang);
+  }
+
+  function setPracticeComplete(visible) {
+    practiceComplete?.classList.toggle('hidden', !visible);
+    practiceComplete?.toggleAttribute('hidden', !visible);
+    practiceControls?.classList.toggle('hidden', visible);
+    practiceControls?.toggleAttribute('hidden', visible);
   }
 
   function initFlashcard() {
@@ -90,13 +101,17 @@
     if (inputActive) inputActive.value = String(s.activeLimit);
   }
 
+  async function getCatalogCards() {
+    return db.getCardsForSlugs(catalogSlugs);
+  }
+
   async function updateProgressUI() {
-    const cards = await db.getDeckCards(deckId);
+    const cards = await getCatalogCards();
     const stats = srs.getProgressStats(cards, totalFormsByWord, db);
 
     document.querySelectorAll('[data-progress-slug]').forEach((el) => {
       const slug = el.getAttribute('data-progress-slug');
-      if (!slug) return;
+      if (!slug || !catalogSlugs.includes(slug)) return;
       const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
       srs.applyProgressBar(el, st.wordPct, st.formsPct);
     });
@@ -189,7 +204,7 @@
 
     if (pick.isNew) {
       return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
-        deckId,
+        deckId: globalDeckId,
         wordSlug: pick.word.slug,
         type: 'summary',
         direction,
@@ -198,7 +213,7 @@
     if (pick.card) return pick.card;
     if (pick.type === 'summary') {
       return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
-        deckId,
+        deckId: globalDeckId,
         wordSlug: pick.word.slug,
         type: 'summary',
         direction,
@@ -206,7 +221,7 @@
     }
     const idx = pick.formIndex ?? 0;
     return db.getOrCreateCard(db.cardId(pick.word.slug, 'form', idx, direction), {
-      deckId,
+      deckId: globalDeckId,
       wordSlug: pick.word.slug,
       type: 'form',
       formIndex: idx,
@@ -224,6 +239,7 @@
     const card = initFlashcard();
     if (!card || !practiceDirection) return;
 
+    setPracticeComplete(false);
     syncCardDisplay();
 
     try {
@@ -241,7 +257,8 @@
     }
 
     if (!currentPick) {
-      card.showPair('—', 'Весь словарь пройден. Повторения — по расписанию, загляните позже.');
+      card.showPair('—', 'Все слова пройдены!');
+      setPracticeComplete(true);
       return;
     }
 
@@ -253,6 +270,7 @@
     if (!card) return;
 
     practiceDirection = direction;
+    db.setSetting('practice:lastDirection', direction);
     syncPracticeButtons();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
@@ -267,12 +285,20 @@
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
     practiceActions?.classList.remove('hidden');
+    setPracticeComplete(false);
     updateProgressUI();
+  }
+
+  async function repeatSession() {
+    if (!practiceDirection) return;
+    await srs.resetCatalogSchedule(catalog, db, practiceDirection);
+    pickAndShowNext();
   }
 
   btnPracticeEl?.addEventListener('click', () => openPractice('ru-el'));
   btnPracticeRu?.addEventListener('click', () => openPractice('el-ru'));
   btnClose?.addEventListener('click', closePractice);
+  btnRepeatSession?.addEventListener('click', repeatSession);
 
   btnRandom?.addEventListener('click', pickAndShowNext);
 
@@ -289,8 +315,8 @@
   });
 
   btnResetDeck?.addEventListener('click', async () => {
-    if (!confirm('Сбросить весь прогресс по этому разделу?')) return;
-    await db.deleteDeckCards(deckId);
+    if (!confirm('Сбросить прогресс по словам этого раздела?')) return;
+    await db.deleteCardsForSlugs(catalogSlugs);
     await db.setSetting(`deck:${deckId}:activeLimit`, parseInt(inputInitial?.value ?? '5', 10));
     updateProgressUI();
     if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();

@@ -1,6 +1,9 @@
 (function (global) {
   const DB_NAME = 'greek3-progress';
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
+
+  /** Единый идентификатор колоды — прогресс привязан к слову, не к разделу. */
+  const GLOBAL_DECK_ID = 'global';
 
   const DIRECTIONS = ['el-ru', 'ru-el'];
 
@@ -94,15 +97,25 @@
       return tx('cards', 'readwrite', (store) => store.put(card));
     },
 
-    async getDeckCards(deckId) {
+    async getAllCards() {
       return tx('cards', 'readonly', (store) => {
         return new Promise((resolve, reject) => {
           const req = store.getAll();
-          req.onsuccess = () =>
-            resolve((req.result ?? []).filter((c) => c.deckId === deckId));
+          req.onsuccess = () => resolve(req.result ?? []);
           req.onerror = () => reject(req.error);
         });
       });
+    },
+
+    async getDeckCards(deckId) {
+      const all = await this.getAllCards();
+      return all.filter((c) => c.deckId === deckId || c.deckId === GLOBAL_DECK_ID);
+    },
+
+    async getCardsForSlugs(slugs) {
+      const set = new Set(slugs);
+      const all = await this.getAllCards();
+      return all.filter((c) => set.has(c.wordSlug));
     },
 
     async getWordCards(wordSlug) {
@@ -122,7 +135,16 @@
     },
 
     async deleteDeckCards(deckId) {
-      const cards = await this.getDeckCards(deckId);
+      const all = await this.getAllCards();
+      await Promise.all(
+        all
+          .filter((c) => c.deckId === deckId || c.deckId === GLOBAL_DECK_ID)
+          .map((c) => this.deleteCard(c.id)),
+      );
+    },
+
+    async deleteCardsForSlugs(slugs) {
+      const cards = await this.getCardsForSlugs(slugs);
       await Promise.all(cards.map((c) => this.deleteCard(c.id)));
     },
 
@@ -159,28 +181,56 @@
     DIRECTIONS,
 
     async migrateLegacyCards() {
-      const done = await this.getSetting('migration:direction-v2', false);
-      if (done) return;
-
-      const all = await tx('cards', 'readonly', (store) => {
-        return new Promise((resolve, reject) => {
-          const req = store.getAll();
-          req.onsuccess = () => resolve(req.result ?? []);
-          req.onerror = () => reject(req.error);
-        });
-      });
-
-      for (const card of all) {
-        if (card.direction) continue;
-        const direction = 'el-ru';
-        const newId = this.cardId(card.wordSlug, card.type, card.formIndex, direction);
-        const updated = { ...card, id: newId, direction };
-        await this.putCard(updated);
-        if (newId !== card.id) await this.deleteCard(card.id);
+      const directionDone = await this.getSetting('migration:direction-v2', false);
+      if (!directionDone) {
+        const all = await this.getAllCards();
+        for (const card of all) {
+          if (card.direction) continue;
+          const direction = 'el-ru';
+          const newId = this.cardId(card.wordSlug, card.type, card.formIndex, direction);
+          const updated = { ...card, id: newId, direction };
+          await this.putCard(updated);
+          if (newId !== card.id) await this.deleteCard(card.id);
+        }
+        await this.setSetting('migration:direction-v2', true);
       }
 
-      await this.setSetting('migration:direction-v2', true);
+      const globalDone = await this.getSetting('migration:global-deck-v3', false);
+      if (globalDone) return;
+
+      const all = await this.getAllCards();
+      const byId = new Map();
+      for (const card of all) {
+        const existing = byId.get(card.id);
+        if (!existing) {
+          byId.set(card.id, { ...card, deckId: GLOBAL_DECK_ID });
+          continue;
+        }
+        const merged = { ...existing, deckId: GLOBAL_DECK_ID };
+        merged.repetitions = Math.max(existing.repetitions ?? 0, card.repetitions ?? 0);
+        merged.remembered = Math.max(existing.remembered ?? 0, card.remembered ?? 0);
+        merged.forgotten = Math.max(existing.forgotten ?? 0, card.forgotten ?? 0);
+        merged.lastReview = Math.max(existing.lastReview ?? 0, card.lastReview ?? 0);
+        merged.nextReview = Math.min(
+          existing.nextReview || 0,
+          card.nextReview || 0,
+        );
+        merged.ease = Math.max(existing.ease ?? 2.5, card.ease ?? 2.5);
+        merged.interval = Math.max(existing.interval ?? 0, card.interval ?? 0);
+        byId.set(card.id, merged);
+      }
+
+      for (const card of all) {
+        if (card.id) await this.deleteCard(card.id);
+      }
+      for (const card of byId.values()) {
+        await this.putCard(card);
+      }
+
+      await this.setSetting('migration:global-deck-v3', true);
     },
+
+    GLOBAL_DECK_ID,
   };
 
   global.GreekDB = GreekDB;
