@@ -751,8 +751,19 @@ body {
 .practice-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.625rem;
   justify-content: center;
+  margin-top: 1.25rem;
+  padding: 0 0.5rem;
+}
+
+.practice-controls .btn {
+  min-width: 2.75rem;
+}
+
+.practice-controls .btn-random {
+  flex: 1 1 auto;
+  max-width: 12rem;
 }
 
 .btn-forget:hover {

@@ -8,6 +8,7 @@
   const DIRECTIONS = ['el-ru', 'ru-el'];
 
   let dbPromise = null;
+  let migrationPromise = null;
 
   function openDb() {
     if (dbPromise) return dbPromise;
@@ -65,6 +66,55 @@
       remembered: 0,
       forgotten: 0,
     };
+  }
+
+  function mergeCardStats(target, source) {
+    target.repetitions = Math.max(target.repetitions ?? 0, source.repetitions ?? 0);
+    target.remembered = Math.max(target.remembered ?? 0, source.remembered ?? 0);
+    target.forgotten = Math.max(target.forgotten ?? 0, source.forgotten ?? 0);
+    target.lastReview = Math.max(target.lastReview ?? 0, source.lastReview ?? 0);
+    target.nextReview = Math.min(target.nextReview || 0, source.nextReview || 0);
+    target.ease = Math.max(target.ease ?? 2.5, source.ease ?? 2.5);
+    target.interval = Math.max(target.interval ?? 0, source.interval ?? 0);
+    return target;
+  }
+
+  function normalizeCardId(card) {
+    const direction = card.direction ?? 'el-ru';
+    if (card.type === 'summary') return `${card.wordSlug}#summary#${direction}`;
+    return `${card.wordSlug}#form#${card.formIndex}#${direction}`;
+  }
+
+  async function replaceAllCards(cards) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['cards'], 'readwrite');
+      const store = transaction.objectStore('cards');
+      const clearReq = store.clear();
+      clearReq.onerror = () => reject(clearReq.error);
+      clearReq.onsuccess = () => {
+        for (const card of cards) {
+          store.put(card);
+        }
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  function mergeCardsByCanonicalId(cards, mapCard) {
+    const byId = new Map();
+    for (const card of cards) {
+      const canonicalId = normalizeCardId(card);
+      const normalized = mapCard(card, canonicalId);
+      const existing = byId.get(canonicalId);
+      if (!existing) {
+        byId.set(canonicalId, normalized);
+        continue;
+      }
+      mergeCardStats(existing, normalized);
+    }
+    return [...byId.values()];
   }
 
   const GreekDB = {
@@ -181,53 +231,37 @@
     DIRECTIONS,
 
     async migrateLegacyCards() {
-      const directionDone = await this.getSetting('migration:direction-v2', false);
-      if (!directionDone) {
+      if (migrationPromise) return migrationPromise;
+
+      migrationPromise = (async () => {
+        const directionDone = await this.getSetting('migration:direction-v2', false);
+        if (!directionDone) {
+          const all = await this.getAllCards();
+          const merged = mergeCardsByCanonicalId(all, (card, canonicalId) => ({
+            ...card,
+            id: canonicalId,
+            direction: card.direction ?? 'el-ru',
+          }));
+          await replaceAllCards(merged);
+          await this.setSetting('migration:direction-v2', true);
+        }
+
+        const globalDone = await this.getSetting('migration:global-deck-v3', false);
+        if (globalDone) return;
+
         const all = await this.getAllCards();
-        for (const card of all) {
-          if (card.direction) continue;
-          const direction = 'el-ru';
-          const newId = this.cardId(card.wordSlug, card.type, card.formIndex, direction);
-          const updated = { ...card, id: newId, direction };
-          await this.putCard(updated);
-          if (newId !== card.id) await this.deleteCard(card.id);
-        }
-        await this.setSetting('migration:direction-v2', true);
-      }
+        const merged = mergeCardsByCanonicalId(all, (card, canonicalId) => ({
+          ...card,
+          id: canonicalId,
+          deckId: GLOBAL_DECK_ID,
+        }));
+        await replaceAllCards(merged);
+        await this.setSetting('migration:global-deck-v3', true);
+      })().finally(() => {
+        migrationPromise = null;
+      });
 
-      const globalDone = await this.getSetting('migration:global-deck-v3', false);
-      if (globalDone) return;
-
-      const all = await this.getAllCards();
-      const byId = new Map();
-      for (const card of all) {
-        const existing = byId.get(card.id);
-        if (!existing) {
-          byId.set(card.id, { ...card, deckId: GLOBAL_DECK_ID });
-          continue;
-        }
-        const merged = { ...existing, deckId: GLOBAL_DECK_ID };
-        merged.repetitions = Math.max(existing.repetitions ?? 0, card.repetitions ?? 0);
-        merged.remembered = Math.max(existing.remembered ?? 0, card.remembered ?? 0);
-        merged.forgotten = Math.max(existing.forgotten ?? 0, card.forgotten ?? 0);
-        merged.lastReview = Math.max(existing.lastReview ?? 0, card.lastReview ?? 0);
-        merged.nextReview = Math.min(
-          existing.nextReview || 0,
-          card.nextReview || 0,
-        );
-        merged.ease = Math.max(existing.ease ?? 2.5, card.ease ?? 2.5);
-        merged.interval = Math.max(existing.interval ?? 0, card.interval ?? 0);
-        byId.set(card.id, merged);
-      }
-
-      for (const card of all) {
-        if (card.id) await this.deleteCard(card.id);
-      }
-      for (const card of byId.values()) {
-        await this.putCard(card);
-      }
-
-      await this.setSetting('migration:global-deck-v3', true);
+      return migrationPromise;
     },
 
     GLOBAL_DECK_ID,

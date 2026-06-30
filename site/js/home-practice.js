@@ -225,10 +225,21 @@
   btnForget?.addEventListener('click', () => gradeAndNext(false));
   btnRemember?.addEventListener('click', () => gradeAndNext(true));
 
-  db.migrateLegacyCards().then(async () => {
+  async function initHomePractice() {
     const last = await db.getSetting('practice:lastDirection', 'el-ru');
     practiceDirection = last === 'ru-el' ? 'ru-el' : 'el-ru';
     syncPracticeButtons();
-    updateContinueHint();
-  });
+    try {
+      await updateContinueHint();
+      await db.migrateLegacyCards();
+      await updateContinueHint();
+    } catch (err) {
+      console.error('Home practice init error', err);
+      if (continueHint) {
+        continueHint.textContent = 'Не удалось загрузить прогресс';
+      }
+    }
+  }
+
+  initHomePractice();
 })();
