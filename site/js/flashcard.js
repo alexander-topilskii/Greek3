@@ -16,8 +16,11 @@
     const backText = root.querySelector('[data-flash-back-text]');
     const hintLeft = root.querySelector('.flashcard-hint--left');
     const hintRight = root.querySelector('.flashcard-hint--right');
+    const btnSpeak = root.parentElement?.querySelector('.btn-speak');
+    const speak = global.GreekSpeak;
 
     let flipped = false;
+    let greekLines = [];
     let startWithRussian = opts.startWithRussian ?? false;
     let dragging = false;
     let startX = 0;
@@ -46,7 +49,42 @@
       }
     }
 
+    function setGreekLines(lines) {
+      greekLines = lines
+        .map((l) => String(l).trim())
+        .filter((l) => l && l !== '—');
+      updateSpeakButton();
+    }
+
+    function updateSpeakButton() {
+      if (!btnSpeak) return;
+      const canSpeak = !!speak?.isSupported?.() && greekLines.length > 0;
+      btnSpeak.disabled = !canSpeak;
+      btnSpeak.classList.toggle('is-speaking', !!speak?.isSpeaking?.());
+      if (!speak?.isSupported?.()) {
+        btnSpeak.title = 'Озвучка не поддерживается в этом браузере';
+      } else if (!greekLines.length) {
+        btnSpeak.title = 'Нет греческого текста';
+      } else if (!speak.hasGreekVoice?.()) {
+        btnSpeak.title = 'Озвучить по-гречески (голос el-GR может отсутствовать на устройстве)';
+      } else {
+        btnSpeak.title = 'Озвучить по-гречески';
+      }
+    }
+
+    function speakCurrent() {
+      if (!speak?.isSupported?.() || !greekLines.length) return;
+      if (speak.isSpeaking?.()) {
+        speak.stop();
+        updateSpeakButton();
+        return;
+      }
+      btnSpeak?.classList.add('is-speaking');
+      speak.speakGreek(greekLines).finally(() => updateSpeakButton());
+    }
+
     function showPair(greek, translation) {
+      setGreekLines([greek]);
       if (startWithRussian) {
         applyFaces(translation, greek, false, true);
       } else {
@@ -56,6 +94,7 @@
     }
 
     function showMultiLine(frontLines, backLines, frontIsGreek, backIsGreek) {
+      setGreekLines(frontIsGreek ? frontLines : backLines);
       const frontHtml = frontLines.map((l) => `<span class="${frontIsGreek ? 'greek' : ''}">${escape(l)}</span>`).join('<br>');
       const backHtml = backLines.map((l) => `<span class="${backIsGreek ? 'greek' : ''}">${escape(l)}</span>`).join('<br>');
       if (frontLabel) frontLabel.textContent = frontIsGreek ? 'Греческий' : 'Русский';
@@ -112,6 +151,8 @@
     }
 
     function finishSwipe(remembered) {
+      speak?.stop?.();
+      updateSpeakButton();
       const dir = remembered ? 1 : -1;
       const layer = dragLayer || inner;
       root.classList.add(remembered ? 'is-exit-right' : 'is-exit-left');
@@ -168,6 +209,12 @@
       if (e.key === 'ArrowRight') finishSwipe(true);
       if (e.key === 'ArrowLeft') finishSwipe(false);
     });
+
+    btnSpeak?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speakCurrent();
+    });
+    updateSpeakButton();
 
     return {
       showPair,

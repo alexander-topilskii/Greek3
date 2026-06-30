@@ -709,6 +709,23 @@ body {
   color: var(--success);
 }
 
+.btn-speak {
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0.625rem 0.75rem;
+}
+
+.btn-speak.is-speaking {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.btn-speak:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .btn {
   font-family: var(--font);
   font-size: 0.9375rem;
