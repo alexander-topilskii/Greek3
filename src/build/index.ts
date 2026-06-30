@@ -1,5 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import {
+  buildCatalogOrder,
+  catalogWordExtras,
+  CATEGORY_ORDER,
+  CATALOG_BLOCK_SIZE,
+  collectLessonWords,
+  interleaveByCategory,
+} from './catalog-order';
 import { buildLevelAggregates, buildTopicAggregates, enrichWordEntry } from './meta';
 import { buildSlugIndexMap, indexOutputPath, parseIndexFile } from './parse-index';
 import { isWordFile, parseWordFile } from './parse-word';
@@ -155,62 +163,62 @@ function buildGlobalCatalog(
   const seen = new Set<string>();
   const ordered: CatalogWord[] = [];
 
-  function addWord(word: WordEntry, href: string, label: string) {
-    if (seen.has(word.slug)) return;
-    seen.add(word.slug);
-    ordered.push(buildCatalogWord(word, href, label));
+  function addCatalogItem(item: ReturnType<typeof buildCatalogOrder>[number]) {
+    if (seen.has(item.word.slug)) return;
+    seen.add(item.word.slug);
+    ordered.push({
+      ...buildCatalogWord(item.word, item.href, item.label),
+      ...catalogWordExtras(item),
+    });
   }
 
   const lessonHub = indexPages.find((p) => p.sourcePath.toLowerCase() === 'lessons/readme.md');
-  if (lessonHub) {
-    const lessonLinks = [...lessonHub.links].reverse();
-    for (const lessonLink of lessonLinks) {
-      const lessonPage = indexPages.find(
-        (p) => p.sourcePath.replace(/\\/g, '/') === lessonLink.resolvedHref.replace(/\.html$/i, 'readme.md'),
-      );
-      if (!lessonPage) continue;
-      for (const link of lessonPage.links) {
-        const word = wordFromIndexLink(link, wordsBySlug, wordsByHref);
-        if (word) addWord(word, link.resolvedHref, link.label);
-      }
-    }
-  }
+  const lessonWords = lessonHub
+    ? collectLessonWords(indexPages, lessonHub, (link) =>
+        wordFromIndexLink(link, wordsBySlug, wordsByHref),
+      )
+    : [];
+  const lessonSlugs = new Set(lessonWords.map((lw) => lw.word.slug));
 
-  const categoryOrder = [
-    'verbs',
-    'nouns',
-    'adjectives',
-    'pronouns',
-    'phrases',
-    'numbers',
-    'particles',
-  ];
   const byCategory = new Map<string, WordEntry[]>();
   for (const word of words) {
+    if (lessonSlugs.has(word.slug)) continue;
     const cat = word.category ?? 'other';
     const list = byCategory.get(cat) ?? [];
     list.push(word);
     byCategory.set(cat, list);
   }
 
-  for (const cat of categoryOrder) {
-    const list = byCategory.get(cat) ?? [];
-    list.sort((a, b) =>
-      (a.translation || a.title).localeCompare(b.translation || b.title, 'ru'),
-    );
-    for (const word of list) {
-      const fileName = `${path.basename(word.sourcePath).replace(/\.md$/i, '')}.html`;
-      addWord(word, `${word.category}/${fileName}`, word.translation || word.title);
-    }
-  }
+  const interleaved = interleaveByCategory(byCategory, CATEGORY_ORDER);
 
+  const interleavedSlugs = new Set(interleaved.map((w) => w.slug));
+  const remaining: WordEntry[] = [];
   for (const word of words) {
-    if (seen.has(word.slug)) continue;
+    if (lessonSlugs.has(word.slug) || interleavedSlugs.has(word.slug)) continue;
+    remaining.push(word);
+  }
+  remaining.sort((a, b) =>
+    (a.translation || a.title).localeCompare(b.translation || b.title, 'ru'),
+  );
+
+  const hrefForWord = (word: WordEntry) => {
     const fileName = `${path.basename(word.sourcePath).replace(/\.md$/i, '')}.html`;
-    addWord(word, `${word.category}/${fileName}`, word.translation || word.title);
+    return `${word.category}/${fileName}`;
+  };
+  const labelForWord = (word: WordEntry) => word.translation || word.title;
+
+  const catalogItems = buildCatalogOrder(
+    lessonWords,
+    [...interleaved, ...remaining],
+    hrefForWord,
+    labelForWord,
+  );
+
+  for (const item of catalogItems) {
+    addCatalogItem(item);
   }
 
-  return { deckId: 'global', words: ordered };
+  return { deckId: 'global', words: ordered, blockSize: CATALOG_BLOCK_SIZE };
 }
 
 function buildCatalogForIndex(

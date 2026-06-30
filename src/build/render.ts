@@ -68,6 +68,13 @@ function progressBarMarkup(slug: string): string {
 
 function practiceCompleteMarkup(): string {
   return `
+        <div class="practice-direction-prompt hidden" id="practice-direction-prompt" hidden>
+          <p class="practice-direction-prompt-text" id="practice-direction-prompt-text"></p>
+          <div class="practice-direction-prompt-actions">
+            <button type="button" class="btn btn-primary" id="btn-switch-ru-el">Переключиться на Ру → Ελ</button>
+            <button type="button" class="btn btn-secondary" id="btn-dismiss-ru-el-prompt">Позже</button>
+          </div>
+        </div>
         <div class="practice-complete hidden" id="practice-complete" hidden>
           <p class="practice-complete-text">Можно пройти ещё раз или вернуться к списку.</p>
           <button type="button" class="btn btn-primary" id="btn-repeat-session">Повторить ещё раз</button>

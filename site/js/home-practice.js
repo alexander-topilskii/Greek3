@@ -35,10 +35,15 @@
   const continueHint = document.getElementById('continue-hint');
   const practiceComplete = document.getElementById('practice-complete');
   const btnRepeatSession = document.getElementById('btn-repeat-session');
+  const directionPrompt = document.getElementById('practice-direction-prompt');
+  const directionPromptText = document.getElementById('practice-direction-prompt-text');
+  const btnSwitchRuEl = document.getElementById('btn-switch-ru-el');
+  const btnDismissRuElPrompt = document.getElementById('btn-dismiss-ru-el-prompt');
 
   let currentPick = null;
   let practiceDirection = null;
   let fc = null;
+  let pendingBlockPrompt = null;
 
   function showRussianFirst() {
     return practiceDirection === 'ru-el';
@@ -59,6 +64,18 @@
   const btnRemember = practiceControls?.querySelector('.btn-remember');
   const btnRandom = practiceControls?.querySelector('.btn-random');
   const btnLang = practiceControls?.querySelector('.btn-lang');
+
+  function setDirectionPrompt(visible, prompt = null) {
+    pendingBlockPrompt = prompt;
+    directionPrompt?.classList.toggle('hidden', !visible);
+    directionPrompt?.toggleAttribute('hidden', !visible);
+    if (visible && prompt && directionPromptText) {
+      const n = prompt.wordCount;
+      directionPromptText.textContent =
+        `Блок из ${n} слов выучен (Ελ → Ру). Переключитесь на Ру → Ελ — ` +
+        'с русского запоминать сложнее, нужно больше повторений.';
+    }
+  }
 
   function setPracticeComplete(visible) {
     practiceComplete?.classList.toggle('hidden', !visible);
@@ -119,6 +136,20 @@
     await db.putCard(srs.gradeCard(card, remembered));
   }
 
+  async function updateDirectionPrompt() {
+    if (practiceDirection !== 'el-ru') {
+      setDirectionPrompt(false);
+      return;
+    }
+    try {
+      const prompt = await srs.checkBlockDirectionPrompt(catalog, db);
+      setDirectionPrompt(!!prompt, prompt);
+    } catch (err) {
+      console.error('Direction prompt check error', err);
+      setDirectionPrompt(false);
+    }
+  }
+
   async function updateContinueHint() {
     if (!continueHint) return;
     const cards = await db.getCardsForSlugs(catalogSlugs);
@@ -144,6 +175,7 @@
     if (!card || !practiceDirection) return;
 
     setPracticeComplete(false);
+    setDirectionPrompt(false);
     syncCardDisplay();
 
     try {
@@ -165,12 +197,13 @@
     }
 
     showCardContent(currentPick);
+    await updateDirectionPrompt();
   }
 
   async function gradeAndNext(remembered) {
     await gradeCurrent(remembered);
     await updateContinueHint();
-    pickAndShowNext();
+    await pickAndShowNext();
   }
 
   function openPractice(direction) {
@@ -180,6 +213,7 @@
     practiceDirection = direction;
     db.setSetting('practice:lastDirection', direction);
     syncPracticeButtons();
+    setDirectionPrompt(false);
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     sectionsGrid?.classList.add('hidden');
@@ -221,6 +255,20 @@
   });
   btnClose?.addEventListener('click', closePractice);
   btnRepeatSession?.addEventListener('click', repeatSession);
+  btnSwitchRuEl?.addEventListener('click', () => {
+    practiceDirection = 'ru-el';
+    db.setSetting('practice:lastDirection', 'ru-el');
+    syncPracticeButtons();
+    setDirectionPrompt(false);
+    syncCardDisplay();
+    pickAndShowNext();
+  });
+  btnDismissRuElPrompt?.addEventListener('click', async () => {
+    if (pendingBlockPrompt) {
+      await srs.dismissRuElBlockPrompt(db, pendingBlockPrompt.blockIndex);
+    }
+    setDirectionPrompt(false);
+  });
   btnRandom?.addEventListener('click', pickAndShowNext);
   btnForget?.addEventListener('click', () => gradeAndNext(false));
   btnRemember?.addEventListener('click', () => gradeAndNext(true));
