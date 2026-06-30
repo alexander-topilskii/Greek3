@@ -8,7 +8,14 @@
     masteryReps: 3,
   };
 
+  /** Ελ→Ру ×1, Ру→Ελ ×3 — с русского нужно больше повторений */
+  const DIRECTION_REP_FACTOR = {
+    'el-ru': 1,
+    'ru-el': 3,
+  };
+
   const WEIGHT = {
+    activeLesson: 150,
     newWord: 100,
     learningSummary: 75,
     learningForm: 65,
@@ -16,6 +23,11 @@
   };
 
   const DIRECTIONS = ['el-ru', 'ru-el'];
+
+  function masteryThreshold(direction) {
+    const factor = DIRECTION_REP_FACTOR[direction] ?? 1;
+    return DEFAULTS.masteryReps * factor;
+  }
 
   /** SM-2 inspired scheduling */
   function gradeCard(card, remembered) {
@@ -51,12 +63,14 @@
   }
 
   function isMastered(card) {
-    return (card.repetitions ?? 0) >= DEFAULTS.masteryReps;
+    const dir = cardDirection(card);
+    return (card.repetitions ?? 0) >= masteryThreshold(dir);
   }
 
   function isLearning(card) {
+    const dir = cardDirection(card);
     const reps = card.repetitions ?? 0;
-    return reps > 0 && reps < DEFAULTS.masteryReps;
+    return reps > 0 && reps < masteryThreshold(dir);
   }
 
   function cardDirection(card) {
@@ -87,7 +101,7 @@
   }
 
   function directionPct(cards, slug, formCount, direction, db) {
-    const M = DEFAULTS.masteryReps;
+    const M = masteryThreshold(direction);
     const summary = getSummaryCard(cards, slug, direction, db);
     const formCards = getFormCards(cards, slug, direction);
     const summaryPct = Math.min(
@@ -138,14 +152,84 @@
     return result;
   }
 
-  /** Индекс «переднего края» — первое слово, где не выучено хотя бы одно направление. */
-  function findFrontierIndex(wordSlugs, poolEnd, cards, db) {
+  /** Первый урок, в котором ещё есть невыученные слова (в текущем направлении). */
+  function findActiveLesson(catalog, cards, db, direction) {
+    const lessons = [
+      ...new Set(
+        catalog.words.map((w) => w.lesson).filter((n) => n != null && n > 0),
+      ),
+    ].sort((a, b) => a - b);
+
+    for (const lesson of lessons) {
+      const lessonWords = catalog.words.filter((w) => w.lesson === lesson);
+      for (const w of lessonWords) {
+        const card = getSummaryCard(cards, w.slug, direction, db);
+        if (!card || !isMastered(card)) return lesson;
+      }
+    }
+    return null;
+  }
+
+  function isNumberTierUnlocked(word, catalog, cards, db, direction) {
+    if (word.category !== 'numbers' || word.numberTier == null) return true;
+    if (word.numberTier <= 0) return true;
+
+    const prevTier = word.numberTier - 1;
+    const prevWords = catalog.words.filter(
+      (w) => w.category === 'numbers' && w.numberTier === prevTier,
+    );
+    if (!prevWords.length) return true;
+
+    return prevWords.every((w) => {
+      const card = getSummaryCard(cards, w.slug, direction, db);
+      return card && isMastered(card);
+    });
+  }
+
+  function wordsInBlock(catalog, blockIndex) {
+    const blockSize = catalog.blockSize ?? 10;
+    return catalog.words.filter((w) => w.blockIndex === blockIndex);
+  }
+
+  function blockElRuComplete(block, cards, db) {
+    return block.every((w) => {
+      const card = getSummaryCard(cards, w.slug, 'el-ru', db);
+      return card && isMastered(card);
+    });
+  }
+
+  function blockRuElComplete(block, cards, db) {
+    return block.every((w) => {
+      const card = getSummaryCard(cards, w.slug, 'ru-el', db);
+      return card && isMastered(card);
+    });
+  }
+
+  /**
+   * Блок, где Ελ→Ру выучен, а Ру→Εл ещё нет — предложить сменить направление.
+   */
+  function findBlockDirectionPrompt(catalog, cards, db, dismissedBlocks) {
+    const blockIndices = [
+      ...new Set(catalog.words.map((w) => w.blockIndex ?? 0)),
+    ].sort((a, b) => a - b);
+
+    for (const bi of blockIndices) {
+      if (dismissedBlocks.has(bi)) continue;
+      const block = wordsInBlock(catalog, bi);
+      if (!block.length) continue;
+      if (!blockElRuComplete(block, cards, db)) continue;
+      if (blockRuElComplete(block, cards, db)) continue;
+      return { blockIndex: bi, wordCount: block.length };
+    }
+    return null;
+  }
+
+  /** Индекс «переднего края» в текущем направлении. */
+  function findFrontierIndex(wordSlugs, poolEnd, cards, db, direction) {
     for (let i = 0; i < poolEnd; i++) {
       const slug = wordSlugs[i];
-      for (const direction of DIRECTIONS) {
-        const card = getSummaryCard(cards, slug, direction, db);
-        if (!card || !isMastered(card)) return i;
-      }
+      const card = getSummaryCard(cards, slug, direction, db);
+      if (!card || !isMastered(card)) return i;
     }
     return Math.max(0, poolEnd - 1);
   }
@@ -154,7 +238,6 @@
     return Math.max(0, frontierIndex - wordIndex);
   }
 
-  /** Чем дальше слово от текущего фронта — тем реже попадает в практику. */
   function reviewWeight(age) {
     return 35 / (1 + age * 0.35);
   }
@@ -177,7 +260,15 @@
     const directions = directionFilter ? [directionFilter] : DIRECTIONS;
     const wordSlugs = catalog.words.map((w) => w.slug);
     const poolEnd = Math.min(settings.activeLimit, wordSlugs.length);
-    const frontierIndex = findFrontierIndex(wordSlugs, poolEnd, cards, db);
+    const practiceDirection = directionFilter ?? 'el-ru';
+    const frontierIndex = findFrontierIndex(
+      wordSlugs,
+      poolEnd,
+      cards,
+      db,
+      practiceDirection,
+    );
+    const activeLesson = findActiveLesson(catalog, cards, db, practiceDirection);
     const candidates = [];
 
     for (let wi = 0; wi < catalog.words.length; wi++) {
@@ -186,8 +277,13 @@
       const word = catalog.words[wi];
       const age = wordAge(wi, frontierIndex);
 
+      if (!isNumberTierUnlocked(word, catalog, cards, db, practiceDirection)) {
+        continue;
+      }
+
       for (const direction of directions) {
         const summaryCard = getSummaryCard(cards, word.slug, direction, db);
+        const inActiveLesson = activeLesson != null && word.lesson === activeLesson;
 
         if (!summaryCard) {
           candidates.push({
@@ -196,29 +292,27 @@
             isNew: true,
             type: 'summary',
             direction,
-            weight: WEIGHT.newWord,
+            weight: inActiveLesson ? WEIGHT.activeLesson : WEIGHT.newWord,
           });
           continue;
         }
 
         if (isDue(summaryCard, now)) {
+          let weight;
           if (isLearning(summaryCard)) {
-            candidates.push({
-              card: summaryCard,
-              word,
-              type: 'summary',
-              direction,
-              weight: WEIGHT.learningSummary,
-            });
+            weight = inActiveLesson ? WEIGHT.activeLesson : WEIGHT.learningSummary;
           } else if (isMastered(summaryCard)) {
-            candidates.push({
-              card: summaryCard,
-              word,
-              type: 'summary',
-              direction,
-              weight: reviewWeight(age),
-            });
+            weight = reviewWeight(age);
+          } else {
+            continue;
           }
+          candidates.push({
+            card: summaryCard,
+            word,
+            type: 'summary',
+            direction,
+            weight,
+          });
         }
       }
 
@@ -261,14 +355,6 @@
     return candidates;
   }
 
-  /**
-   * Выбор карточки: новые слова + повторения по SRS.
-   * Если в текущем пуле нечего учить — автоматически расширяет activeLimit.
-   */
-  /**
-   * Сделать все summary-карточки каталога снова доступными для повторения.
-   * Прогресс (repetitions) сохраняется — меняется только расписание.
-   */
   async function resetCatalogSchedule(catalog, db, direction, now = Date.now()) {
     const slugs = new Set(catalog.words.map((w) => w.slug));
     const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
@@ -337,9 +423,41 @@
     }
   }
 
+  async function getDismissedRuElBlocks(db) {
+    const dismissed = new Set();
+    const prefix = 'practice:dismissedRuElBlock:';
+    if (typeof db.getAllSettings === 'function') {
+      const all = await db.getAllSettings();
+      for (const [key, val] of Object.entries(all)) {
+        if (key.startsWith(prefix) && val) {
+          dismissed.add(Number(key.slice(prefix.length)));
+        }
+      }
+      return dismissed;
+    }
+    for (let bi = 0; bi < 200; bi++) {
+      const val = await db.getSetting(`${prefix}${bi}`, false);
+      if (val) dismissed.add(bi);
+    }
+    return dismissed;
+  }
+
+  async function dismissRuElBlockPrompt(db, blockIndex) {
+    await db.setSetting(`practice:dismissedRuElBlock:${blockIndex}`, true);
+  }
+
+  async function checkBlockDirectionPrompt(catalog, db) {
+    const slugs = new Set(catalog.words.map((w) => w.slug));
+    const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
+    const dismissed = await getDismissedRuElBlocks(db);
+    return findBlockDirectionPrompt(catalog, cards, db, dismissed);
+  }
+
   global.GreekSRS = {
     DEFAULTS,
     DIRECTIONS,
+    DIRECTION_REP_FACTOR,
+    masteryThreshold,
     gradeCard,
     isDue,
     isMastered,
@@ -347,6 +465,11 @@
     statsForWord,
     applyProgressBar,
     getProgressStats,
+    findActiveLesson,
+    findBlockDirectionPrompt,
+    checkBlockDirectionPrompt,
+    dismissRuElBlockPrompt,
+    isNumberTierUnlocked,
     pickNextCard,
     loadDeckSettings,
     saveDeckSettings,

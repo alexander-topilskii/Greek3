@@ -59,11 +59,19 @@ export interface CatalogWord {
   recordType: string;
   primaryGreek: string;
   category: string;
+  /** Номер урока (1…), если слово из lessons/ */
+  lesson?: number;
+  /** Блок ~10 слов для подсказки смены направления */
+  blockIndex?: number;
+  /** Уровень чисел: 0 = 1–20, 1 = десятки, 2 = сотни, 3 = тысячи */
+  numberTier?: number;
 }
 
 export interface VerbCatalog {
   deckId: string;
   words: CatalogWord[];
+  /** Размер блока для подсказки Ру → Εл (по умолчанию 10) */
+  blockSize?: number;
 }
 
 export interface SiteConfig {
