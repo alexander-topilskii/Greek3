@@ -187,8 +187,65 @@
   }
 
   function wordsInBlock(catalog, blockIndex) {
-    const blockSize = catalog.blockSize ?? 10;
-    return catalog.words.filter((w) => w.blockIndex === blockIndex);
+    return catalog.words.filter((w) => (w.blockIndex ?? 0) === blockIndex);
+  }
+
+  function blockMasteredInDirection(block, cards, db, direction) {
+    return block.every((w) => {
+      const card = getSummaryCard(cards, w.slug, direction, db);
+      return card && isMastered(card);
+    });
+  }
+
+  function allCatalogMasteredInDirection(catalog, cards, db, direction) {
+    return catalog.words.every((w) => {
+      const card = getSummaryCard(cards, w.slug, direction, db);
+      return card && isMastered(card);
+    });
+  }
+
+  function allMasteredInPool(wordSlugs, poolEnd, cards, db, direction) {
+    for (let i = 0; i < poolEnd; i++) {
+      const card = getSummaryCard(cards, wordSlugs[i], direction, db);
+      if (!card || !isMastered(card)) return false;
+    }
+    return poolEnd > 0;
+  }
+
+  /** Не выходить за пределы незавершённого блока (для подсказки смены направления). */
+  function getPoolEnd(settings, catalog, cards, db, direction) {
+    const n = catalog.words.length;
+    const limit = Math.min(settings.activeLimit, n);
+    if (catalog.words[0]?.blockIndex == null) return limit;
+
+    const blockIndices = [
+      ...new Set(catalog.words.map((w) => w.blockIndex ?? 0)),
+    ].sort((a, b) => a - b);
+
+    for (const bi of blockIndices) {
+      const block = wordsInBlock(catalog, bi);
+      if (!blockMasteredInDirection(block, cards, db, direction)) {
+        let blockEnd = 0;
+        for (let i = 0; i < catalog.words.length; i++) {
+          if ((catalog.words[i].blockIndex ?? 0) === bi) blockEnd = i + 1;
+        }
+        return Math.min(limit, blockEnd);
+      }
+    }
+    return limit;
+  }
+
+  function canExpandActiveLimit(settings, catalog, cards, db, direction) {
+    const poolEnd = getPoolEnd(settings, catalog, cards, db, direction);
+    const wordSlugs = catalog.words.map((w) => w.slug);
+    if (!allMasteredInPool(wordSlugs, poolEnd, cards, db, direction)) return false;
+
+    if (catalog.words[0]?.blockIndex == null) return true;
+
+    const lastWord = catalog.words[poolEnd - 1];
+    if (!lastWord) return true;
+    const block = wordsInBlock(catalog, lastWord.blockIndex ?? 0);
+    return blockMasteredInDirection(block, cards, db, direction);
   }
 
   function blockElRuComplete(block, cards, db) {
@@ -256,11 +313,15 @@
   }
 
   function collectCandidates(settings, catalog, cards, db, now, options) {
-    const { summaryOnly = false, direction: directionFilter = null } = options;
+    const {
+      summaryOnly = false,
+      direction: directionFilter = null,
+      relaxDue = false,
+    } = options;
     const directions = directionFilter ? [directionFilter] : DIRECTIONS;
     const wordSlugs = catalog.words.map((w) => w.slug);
-    const poolEnd = Math.min(settings.activeLimit, wordSlugs.length);
     const practiceDirection = directionFilter ?? 'el-ru';
+    const poolEnd = getPoolEnd(settings, catalog, cards, db, practiceDirection);
     const frontierIndex = findFrontierIndex(
       wordSlugs,
       poolEnd,
@@ -297,15 +358,19 @@
           continue;
         }
 
-        if (isDue(summaryCard, now)) {
+        const due = isDue(summaryCard, now);
+        if (due || relaxDue) {
           let weight;
           if (isLearning(summaryCard)) {
             weight = inActiveLesson ? WEIGHT.activeLesson : WEIGHT.learningSummary;
           } else if (isMastered(summaryCard)) {
-            weight = reviewWeight(age);
+            weight = relaxDue && !due ? reviewWeight(age) * 1.5 : reviewWeight(age);
+          } else if ((summaryCard.repetitions ?? 0) === 0) {
+            weight = inActiveLesson ? WEIGHT.activeLesson : WEIGHT.newWord;
           } else {
             continue;
           }
+          if (relaxDue && !due) weight *= 0.6;
           candidates.push({
             card: summaryCard,
             word,
@@ -358,11 +423,31 @@
   async function resetCatalogSchedule(catalog, db, direction, now = Date.now()) {
     const slugs = new Set(catalog.words.map((w) => w.slug));
     const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
+    const resetIds = new Set();
+
     for (const card of cards) {
       if (card.type !== 'summary') continue;
       if (cardDirection(card) !== direction) continue;
+      resetIds.add(card.id);
       await db.putCard({ ...card, nextReview: now, deckId: db.GLOBAL_DECK_ID });
     }
+
+    for (const word of catalog.words) {
+      const id = db.cardId(word.slug, 'summary', null, direction);
+      if (resetIds.has(id)) continue;
+      const card = await db.getOrCreateCard(id, {
+        deckId: db.GLOBAL_DECK_ID,
+        wordSlug: word.slug,
+        type: 'summary',
+        direction,
+      });
+      await db.putCard({ ...card, nextReview: now, deckId: db.GLOBAL_DECK_ID });
+    }
+  }
+
+  async function repeatCatalogSession(deckId, catalog, db, direction) {
+    await resetCatalogSchedule(catalog, db, direction);
+    await saveDeckSettings(deckId, db, { activeLimit: catalog.words.length });
   }
 
   async function pickNextCard(deckId, catalog, db, options = {}) {
@@ -385,7 +470,33 @@
       const pick = pickWeighted(candidates);
       if (pick) return pick;
 
+      const relaxed = collectCandidates(
+        workingSettings,
+        catalog,
+        allCards,
+        db,
+        now,
+        { ...options, relaxDue: true },
+      );
+      const practiceDirection = options.direction ?? 'el-ru';
+      const relaxedPick =
+        allCatalogMasteredInDirection(catalog, allCards, db, practiceDirection)
+          ? null
+          : pickWeighted(relaxed);
+      if (relaxedPick) return relaxedPick;
+
       if (workingSettings.activeLimit >= wordSlugs.length) break;
+      if (
+        !canExpandActiveLimit(
+          workingSettings,
+          catalog,
+          allCards,
+          db,
+          options.direction ?? 'el-ru',
+        )
+      ) {
+        break;
+      }
 
       workingSettings.activeLimit = Math.min(
         wordSlugs.length,
@@ -474,5 +585,8 @@
     loadDeckSettings,
     saveDeckSettings,
     resetCatalogSchedule,
+    repeatCatalogSession,
+    getPoolEnd,
+    canExpandActiveLimit,
   };
 })(window);
