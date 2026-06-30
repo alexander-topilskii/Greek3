@@ -265,9 +265,24 @@
    * Выбор карточки: новые слова + повторения по SRS.
    * Если в текущем пуле нечего учить — автоматически расширяет activeLimit.
    */
+  /**
+   * Сделать все summary-карточки каталога снова доступными для повторения.
+   * Прогресс (repetitions) сохраняется — меняется только расписание.
+   */
+  async function resetCatalogSchedule(catalog, db, direction, now = Date.now()) {
+    const slugs = new Set(catalog.words.map((w) => w.slug));
+    const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
+    for (const card of cards) {
+      if (card.type !== 'summary') continue;
+      if (cardDirection(card) !== direction) continue;
+      await db.putCard({ ...card, nextReview: now, deckId: db.GLOBAL_DECK_ID });
+    }
+  }
+
   async function pickNextCard(deckId, catalog, db, options = {}) {
     const settings = await loadDeckSettings(deckId, db);
-    const allCards = await db.getDeckCards(deckId);
+    const slugs = new Set(catalog.words.map((w) => w.slug));
+    const allCards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
     const now = Date.now();
     const wordSlugs = catalog.words.map((w) => w.slug);
     const workingSettings = { ...settings };
@@ -335,5 +350,6 @@
     pickNextCard,
     loadDeckSettings,
     saveDeckSettings,
+    resetCatalogSchedule,
   };
 })(window);

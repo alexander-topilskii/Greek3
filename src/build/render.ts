@@ -66,6 +66,14 @@ function progressBarMarkup(slug: string): string {
         </div>`;
 }
 
+function practiceCompleteMarkup(): string {
+  return `
+        <div class="practice-complete hidden" id="practice-complete" hidden>
+          <p class="practice-complete-text">Можно пройти ещё раз или вернуться к списку.</p>
+          <button type="button" class="btn btn-primary" id="btn-repeat-session">Повторить ещё раз</button>
+        </div>`;
+}
+
 function flashcardMarkup(id = 'flashcard-root'): string {
   return `
     <div class="flashcard-root" id="${id}">
@@ -186,7 +194,10 @@ function layout(
 </html>`;
 }
 
-export function renderHome(sections: { title: string; href: string; description: string }[]): string {
+export function renderHome(
+  sections: { title: string; href: string; description: string }[],
+  globalCatalog?: VerbCatalog,
+): string {
   const cards = sections
     .map(
       (s) => `
@@ -198,17 +209,55 @@ export function renderHome(sections: { title: string; href: string; description:
     )
     .join('');
 
+  const catalogJson = globalCatalog
+    ? `<script type="application/json" id="global-catalog">${embedJson(globalCatalog)}</script>`
+    : '';
+
+  const continueBlock =
+    globalCatalog && globalCatalog.words.length > 0
+      ? `
+      <div class="hero-actions fade-in">
+        <button type="button" class="btn btn-primary btn-continue" id="btn-continue">Продолжить</button>
+        <p class="continue-hint" id="continue-hint">Загрузка прогресса…</p>
+        <div class="hero-directions">
+          <span class="hero-directions-label">Направление:</span>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
+        </div>
+      </div>`
+      : '';
+
+  const practiceBlock =
+    globalCatalog && globalCatalog.words.length > 0
+      ? `
+    <section class="home-practice list-practice hidden" id="home-practice" aria-hidden="true">
+      <div class="practice-panel practice-panel--wide fade-in">
+        ${flashcardMarkup('home-flashcard-root')}
+        ${practiceCompleteMarkup()}
+      </div>
+      <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← На главную</button>
+    </section>`
+      : '';
+
   const content = `
-    <section class="hero fade-in">
-      <p class="hero-label">Современный греческий</p>
-      <h1>Изучай и практикуй<br><span class="hero-accent">ελληνικά</span></h1>
-      <p class="hero-desc">Интерактивные карточки, таблицы форм и режим практики — всё из ваших Markdown-файлов.</p>
-    </section>
-    <section class="sections-grid">
-      ${cards}
+    <section class="home-page verbs-list-page" data-deck-id="global">
+      <section class="hero fade-in">
+        <p class="hero-label">Современный греческий</p>
+        <h1>Изучай и практикуй<br><span class="hero-accent">ελληνικά</span></h1>
+        <p class="hero-desc">Интерактивные карточки, таблицы форм и режим практики — всё из ваших Markdown-файлов.</p>
+        ${continueBlock}
+      </section>
+      ${practiceBlock}
+      <section class="sections-grid" id="sections-grid">
+        ${cards}
+      </section>
+      ${catalogJson}
     </section>`;
 
-  return layout(content, 'Главная');
+  const scripts =
+    globalCatalog && globalCatalog.words.length > 0 ? ['assets/js/home-practice.js'] : [];
+
+  return layout(content, 'Главная', undefined, scripts);
 }
 
 function normalizeSitePath(...parts: string[]): string {
@@ -303,17 +352,32 @@ function renderIndexLink(
       </a>`;
 }
 
+function reverseLessonsIndex(page: IndexPage): IndexPage {
+  if (page.sourcePath.toLowerCase() !== 'lessons/readme.md') return page;
+  return {
+    ...page,
+    sections: [...page.sections]
+      .reverse()
+      .map((section) => ({
+        ...section,
+        links: [...section.links].reverse(),
+      })),
+    links: [...page.links].reverse(),
+  };
+}
+
 function renderGroupedLinks(
   page: IndexPage,
   pageOutputDir: string,
   catalog: VerbCatalog | undefined,
 ): string {
+  const displayPage = reverseLessonsIndex(page);
   const sections =
-    page.sections.length > 0
-      ? page.sections.filter((s) => s.links.length > 0)
-      : [{ title: '', links: page.links }];
+    displayPage.sections.length > 0
+      ? displayPage.sections.filter((s) => s.links.length > 0)
+      : [{ title: '', links: displayPage.links }];
 
-  if (!sections.length || !page.links.length) {
+  if (!sections.length || !displayPage.links.length) {
     return '<p class="empty-state">Пока нет записей. Добавьте MD-файлы в этот раздел.</p>';
   }
 
@@ -364,6 +428,7 @@ export function renderIndex(
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
           ${flashcardMarkup('list-flashcard-root')}
+          ${practiceCompleteMarkup()}
         </div>
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
       </section>

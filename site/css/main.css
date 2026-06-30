@@ -188,6 +188,62 @@ body {
   font-size: 0.9375rem;
 }
 
+.hero-actions {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-continue {
+  min-width: 12rem;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.continue-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.hero-directions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.hero-directions-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.practice-complete {
+  margin-top: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.practice-complete.hidden {
+  display: none;
+}
+
+.practice-complete-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.home-practice .btn-close-practice {
+  margin-top: 1rem;
+}
+
 /* Section cards */
 .sections-grid {
   display: grid;

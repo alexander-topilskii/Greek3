@@ -52,7 +52,7 @@
     const direction = getDirection();
     const id = db.cardId(wordSlug, 'form', index, direction);
     return db.getOrCreateCard(id, {
-      deckId,
+      deckId: db.GLOBAL_DECK_ID ?? 'global',
       wordSlug,
       type: 'form',
       formIndex: index,
@@ -63,7 +63,12 @@
   async function ensureSummaryCard() {
     const direction = getDirection();
     const id = db.cardId(wordSlug, 'summary', null, direction);
-    return db.getOrCreateCard(id, { deckId, wordSlug, type: 'summary', direction });
+    return db.getOrCreateCard(id, {
+      deckId: db.GLOBAL_DECK_ID ?? 'global',
+      wordSlug,
+      type: 'summary',
+      direction,
+    });
   }
 
   async function gradeCurrent(remembered) {

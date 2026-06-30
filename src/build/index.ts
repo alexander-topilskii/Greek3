@@ -146,6 +146,73 @@ function breadcrumbsForIndex(
   return crumbs;
 }
 
+function buildGlobalCatalog(
+  indexPages: IndexPage[],
+  words: WordEntry[],
+  wordsBySlug: Map<string, WordEntry>,
+  wordsByHref: Map<string, WordEntry>,
+): VerbCatalog {
+  const seen = new Set<string>();
+  const ordered: CatalogWord[] = [];
+
+  function addWord(word: WordEntry, href: string, label: string) {
+    if (seen.has(word.slug)) return;
+    seen.add(word.slug);
+    ordered.push(buildCatalogWord(word, href, label));
+  }
+
+  const lessonHub = indexPages.find((p) => p.sourcePath.toLowerCase() === 'lessons/readme.md');
+  if (lessonHub) {
+    const lessonLinks = [...lessonHub.links].reverse();
+    for (const lessonLink of lessonLinks) {
+      const lessonPage = indexPages.find(
+        (p) => p.sourcePath.replace(/\\/g, '/') === lessonLink.resolvedHref.replace(/\.html$/i, 'readme.md'),
+      );
+      if (!lessonPage) continue;
+      for (const link of lessonPage.links) {
+        const word = wordFromIndexLink(link, wordsBySlug, wordsByHref);
+        if (word) addWord(word, link.resolvedHref, link.label);
+      }
+    }
+  }
+
+  const categoryOrder = [
+    'verbs',
+    'nouns',
+    'adjectives',
+    'pronouns',
+    'phrases',
+    'numbers',
+    'particles',
+  ];
+  const byCategory = new Map<string, WordEntry[]>();
+  for (const word of words) {
+    const cat = word.category ?? 'other';
+    const list = byCategory.get(cat) ?? [];
+    list.push(word);
+    byCategory.set(cat, list);
+  }
+
+  for (const cat of categoryOrder) {
+    const list = byCategory.get(cat) ?? [];
+    list.sort((a, b) =>
+      (a.translation || a.title).localeCompare(b.translation || b.title, 'ru'),
+    );
+    for (const word of list) {
+      const fileName = `${path.basename(word.sourcePath).replace(/\.md$/i, '')}.html`;
+      addWord(word, `${word.category}/${fileName}`, word.translation || word.title);
+    }
+  }
+
+  for (const word of words) {
+    if (seen.has(word.slug)) continue;
+    const fileName = `${path.basename(word.sourcePath).replace(/\.md$/i, '')}.html`;
+    addWord(word, `${word.category}/${fileName}`, word.translation || word.title);
+  }
+
+  return { deckId: 'global', words: ordered };
+}
+
 function buildCatalogForIndex(
   index: IndexPage,
   wordsBySlug: Map<string, WordEntry>,
@@ -347,6 +414,9 @@ function main(): void {
 
   renderTopicLevelPages(globalWords);
 
+  const globalCatalog = buildGlobalCatalog(indexPages, words, wordsBySlug, wordsByHref);
+  writeCatalog('', globalCatalog);
+
   const homeSections = [
     { title: 'Уроки', href: 'words/lessons/index.html', description: 'Слова по занятиям с репетитором' },
     { title: 'Глаголы', href: 'words/verbs/index.html', description: 'Спряжения, времена и формы' },
@@ -361,7 +431,7 @@ function main(): void {
     { title: 'Уровни', href: 'words/levels/index.html', description: 'A1 → B2 по шкале CEFR' },
   ];
 
-  writeHtml('index.html', renderHome(homeSections));
+  writeHtml('index.html', renderHome(homeSections, globalCatalog));
   console.log('  🏠 index.html');
   console.log(`✅ Done — ${words.length} word(s), output: dist/`);
 }
