@@ -2,6 +2,7 @@
   const LANG = 'el-GR';
 
   let greekVoice = null;
+  let speakSession = 0;
 
   function getSynth() {
     return global.speechSynthesis ?? null;
@@ -27,6 +28,14 @@
     if (voices.length) greekVoice = pickGreekVoice(voices);
   }
 
+  /** Chrome/Safari: голоса часто появляются только после жеста пользователя. */
+  function prepareSynth() {
+    const synth = getSynth();
+    if (!synth) return;
+    synth.resume();
+    loadVoices();
+  }
+
   if (isSupported()) {
     loadVoices();
     getSynth().addEventListener('voiceschanged', loadVoices);
@@ -37,45 +46,105 @@
     return lines.map((l) => String(l).trim()).filter(Boolean);
   }
 
+  function isIgnorableError(error) {
+    return error === 'interrupted' || error === 'canceled';
+  }
+
   /**
    * Озвучить греческий текст. Несколько строк — по очереди.
-   * @returns {Promise<boolean>} false если TTS недоступен или ошибка
+   * @returns {Promise<{ ok: boolean, reason?: string }>}
    */
   function speakGreek(text) {
     const lines = normalizeLines(text);
-    if (!lines.length || !isSupported()) return Promise.resolve(false);
+    if (!lines.length || !isSupported()) {
+      return Promise.resolve({ ok: false, reason: 'unsupported' });
+    }
 
     const synth = getSynth();
-    synth.cancel();
-    if (!greekVoice) loadVoices();
+    const session = ++speakSession;
+    prepareSynth();
+
+    if (synth.speaking || synth.pending) synth.cancel();
 
     return new Promise((resolve) => {
       let index = 0;
+      let settled = false;
+      let watchdog = null;
+
+      function clearWatchdog() {
+        if (watchdog) {
+          global.clearTimeout(watchdog);
+          watchdog = null;
+        }
+      }
+
+      function finish(ok, reason) {
+        if (settled || session !== speakSession) return;
+        settled = true;
+        clearWatchdog();
+        resolve({ ok, reason });
+      }
+
+      function armWatchdog() {
+        clearWatchdog();
+        watchdog = global.setTimeout(() => {
+          if (session !== speakSession || settled) return;
+          finish(false, 'timeout');
+        }, 8000);
+      }
 
       function speakNext() {
+        if (session !== speakSession) return;
+
         if (index >= lines.length) {
-          resolve(true);
+          finish(true);
           return;
         }
 
-        const utterance = new SpeechSynthesisUtterance(lines[index]);
+        const line = lines[index];
+        const utterance = new SpeechSynthesisUtterance(line);
         utterance.lang = LANG;
         if (greekVoice) utterance.voice = greekVoice;
 
+        let started = false;
+        armWatchdog();
+
+        utterance.onstart = () => {
+          started = true;
+        };
+
         utterance.onend = () => {
+          if (session !== speakSession) return;
           index += 1;
           speakNext();
         };
-        utterance.onerror = () => resolve(false);
+
+        utterance.onerror = (e) => {
+          if (session !== speakSession) return;
+          const err = e?.error ?? 'unknown';
+          if (isIgnorableError(err)) return;
+          finish(false, err);
+        };
 
         synth.speak(utterance);
+
+        // Chrome: очередь иногда «зависает» без resume или повторного speak.
+        global.setTimeout(() => {
+          if (session !== speakSession || settled || started) return;
+          if (synth.paused) synth.resume();
+          if (!synth.speaking && !synth.pending) {
+            synth.speak(utterance);
+          }
+        }, 120);
       }
 
-      speakNext();
+      // Отложенный старт: cancel() и speak() в одном тике ломают Chrome.
+      global.setTimeout(speakNext, 0);
     });
   }
 
   function stop() {
+    speakSession += 1;
     getSynth()?.cancel();
   }
 
@@ -86,7 +155,7 @@
   global.GreekSpeak = {
     isSupported,
     hasGreekVoice() {
-      if (!greekVoice) loadVoices();
+      prepareSynth();
       return !!greekVoice;
     },
     speakGreek,

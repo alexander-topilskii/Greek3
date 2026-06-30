@@ -56,8 +56,23 @@
       updateSpeakButton();
     }
 
+    let speakErrorTimer = null;
+
+    function setSpeakError(message) {
+      if (!btnSpeak) return;
+      btnSpeak.classList.add('is-speak-error');
+      btnSpeak.title = message;
+      if (speakErrorTimer) global.clearTimeout(speakErrorTimer);
+      speakErrorTimer = global.setTimeout(() => {
+        speakErrorTimer = null;
+        btnSpeak.classList.remove('is-speak-error');
+        updateSpeakButton();
+      }, 3200);
+    }
+
     function updateSpeakButton() {
       if (!btnSpeak) return;
+      if (speakErrorTimer) return;
       const canSpeak = !!speak?.isSupported?.() && greekLines.length > 0;
       btnSpeak.disabled = !canSpeak;
       btnSpeak.classList.toggle('is-speaking', !!speak?.isSpeaking?.());
@@ -72,6 +87,16 @@
       }
     }
 
+    function speakFailureReason(reason) {
+      if (reason === 'unsupported') return 'Озвучка недоступна в этом браузере';
+      if (reason === 'timeout') return 'Озвучка не запустилась — попробуйте ещё раз';
+      if (reason === 'not-allowed') return 'Браузер заблокировал озвучку';
+      if (reason === 'synthesis-failed') {
+        return 'Не удалось озвучить — проверьте голос el-GR в настройках системы';
+      }
+      return 'Не удалось озвучить — попробуйте другой браузер (Chrome, Safari)';
+    }
+
     function speakCurrent() {
       if (!speak?.isSupported?.() || !greekLines.length) return;
       if (speak.isSpeaking?.()) {
@@ -79,8 +104,11 @@
         updateSpeakButton();
         return;
       }
+      btnSpeak?.classList.remove('is-speak-error');
       btnSpeak?.classList.add('is-speaking');
-      speak.speakGreek(greekLines).finally(() => updateSpeakButton());
+      speak.speakGreek(greekLines).then((result) => {
+        if (!result?.ok) setSpeakError(speakFailureReason(result?.reason));
+      }).finally(() => updateSpeakButton());
     }
 
     function showPair(greek, translation) {
