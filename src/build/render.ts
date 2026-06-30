@@ -244,7 +244,6 @@ export function renderHome(
       <section class="hero fade-in">
         <p class="hero-label">Современный греческий</p>
         <h1>Изучай и практикуй<br><span class="hero-accent">ελληνικά</span></h1>
-        <p class="hero-desc">Интерактивные карточки, таблицы форм и режим практики — всё из ваших Markdown-файлов.</p>
         ${continueBlock}
       </section>
       ${practiceBlock}
