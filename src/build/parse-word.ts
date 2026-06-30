@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import type { WordEntry, WordForm } from './types';
+import { parseFrontmatter } from './parse-frontmatter';
+import type { WordEntry, WordForm, WordMeta } from './types';
 
 const SECTION_BASE = 'база';
 const SECTION_FORMS = 'формы';
@@ -72,16 +73,24 @@ function parseBase(lines: string[]): { translation: string; baseForms: string[] 
 
 export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
   const raw = fs.readFileSync(filePath, 'utf-8');
+  const { frontmatter, body } = parseFrontmatter(raw);
   const relativePath = path.relative(wordsRoot, filePath);
   const slug = slugFromPath(relativePath);
   const category = slug.includes('/') ? slug.split('/')[0] : '';
-  const sections = parseSectionContent(raw.split('\n'));
+  const sections = parseSectionContent(body.split('\n'));
 
   let translation = '';
   let verbType = '';
   let baseForms: string[] = [];
   let forms: WordForm[] = [];
   const extraSections: { title: string; lines: string[] }[] = [];
+
+  const meta: WordMeta = {
+    level: frontmatter.level,
+    topics: frontmatter.topics,
+    tags: frontmatter.tags,
+    recordType: frontmatter.type,
+  };
 
   for (const section of sections) {
     const key = section.title.toLowerCase();
@@ -94,6 +103,8 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       verbType = section.lines.map((l) => l.trim()).find(Boolean) ?? '';
     } else if (key === SECTION_FORMS) {
       forms = parseForms(section.lines);
+    } else if (key === 'уровень' && !meta.level) {
+      meta.level = section.lines.map((l) => l.trim()).find(Boolean) ?? '';
     } else {
       extraSections.push(section);
     }
@@ -109,10 +120,20 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
     forms,
     extraSections,
     sourcePath: relativePath,
+    meta,
+    primaryGreek: '',
   };
 }
 
 export function isWordFile(relativePath: string): boolean {
   const base = path.basename(relativePath).toLowerCase();
   return base.endsWith('.md') && base !== 'readme.md';
+}
+
+export function getSpecialSection(
+  word: WordEntry,
+  title: string,
+): { title: string; lines: string[] } | null {
+  const key = title.toLowerCase();
+  return word.extraSections.find((s) => s.title.toLowerCase() === key) ?? null;
 }

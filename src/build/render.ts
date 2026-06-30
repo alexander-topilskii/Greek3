@@ -1,5 +1,18 @@
 import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
 import { renderMarkdown } from './markdown';
+import { getSpecialSection } from './parse-word';
+
+const RECORD_TYPE_LABELS: Record<string, string> = {
+  verb: 'глагол',
+  noun: 'сущ.',
+  adjective: 'прил.',
+  pronoun: 'мест.',
+  number: 'число',
+  case: 'падеж',
+  particle: 'част.',
+  phrase: 'фраза',
+  word: 'слово',
+};
 
 const SITE_CONFIG: SiteConfig = {
   title: 'Greek3',
@@ -202,6 +215,62 @@ function normalizeSitePath(...parts: string[]): string {
   return stack.join('/');
 }
 
+function renderBadges(word: CatalogWord | undefined): string {
+  if (!word) return '';
+  const parts: string[] = [];
+  if (word.level) {
+    parts.push(`<span class="word-badge word-badge--level">${escapeHtml(word.level)}</span>`);
+  }
+  if (word.recordType) {
+    const label = RECORD_TYPE_LABELS[word.recordType] ?? word.recordType;
+    parts.push(`<span class="word-badge word-badge--type">${escapeHtml(label)}</span>`);
+  }
+  for (const topic of word.topics.slice(0, 2)) {
+    parts.push(`<span class="word-badge word-badge--topic">${escapeHtml(topic)}</span>`);
+  }
+  if (!parts.length) return '';
+  return `<div class="word-link-badges">${parts.join('')}</div>`;
+}
+
+function renderMetaBadges(word: WordEntry): string {
+  const parts: string[] = [];
+  if (word.meta.level) {
+    parts.push(`<span class="word-badge word-badge--level">${escapeHtml(word.meta.level)}</span>`);
+  }
+  if (word.meta.recordType) {
+    const label = RECORD_TYPE_LABELS[word.meta.recordType] ?? word.meta.recordType;
+    parts.push(`<span class="word-badge word-badge--type">${escapeHtml(label)}</span>`);
+  }
+  for (const topic of word.meta.topics.slice(0, 3)) {
+    parts.push(`<span class="word-badge word-badge--topic">${escapeHtml(topic)}</span>`);
+  }
+  if (!parts.length) return '';
+  return `<div class="word-header-badges">${parts.join('')}</div>`;
+}
+
+function renderContextSection(lines: string[]): string {
+  const items: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('-')) continue;
+    const content = trimmed.replace(/^-\s*/, '');
+    const parts = content.split(/\s+[—–-]\s+/);
+    if (parts.length >= 2) {
+      const greek = parts[0].replace(/\*\*/g, '').trim();
+      const ru = parts.slice(1).join(' — ').trim();
+      items.push(`
+        <div class="context-bubble">
+          <p class="context-bubble-greek greek">${renderMarkdown(greek)}</p>
+          <p class="context-bubble-ru">${escapeHtml(ru)}</p>
+        </div>`);
+    } else {
+      items.push(`<div class="context-bubble"><div class="context-bubble-ru">${renderMarkdown(content)}</div></div>`);
+    }
+  }
+  if (!items.length) return renderMarkdown(lines.join('\n'));
+  return `<div class="context-bubbles">${items.join('')}</div>`;
+}
+
 function indexLinkSitePath(pageOutputDir: string, link: IndexLink): string {
   if (link.resolvedHref && !/^(https?:)?\/\//.test(link.resolvedHref)) {
     return sitePath(normalizeSitePath('words', link.resolvedHref));
@@ -223,6 +292,7 @@ function renderIndexLink(
           <span class="word-link-label">${escapeHtml(link.label)}</span>
           <span class="word-link-arrow" aria-hidden="true">→</span>
         </div>
+        ${renderBadges(word)}
         ${slug ? progressBarMarkup(slug) : ''}
       </a>`;
 }
@@ -281,6 +351,7 @@ export function renderIndex(
         ${catalog && catalog.words.length > 0 ? `<div class="list-practice-actions">
           <button type="button" class="btn btn-primary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el">Практика: греческий</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru">Практика: русский</button>
+          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
         </div>` : ''}
       </div>
 
@@ -299,7 +370,12 @@ export function renderIndex(
       ${catalogJson}
     </section>`;
 
-  return layout(content, page.title, breadcrumbs, catalog && catalog.words.length > 0 ? ['assets/js/list-practice.js'] : []);
+  const scripts =
+    catalog && catalog.words.length > 0
+      ? ['assets/js/list-controls.js', 'assets/js/list-practice.js']
+      : [];
+
+  return layout(content, page.title, breadcrumbs, scripts);
 }
 
 function casesCheatSheetCell(text: string): string {
@@ -417,13 +493,19 @@ export function renderWord(
   word: WordEntry,
   breadcrumbs: { label: string; href?: string }[],
 ): string {
+  const isPhrase = word.meta.recordType === 'phrase' || word.category === 'phrases';
   const tenseLabels =
     word.category === 'cases'
       ? ['название', 'роль', 'артикли']
-      : ['прош.', 'наст.', 'буд.'];
+      : isPhrase
+        ? ['вариант', 'форма', '']
+        : ['прош.', 'наст.', 'буд.'];
   const translation = word.translation || word.title;
   const deckId = word.category || 'default';
-  const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers';
+  const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers' && !isPhrase;
+  const metaBadges = renderMetaBadges(word);
+  const contextSection = getSpecialSection(word, 'контекст');
+  const skipTitles = new Set(['контекст', 'уровень']);
 
   const summaryHtml = showVerbSummary
     ? `
@@ -431,6 +513,7 @@ export function renderWord(
         <div class="verb-summary-head">
           <span class="verb-summary-translation">${escapeHtml(translation)}</span>${word.verbType ? `<span class="verb-summary-type"> (${escapeHtml(word.verbType)})</span>` : ''}
         </div>
+        ${metaBadges}
         <div class="verb-summary-grid">
           ${word.baseForms
             .map(
@@ -443,7 +526,18 @@ export function renderWord(
             .join('')}
         </div>
       </div>`
-    : `<h1 class="word-title">${escapeHtml(translation)}</h1>`;
+    : isPhrase
+      ? `
+      <div class="phrase-summary">
+        <p class="phrase-summary-greek greek">${escapeHtml(word.primaryGreek || word.baseForms[0] || '')}</p>
+        <p class="phrase-summary-ru">${escapeHtml(translation)}</p>
+        ${metaBadges}
+      </div>`
+      : `<div class="word-title-block">
+        <h1 class="word-title">${escapeHtml(translation)}</h1>
+        ${word.primaryGreek ? `<p class="word-title-greek greek">${escapeHtml(word.primaryGreek)}</p>` : ''}
+        ${metaBadges}
+      </div>`;
 
   const formsJson = escapeHtml(JSON.stringify(word.forms));
   const baseFormsJson = escapeHtml(JSON.stringify(word.baseForms));
@@ -459,17 +553,31 @@ export function renderWord(
     .join('');
 
   const extraHtml = word.extraSections
-    .map(
-      (s) => `
-      <section class="extra-section fade-in">
+    .filter((s) => !skipTitles.has(s.title.toLowerCase()))
+    .map((s) => {
+      const isContext = s.title.toLowerCase() === 'контекст';
+      const body = isContext
+        ? renderContextSection(s.lines)
+        : renderMarkdown(s.lines.join('\n'));
+      return `
+      <section class="extra-section fade-in${isContext ? ' extra-section--context' : ''}">
         <h2>${escapeHtml(s.title)}</h2>
-        <div class="extra-content">${renderMarkdown(s.lines.join('\n'))}</div>
-      </section>`,
-    )
+        <div class="extra-content">${body}</div>
+      </section>`;
+    })
     .join('');
 
+  const contextHtml =
+    contextSection && !extraHtml.includes('extra-section--context')
+      ? `
+      <section class="extra-section extra-section--context fade-in">
+        <h2>Контекст</h2>
+        <div class="extra-content">${renderContextSection(contextSection.lines)}</div>
+      </section>`
+      : '';
+
   const content = `
-    <article class="word-page"
+    <article class="word-page${isPhrase ? ' word-page--phrase' : ''}"
       data-word-slug="${escapeHtml(word.slug)}"
       data-deck-id="${escapeHtml(deckId)}"
       data-translation="${escapeHtml(translation)}"
@@ -490,7 +598,7 @@ export function renderWord(
         word.forms.length
           ? `
       <section class="forms-table-section fade-in">
-        <h2>Все формы</h2>
+        <h2>${isPhrase ? 'Варианты' : 'Все формы'}</h2>
         <div class="table-wrap">
           <table class="forms-table">
             <thead>
@@ -503,6 +611,7 @@ export function renderWord(
           : ''
       }
 
+      ${contextHtml}
       ${extraHtml}
     </article>`;
 
@@ -539,5 +648,58 @@ export function buildCatalogWord(word: WordEntry, href: string, label: string): 
     label,
     formCount: word.forms.length,
     forms: word.forms,
+    level: word.meta.level,
+    topics: word.meta.topics,
+    tags: word.meta.tags,
+    recordType: word.meta.recordType,
+    primaryGreek: word.primaryGreek,
+    category: word.category,
+  };
+}
+
+export function renderTopicLevelHub(
+  title: string,
+  items: { title: string; href: string; count: number; description?: string }[],
+  breadcrumbs: { label: string; href?: string }[],
+): string {
+  const cards = items
+    .map(
+      (item) => `
+    <a href="${escapeHtml(sitePath(item.href))}" class="section-card fade-in">
+      <h2>${escapeHtml(item.title)}</h2>
+      <p>${escapeHtml(item.description ?? `${item.count} записей`)}</p>
+      <span class="card-arrow" aria-hidden="true">→</span>
+    </a>`,
+    )
+    .join('');
+
+  const content = `
+    <section class="hub-page">
+      <div class="page-head fade-in">
+        <h1>${escapeHtml(title)}</h1>
+      </div>
+      <div class="sections-grid">${cards || '<p class="empty-state">Пока нет записей с метаданными.</p>'}</div>
+    </section>`;
+
+  return layout(content, title, breadcrumbs);
+}
+
+export function syntheticIndexFromCatalog(
+  title: string,
+  intro: string,
+  catalog: VerbCatalog,
+  sourcePath: string,
+): IndexPage {
+  const links = catalog.words.map((w) => ({
+    label: w.label,
+    href: w.href,
+    resolvedHref: w.href,
+  }));
+  return {
+    title,
+    intro,
+    sections: [{ title: 'Все записи', links }],
+    links,
+    sourcePath,
   };
 }

@@ -51,3 +51,6 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 - [Числа](words/numbers/readme.md)
 - [Падежи](words/cases/readme.md)
 - [Частицы](words/particles/readme.md)
+- [Фразы](words/phrases/readme.md)
+- [Темы](words/topics/readme.md) — генерируются при сборке
+- [Уровни](words/levels/readme.md) — генерируются при сборке

@@ -87,6 +87,27 @@ export function parseIndexFile(filePath: string, wordsRoot: string): IndexPage {
   };
 }
 
+export function buildSlugIndexMap(indexes: IndexPage[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+
+  function add(slug: string, topic: string) {
+    if (!topic || topic === 'Слова') return;
+    const list = map.get(slug) ?? [];
+    if (!list.includes(topic)) list.push(topic);
+    map.set(slug, list);
+  }
+
+  for (const page of indexes) {
+    for (const section of page.sections) {
+      for (const link of section.links) {
+        add(link.resolvedHref.replace(/\.html$/i, ''), section.title);
+      }
+    }
+  }
+
+  return map;
+}
+
 export function indexOutputPath(relativePath: string): string {
   if (relativePath.toLowerCase() === 'readme.md') {
     return 'index.html';
