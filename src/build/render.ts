@@ -20,7 +20,12 @@ const SITE_CONFIG: SiteConfig = {
   baseUrl: process.env.SITE_BASE_URL ?? '',
 };
 
-const SHARED_SCRIPTS = ['assets/js/db.js', 'assets/js/srs.js', 'assets/js/flashcard.js'];
+const SHARED_SCRIPTS = [
+  'assets/js/db.js',
+  'assets/js/srs.js',
+  'assets/js/speak.js',
+  'assets/js/flashcard.js',
+];
 
 function escapeHtml(text: string): string {
   return text
@@ -87,6 +92,7 @@ function flashcardMarkup(id = 'flashcard-root'): string {
       <button type="button" class="btn btn-secondary btn-forget" aria-label="Не помню">←</button>
       <button type="button" class="btn btn-primary btn-random">Случайная</button>
       <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
+      <button type="button" class="btn btn-secondary btn-speak" aria-label="Озвучить по-гречески" title="Озвучить по-гречески">🔊</button>
       <button type="button" class="btn btn-secondary btn-remember" aria-label="Помню">→</button>
     </div>`;
 }
