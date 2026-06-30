@@ -238,8 +238,8 @@
 
   async function repeatSession() {
     if (!practiceDirection) return;
-    await srs.resetCatalogSchedule(catalog, db, practiceDirection);
-    pickAndShowNext();
+    await srs.repeatCatalogSession(deckId, catalog, db, practiceDirection);
+    await pickAndShowNext();
   }
 
   btnContinue?.addEventListener('click', continuePractice);
