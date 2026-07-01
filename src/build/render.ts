@@ -583,7 +583,7 @@ export function renderCasesIndex(
     <section class="verbs-list-page cases-page" data-deck-id="cases">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила — затем потренируйтесь в мини-игре.</p>'}
+        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите падежи и управление глаголов — затем потренируйтесь в мини-игре.</p>'}
       </div>
 
       ${casesCheatSheetMarkup()}

@@ -49,7 +49,7 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 - [Прилагательные](words/adjectives/readme.md)
 - [Местоимения](words/pronouns/readme.md)
 - [Числа](words/numbers/readme.md)
-- [Падежи](words/cases/readme.md)
+- [Падежи и управление](words/cases/readme.md)
 - [Частицы](words/particles/readme.md)
 - [Фразы](words/phrases/readme.md)
 - [Темы](words/topics/readme.md) — генерируются при сборке

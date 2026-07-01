@@ -7,7 +7,7 @@
 [Местоимения](pronouns/readme.md)
 [Фразы](phrases/readme.md)
 [Числа](numbers/readme.md)
-[Падежи](cases/readme.md)
+[Падежи и управление](cases/readme.md)
 [Частицы](particles/readme.md)
 [Темы](topics/readme.md)
 [Уровни](levels/readme.md)
