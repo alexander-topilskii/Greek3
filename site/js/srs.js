@@ -120,6 +120,57 @@
     return poolWords.every((w) => isSessionSatisfied(w.slug, direction));
   }
 
+  function isWordFullyDoneGlobal(slug, cards, db) {
+    const elRu = getSummaryCard(cards, slug, 'el-ru', db);
+    const ruEl = getSummaryCard(cards, slug, 'ru-el', db);
+    return Boolean(elRu && isMastered(elRu) && ruEl && isMastered(ruEl));
+  }
+
+  function isWordDoneForPool(slug, cards, db, now = Date.now()) {
+    if (
+      sessionActive &&
+      isSessionSatisfied(slug, 'el-ru') &&
+      isSessionSatisfied(slug, 'ru-el')
+    ) {
+      return true;
+    }
+    if (!isWordFullyDoneGlobal(slug, cards, db)) return false;
+    for (const dir of DIRECTIONS) {
+      const card = getSummaryCard(cards, slug, dir, db);
+      if (card && isDue(card, now)) return false;
+    }
+    return true;
+  }
+
+  /** Текущее направление для слова: Ελ→Ру, затем Ру→Ελ; null — слово выучено. */
+  function getWordPracticeDirection(slug, cards, db) {
+    if (sessionActive) {
+      if (!isSessionSatisfied(slug, 'el-ru')) return 'el-ru';
+      if (!isSessionSatisfied(slug, 'ru-el')) return 'ru-el';
+      return null;
+    }
+    const elRu = getSummaryCard(cards, slug, 'el-ru', db);
+    if (!elRu || !isMastered(elRu)) return 'el-ru';
+    const ruEl = getSummaryCard(cards, slug, 'ru-el', db);
+    if (!ruEl || !isMastered(ruEl)) return 'ru-el';
+    return null;
+  }
+
+  /**
+   * Скользящий набор: пропускаем полностью выученные слова,
+   * на их место приходят следующие из каталога.
+   */
+  function getActivePoolWords(catalog, cards, db, settings) {
+    const limit = Math.min(settings.activeLimit, catalog.words.length);
+    const pool = [];
+    for (const word of catalog.words) {
+      if (pool.length >= limit) break;
+      if (isWordDoneForPool(word.slug, cards, db)) continue;
+      pool.push(word);
+    }
+    return pool;
+  }
+
   function getSummaryCard(cards, slug, direction, db) {
     const id = db.cardId(slug, 'summary', null, direction);
     let card = cards.find((c) => c.id === id);
@@ -195,19 +246,18 @@
     return result;
   }
 
-  /** Первый урок, в котором ещё есть невыученные слова (в текущем направлении). */
+  /** Урок с невыученными словами — с конца списка (51, 50, 49…). */
   function findActiveLesson(catalog, cards, db, direction) {
     const lessons = [
       ...new Set(
         catalog.words.map((w) => w.lesson).filter((n) => n != null && n > 0),
       ),
-    ].sort((a, b) => a - b);
+    ].sort((a, b) => b - a);
 
     for (const lesson of lessons) {
       const lessonWords = catalog.words.filter((w) => w.lesson === lesson);
       for (const w of lessonWords) {
-        const card = getSummaryCard(cards, w.slug, direction, db);
-        if (!card || !isMastered(card)) return lesson;
+        if (!isWordDoneForPool(w.slug, cards, db)) return lesson;
       }
     }
     return null;
@@ -247,48 +297,36 @@
     });
   }
 
-  function allMasteredInPool(wordSlugs, poolEnd, cards, db, direction) {
-    for (let i = 0; i < poolEnd; i++) {
-      const card = getSummaryCard(cards, wordSlugs[i], direction, db);
-      if (!card || !isMastered(card)) return false;
-    }
-    return poolEnd > 0;
+  function isCatalogFullyMastered(catalog, cards, db) {
+    return catalog.words.every((w) => isWordFullyDoneGlobal(w.slug, cards, db));
   }
 
-  /** Не выходить за пределы незавершённого блока (для подсказки смены направления). */
-  function getPoolEnd(settings, catalog, cards, db, direction) {
-    const n = catalog.words.length;
-    const limit = Math.min(settings.activeLimit, n);
-    if (catalog.words[0]?.blockIndex == null) return limit;
-
-    const blockIndices = [
-      ...new Set(catalog.words.map((w) => w.blockIndex ?? 0)),
-    ].sort((a, b) => a - b);
-
-    for (const bi of blockIndices) {
-      const block = wordsInBlock(catalog, bi);
-      if (!blockMasteredInDirection(block, cards, db, direction)) {
-        let blockEnd = 0;
-        for (let i = 0; i < catalog.words.length; i++) {
-          if ((catalog.words[i].blockIndex ?? 0) === bi) blockEnd = i + 1;
-        }
-        return Math.min(limit, blockEnd);
+  function findPoolFrontierIndex(catalog, poolWords, cards, db, options) {
+    const { perWordDirection = false, direction: directionFilter = null } = options;
+    for (let i = 0; i < catalog.words.length; i++) {
+      const word = catalog.words[i];
+      if (!poolWords.some((w) => w.slug === word.slug)) continue;
+      if (perWordDirection) {
+        if (getWordPracticeDirection(word.slug, cards, db)) return i;
+      } else {
+        const dir = directionFilter ?? 'el-ru';
+        const card = getSummaryCard(cards, word.slug, dir, db);
+        if (!card || !isMastered(card)) return i;
       }
     }
-    return limit;
+    const lastPoolWord = poolWords[poolWords.length - 1];
+    if (!lastPoolWord) return 0;
+    const idx = catalog.words.findIndex((w) => w.slug === lastPoolWord.slug);
+    return idx >= 0 ? idx : 0;
   }
 
-  function canExpandActiveLimit(settings, catalog, cards, db, direction) {
-    const poolEnd = getPoolEnd(settings, catalog, cards, db, direction);
-    const wordSlugs = catalog.words.map((w) => w.slug);
-    if (!allMasteredInPool(wordSlugs, poolEnd, cards, db, direction)) return false;
+  /** @deprecated Используйте getActivePoolWords; оставлено для совместимости. */
+  function getPoolEnd(settings, catalog, cards, db, direction) {
+    return getActivePoolWords(catalog, cards, db, settings).length;
+  }
 
-    if (catalog.words[0]?.blockIndex == null) return true;
-
-    const lastWord = catalog.words[poolEnd - 1];
-    if (!lastWord) return true;
-    const block = wordsInBlock(catalog, lastWord.blockIndex ?? 0);
-    return blockMasteredInDirection(block, cards, db, direction);
+  function canExpandActiveLimit(settings, catalog) {
+    return settings.activeLimit < catalog.words.length;
   }
 
   function blockElRuComplete(block, cards, db) {
@@ -360,37 +398,37 @@
       summaryOnly = false,
       direction: directionFilter = null,
       relaxDue = false,
+      perWordDirection = false,
     } = options;
-    const directions = directionFilter ? [directionFilter] : DIRECTIONS;
-    const wordSlugs = catalog.words.map((w) => w.slug);
+    const poolWords = getActivePoolWords(catalog, cards, db, settings);
     const practiceDirection = directionFilter ?? 'el-ru';
-    const poolEnd = getPoolEnd(settings, catalog, cards, db, practiceDirection);
-    const frontierIndex = findFrontierIndex(
-      wordSlugs,
-      poolEnd,
-      cards,
-      db,
-      practiceDirection,
-    );
+    const frontierIndex = findPoolFrontierIndex(catalog, poolWords, cards, db, {
+      perWordDirection,
+      direction: directionFilter,
+    });
     const activeLesson = findActiveLesson(catalog, cards, db, practiceDirection);
     const candidates = [];
 
-    for (let wi = 0; wi < catalog.words.length; wi++) {
-      if (wi >= poolEnd) continue;
-
-      const word = catalog.words[wi];
-      const age = wordAge(wi, frontierIndex);
+    for (const word of poolWords) {
+      const wi = catalog.words.findIndex((w) => w.slug === word.slug);
+      const age = wordAge(wi >= 0 ? wi : 0, frontierIndex);
 
       if (!isNumberTierUnlocked(word, catalog, cards, db, practiceDirection)) {
         continue;
       }
 
-      if (
-        sessionActive &&
-        directionFilter &&
-        isSessionSatisfied(word.slug, directionFilter)
-      ) {
-        continue;
+      let directions;
+      if (perWordDirection) {
+        const wordDir = getWordPracticeDirection(word.slug, cards, db);
+        if (!wordDir) continue;
+        directions = [wordDir];
+      } else if (directionFilter) {
+        if (sessionActive && isSessionSatisfied(word.slug, directionFilter)) {
+          continue;
+        }
+        directions = [directionFilter];
+      } else {
+        directions = DIRECTIONS;
       }
 
       for (const direction of directions) {
@@ -434,8 +472,14 @@
 
       if (summaryOnly) continue;
 
+      const formDirections = perWordDirection
+        ? [getWordPracticeDirection(word.slug, cards, db)].filter(Boolean)
+        : directionFilter
+          ? [directionFilter]
+          : DIRECTIONS;
+
       for (let fi = 0; fi < word.formCount; fi++) {
-        for (const direction of directions) {
+        for (const direction of formDirections) {
           const formId = db.cardId(word.slug, 'form', fi, direction);
           let formCard = cards.find((c) => c.id === formId);
           if (!formCard && direction === 'el-ru') {
@@ -501,7 +545,10 @@
     await saveDeckSettings(deckId, db, { activeLimit: catalog.words.length });
   }
 
-  function getStudyPoolWords(catalog, settings) {
+  function getStudyPoolWords(catalog, settings, cards, db) {
+    if (cards && db) {
+      return getActivePoolWords(catalog, cards, db, settings);
+    }
     const limit = Math.min(settings.activeLimit, catalog.words.length);
     return catalog.words.slice(0, limit);
   }
@@ -521,18 +568,14 @@
 
   /** Ελ→Ру пока не выучен набор, затем Ру→Ελ. В сессии — по локальному счётчику. */
   function resolveAutoDirection(catalog, cards, db, settings) {
-    const pool = getStudyPoolWords(catalog, settings);
+    const pool = getActivePoolWords(catalog, cards, db, settings);
     if (!poolDoneInDirection(pool, cards, db, 'el-ru')) return 'el-ru';
     if (!poolDoneInDirection(pool, cards, db, 'ru-el')) return 'ru-el';
     return 'el-ru';
   }
 
   function isStudyPoolFullyMastered(catalog, cards, db, settings) {
-    const pool = getStudyPoolWords(catalog, settings);
-    return (
-      poolDoneInDirection(pool, cards, db, 'el-ru') &&
-      poolDoneInDirection(pool, cards, db, 'ru-el')
-    );
+    return isCatalogFullyMastered(catalog, cards, db);
   }
 
   function canExpandStudyPool(settings, catalog) {
@@ -546,11 +589,12 @@
   }
 
   async function resetStudyPoolMastery(catalog, db, settings, now = Date.now()) {
-    const pool = getStudyPoolWords(catalog, settings);
+    const allCards = await db.getAllCards();
+    const pool = getActivePoolWords(catalog, allCards, db, settings);
     const slugs = new Set(pool.map((w) => w.slug));
-    const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
+    const poolCards = allCards.filter((c) => slugs.has(c.wordSlug));
 
-    for (const card of cards) {
+    for (const card of poolCards) {
       if (card.type !== 'summary') continue;
       await db.putCard({
         ...card,
@@ -566,7 +610,7 @@
     for (const word of pool) {
       for (const direction of DIRECTIONS) {
         const id = db.cardId(word.slug, 'summary', null, direction);
-        if (cards.some((c) => c.id === id)) continue;
+        if (poolCards.some((c) => c.id === id)) continue;
         const card = await db.getOrCreateCard(id, {
           deckId: db.GLOBAL_DECK_ID,
           wordSlug: word.slug,
@@ -605,12 +649,10 @@
     const slugs = new Set(catalog.words.map((w) => w.slug));
     const allCards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
     const now = Date.now();
-    const wordSlugs = catalog.words.map((w) => w.slug);
-    const workingSettings = { ...settings };
 
-    for (let attempt = 0; attempt < 25; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       const candidates = collectCandidates(
-        workingSettings,
+        settings,
         catalog,
         allCards,
         db,
@@ -621,16 +663,21 @@
       if (pick) return pick;
 
       const relaxed = collectCandidates(
-        workingSettings,
+        settings,
         catalog,
         allCards,
         db,
         now,
         { ...options, relaxDue: true },
       );
-      const practiceDirection = options.direction ?? 'el-ru';
+      const practiceDirection =
+        options.perWordDirection || !options.direction
+          ? 'el-ru'
+          : options.direction;
       const relaxedPick =
-        allCatalogMasteredInDirection(catalog, allCards, db, practiceDirection)
+        isCatalogFullyMastered(catalog, allCards, db) ||
+        (options.perWordDirection &&
+          getActivePoolWords(catalog, allCards, db, settings).length === 0)
           ? null
           : pickWeighted(relaxed);
       if (relaxedPick) return relaxedPick;
@@ -638,35 +685,17 @@
       if (
         sessionActive &&
         options.direction &&
+        !options.perWordDirection &&
         poolSessionSatisfiedInDirection(
-          catalog.words.slice(
-            0,
-            getPoolEnd(workingSettings, catalog, allCards, db, options.direction),
-          ),
+          getActivePoolWords(catalog, allCards, db, settings),
           options.direction,
         )
       ) {
         break;
       }
 
-      if (workingSettings.activeLimit >= wordSlugs.length) break;
-      if (
-        !canExpandActiveLimit(
-          workingSettings,
-          catalog,
-          allCards,
-          db,
-          options.direction ?? 'el-ru',
-        )
-      ) {
-        break;
-      }
-
-      workingSettings.activeLimit = Math.min(
-        wordSlugs.length,
-        workingSettings.activeLimit + workingSettings.batchIncrement,
-      );
-      await db.setSetting(`deck:${deckId}:activeLimit`, workingSettings.activeLimit);
+      if (isCatalogFullyMastered(catalog, allCards, db)) break;
+      if (getActivePoolWords(catalog, allCards, db, settings).length === 0) break;
     }
 
     return null;
@@ -760,6 +789,10 @@
     getPoolEnd,
     canExpandActiveLimit,
     getStudyPoolWords,
+    getActivePoolWords,
+    getWordPracticeDirection,
+    isWordFullyDoneGlobal,
+    isCatalogFullyMastered,
     poolMasteredInDirection,
     resolveAutoDirection,
     isStudyPoolFullyMastered,
