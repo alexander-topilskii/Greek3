@@ -231,6 +231,12 @@
     if (!currentPick) return;
     const card = await ensurePickCard(currentPick);
     await db.putCard(srs.gradeCard(card, remembered));
+    if (remembered) {
+      srs.recordSessionCorrect(
+        currentPick.word.slug,
+        practiceDirection ?? currentPick.direction ?? 'el-ru',
+      );
+    }
   }
 
   async function pickAndShowNext() {
@@ -255,7 +261,13 @@
     }
 
     if (!currentPick) {
-      card.showPair('—', 'Все слова пройдены!');
+      const sessionDone = srs.isSessionActive();
+      card.showPair(
+        '—',
+        sessionDone
+          ? 'Направление пройдено в этой сессии — смените режим или закройте практику'
+          : 'Все слова пройдены!',
+      );
       setPracticeComplete(true);
       return;
     }
@@ -267,6 +279,7 @@
     const card = initFlashcard();
     if (!card) return;
 
+    srs.beginSession();
     practiceDirection = direction;
     db.setSetting('practice:lastDirection', direction);
     syncPracticeButtons();
@@ -279,6 +292,7 @@
   }
 
   function closePractice() {
+    srs.endSession();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
@@ -289,6 +303,7 @@
 
   async function repeatSession() {
     if (!practiceDirection) return;
+    srs.beginSession();
     await srs.repeatCatalogSession(deckId, catalog, db, practiceDirection);
     await pickAndShowNext();
   }

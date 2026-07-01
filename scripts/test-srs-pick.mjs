@@ -78,7 +78,10 @@ function masteredCard(slug, direction, reps = 3) {
 
 async function testRepeatAfterComplete() {
   const catalog = makeCatalog(5, false);
-  const cards = catalog.words.map((w) => masteredCard(w.slug, 'ru-el', 9));
+  const cards = [
+    ...catalog.words.map((w) => masteredCard(w.slug, 'el-ru', 3)),
+    ...catalog.words.map((w) => masteredCard(w.slug, 'ru-el', 9)),
+  ];
   const db = makeDb(cards);
   await db.setSetting('deck:lessons-51:activeLimit', 5);
 
@@ -86,7 +89,7 @@ async function testRepeatAfterComplete() {
     summaryOnly: true,
     direction: 'ru-el',
   });
-  if (pick) throw new Error('Expected null when all mastered and not due');
+  if (pick) throw new Error('Expected null when catalog fully mastered and not due');
 
   await srs.repeatCatalogSession('lessons-51', catalog, db, 'ru-el');
   pick = await srs.pickNextCard('lessons-51', catalog, db, {
@@ -97,31 +100,54 @@ async function testRepeatAfterComplete() {
   console.log('✓ repeat session makes words pickable again');
 }
 
-async function testNoExpandBeforeBlockComplete() {
-  const catalog = makeCatalog(15, true);
+async function testSlidingPoolReplacesMasteredWords() {
+  const catalog = makeCatalog(10, false);
   const cards = [];
   for (let i = 0; i < 5; i++) {
     cards.push(masteredCard(`word-${i}`, 'el-ru', 3));
+    cards.push(masteredCard(`word-${i}`, 'ru-el', 9));
   }
   const db = makeDb(cards);
   await db.setSetting('deck:global:activeLimit', 5);
-  await db.setSetting('deck:global:initialBatchSize', 5);
-  await db.setSetting('deck:global:batchIncrement', 3);
 
-  const before = await db.getSetting('deck:global:activeLimit', 5);
+  srs.beginSession();
   const pick = await srs.pickNextCard('global', catalog, db, {
     summaryOnly: true,
-    direction: 'el-ru',
+    perWordDirection: true,
   });
-  const after = await db.getSetting('deck:global:activeLimit', 5);
+  srs.endSession();
 
-  if (after > before) {
-    throw new Error(`activeLimit expanded ${before} -> ${after} before block complete`);
+  if (!pick || !/^word-[5-9]$/.test(pick.word.slug)) {
+    throw new Error(`Expected word-5..9 in sliding pool, got ${pick?.word.slug}`);
   }
-  if (!pick || pick.word.slug === 'word-5') {
-    throw new Error('Should review in-block words, not expand to word-5');
+  console.log('✓ sliding pool replaces fully mastered words');
+}
+
+async function testPerWordDirectionMixed() {
+  const catalog = makeCatalog(3, false);
+  const db = makeDb();
+  await db.setSetting('deck:global:activeLimit', 3);
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+
+  const dirs = new Set();
+  for (let i = 0; i < 40; i++) {
+    const pick = await srs.pickNextCard('global', catalog, db, {
+      summaryOnly: true,
+      perWordDirection: true,
+    });
+    if (pick) dirs.add(`${pick.word.slug}:${pick.direction}`);
   }
-  console.log('✓ does not expand past incomplete block (picked', pick.word.slug + ')');
+  srs.endSession();
+
+  if (!dirs.has('word-0:ru-el')) {
+    throw new Error('word-0 should appear in ru-el after el-ru session complete');
+  }
+  if ([...dirs].some((k) => k === 'word-0:el-ru')) {
+    throw new Error('word-0 should not appear in el-ru after session complete');
+  }
+  console.log('✓ per-word direction after el-ru session');
 }
 
 async function testDirectionPromptBlock() {
@@ -155,6 +181,104 @@ async function testStudyPoolFullyMastered() {
   console.log('✓ study pool fully mastered detection');
 }
 
+async function testSessionExcludesWordAfterThreshold() {
+  const catalog = makeCatalog(3, false);
+  const db = makeDb();
+  await db.setSetting('deck:global:activeLimit', 3);
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-1', 'el-ru');
+
+  const picks = new Set();
+  for (let i = 0; i < 30; i++) {
+    const pick = await srs.pickNextCard('global', catalog, db, {
+      summaryOnly: true,
+      direction: 'el-ru',
+    });
+    if (pick) picks.add(pick.word.slug);
+  }
+  srs.endSession();
+
+  if (picks.has('word-0')) {
+    throw new Error('word-0 should be excluded after 2 session correct answers');
+  }
+  if (!picks.has('word-1') || !picks.has('word-2')) {
+    throw new Error('word-1 and word-2 should still be pickable in session');
+  }
+  console.log('✓ session excludes word after threshold');
+}
+
+async function testSessionAutoDirection() {
+  const catalog = makeCatalog(3, false);
+  const settings = { activeLimit: 3, batchIncrement: 3, initialBatchSize: 3 };
+  srs.beginSession();
+  for (const w of catalog.words) {
+    srs.recordSessionCorrect(w.slug, 'el-ru');
+    srs.recordSessionCorrect(w.slug, 'el-ru');
+  }
+  const dir = srs.resolveAutoDirection(catalog, [], makeDb(), settings);
+  srs.endSession();
+  if (dir !== 'ru-el') {
+    throw new Error(`Expected ru-el after session el-ru complete, got ${dir}`);
+  }
+  console.log('✓ session switches auto direction without global mastery');
+}
+
+async function testSessionResetsOnEnd() {
+  const catalog = makeCatalog(2, false);
+  const db = makeDb();
+  await db.setSetting('deck:global:activeLimit', 2);
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.endSession();
+
+  srs.beginSession();
+  const pick = await srs.pickNextCard('global', catalog, db, {
+    summaryOnly: true,
+    direction: 'el-ru',
+  });
+  srs.endSession();
+  if (!pick) throw new Error('Expected pick after new session started');
+  console.log('✓ session resets on begin/end');
+}
+
+async function testLessonOrderReversed() {
+  const { collectLessonWords } = await import('../dist/build/catalog-order.js');
+  const lessonHub = {
+    links: [
+      { resolvedHref: 'lessons/49/index.html' },
+      { resolvedHref: 'lessons/51/index.html' },
+    ],
+  };
+  const indexPages = [
+    {
+      sourcePath: 'lessons/49/readme.md',
+      links: [{ resolvedHref: 'verbs/word-a.html', label: 'a' }],
+    },
+    {
+      sourcePath: 'lessons/51/readme.md',
+      links: [{ resolvedHref: 'verbs/word-b.html', label: 'b' }],
+    },
+  ];
+  const wordsByHref = {
+    'verbs/word-a.html': { slug: 'verbs/word-a', title: 'a', translation: 'а' },
+    'verbs/word-b.html': { slug: 'verbs/word-b', title: 'b', translation: 'б' },
+  };
+  const result = collectLessonWords(indexPages, lessonHub, (link) => wordsByHref[link.resolvedHref] ?? null);
+  if (
+    result.length !== 2 ||
+    result[0].lesson !== 2 ||
+    result[0].word.slug !== 'verbs/word-b'
+  ) {
+    throw new Error(
+      `Expected lesson 51/word-b first, got ${JSON.stringify(result.map((r) => [r.lesson, r.word.slug]))}`,
+    );
+  }
+  console.log('✓ lesson words collected from end of list');
+}
+
 async function testWordSourceLabel() {
   const word = { lesson: 51, category: 'verbs' };
   if (srs.wordSourceLabel(word, {}) !== 'Урок 51') {
@@ -169,10 +293,15 @@ async function testWordSourceLabel() {
 
 async function main() {
   await testRepeatAfterComplete();
-  await testNoExpandBeforeBlockComplete();
+  await testSlidingPoolReplacesMasteredWords();
+  await testPerWordDirectionMixed();
   await testDirectionPromptBlock();
   await testAutoDirection();
   await testStudyPoolFullyMastered();
+  await testSessionExcludesWordAfterThreshold();
+  await testSessionAutoDirection();
+  await testSessionResetsOnEnd();
+  await testLessonOrderReversed();
   await testWordSourceLabel();
   console.log('\nAll SRS smoke tests passed.');
 }

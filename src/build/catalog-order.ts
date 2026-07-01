@@ -93,7 +93,7 @@ export interface LessonWordRef {
   lesson: number;
 }
 
-/** Слова из уроков в порядке уроков 1 → N (внутри урока — как в readme). */
+/** Слова из уроков в порядке уроков N → 1 (с конца списка: 51, 50, 49…). */
 export function collectLessonWords(
   indexPages: IndexPage[],
   lessonHub: IndexPage,
@@ -108,7 +108,7 @@ export function collectLessonWords(
       .map((p) => [p.sourcePath.replace(/\\/g, '/'), p]),
   );
 
-  for (let li = 0; li < lessonHub.links.length; li++) {
+  for (let li = lessonHub.links.length - 1; li >= 0; li--) {
     const lessonLink = lessonHub.links[li];
     const lessonPath = indexHrefToReadmePath(lessonLink.resolvedHref);
     const lessonPage = lessonPageByPath.get(lessonPath);
