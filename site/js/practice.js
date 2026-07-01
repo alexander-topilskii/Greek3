@@ -26,8 +26,6 @@
 
   const root = document.getElementById('flashcard-root');
   const panel = root?.closest('.practice-panel');
-  const btnForget = panel?.querySelector('.btn-forget');
-  const btnRemember = panel?.querySelector('.btn-remember');
   const btnRandom = panel?.querySelector('.btn-random');
   const btnLang = panel?.querySelector('.btn-lang');
   const btnReset = document.querySelector('.btn-reset-word');
@@ -132,8 +130,6 @@
     srs.applyProgressBar(bar, st.wordPct, st.formsPct);
   }
 
-  btnForget?.addEventListener('click', () => gradeAndNext(false));
-  btnRemember?.addEventListener('click', () => gradeAndNext(true));
   btnRandom?.addEventListener('click', randomMixed);
   btnLang?.addEventListener('click', () => {
     fc.toggleLang(btnLang);

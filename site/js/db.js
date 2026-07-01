@@ -202,6 +202,19 @@
       return tx('cards', 'readwrite', (store) => store.delete(id));
     },
 
+    async clearAllCards() {
+      return tx('cards', 'readwrite', (store) => store.clear());
+    },
+
+    async clearAllSettings() {
+      return tx('settings', 'readwrite', (store) => store.clear());
+    },
+
+    async resetAllProgress() {
+      await this.clearAllCards();
+      await this.clearAllSettings();
+    },
+
     async getSetting(key, fallback) {
       return tx('settings', 'readonly', (store) => {
         return new Promise((resolve, reject) => {
