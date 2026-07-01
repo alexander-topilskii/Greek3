@@ -42,14 +42,15 @@
   const btnAddWords = document.getElementById('btn-add-words');
   const catalogComplete = document.getElementById('practice-catalog-complete');
   const btnRepeatCatalog = document.getElementById('btn-repeat-catalog');
+  const btnHomeSettings = document.getElementById('btn-home-settings');
+  const settingsDialog = document.getElementById('home-settings-dialog');
+  const btnResetAll = document.getElementById('btn-reset-all-progress');
 
   let currentPick = null;
   let practiceDirection = 'el-ru';
   let fc = null;
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
-  const btnForget = practiceControls?.querySelector('.btn-forget');
-  const btnRemember = practiceControls?.querySelector('.btn-remember');
   const btnRandom = practiceControls?.querySelector('.btn-random');
 
   function directionLabel(direction) {
@@ -337,8 +338,22 @@
   btnAddWords?.addEventListener('click', addWordsToSet);
   btnRepeatCatalog?.addEventListener('click', repeatCatalog);
   btnRandom?.addEventListener('click', pickAndShowNext);
-  btnForget?.addEventListener('click', () => gradeAndNext(false));
-  btnRemember?.addEventListener('click', () => gradeAndNext(true));
+
+  btnHomeSettings?.addEventListener('click', () => {
+    settingsDialog?.showModal();
+  });
+
+  btnResetAll?.addEventListener('click', async () => {
+    if (!confirm('Сбросить весь прогресс? Все выученные слова будут забыты.')) return;
+    await db.resetAllProgress();
+    practiceDirection = 'el-ru';
+    currentPick = null;
+    await updateContinueHint();
+    settingsDialog?.close();
+    if (!practiceSection?.classList.contains('hidden')) {
+      await pickAndShowNext();
+    }
+  });
 
   async function initHomePractice() {
     try {

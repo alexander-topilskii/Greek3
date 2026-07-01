@@ -90,8 +90,6 @@
   }
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
-  const btnForget = practiceControls?.querySelector('.btn-forget');
-  const btnRemember = practiceControls?.querySelector('.btn-remember');
   const btnRandom = practiceControls?.querySelector('.btn-random');
   const btnLang = practiceControls?.querySelector('.btn-lang');
 
@@ -301,9 +299,6 @@
   btnRepeatSession?.addEventListener('click', repeatSession);
 
   btnRandom?.addEventListener('click', pickAndShowNext);
-
-  btnForget?.addEventListener('click', () => gradeAndNext(false));
-  btnRemember?.addEventListener('click', () => gradeAndNext(true));
 
   btnSaveSettings?.addEventListener('click', async () => {
     await srs.saveDeckSettings(deckId, db, {
