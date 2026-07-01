@@ -166,11 +166,42 @@ function settingsPanel(scope: 'word' | 'deck', maxWords = 999): string {
     </details>`;
 }
 
+function homeSettingsButtonMarkup(): string {
+  return `
+        <button type="button" class="btn-icon btn-header-settings" id="btn-home-settings" aria-label="Настройки" title="Настройки">
+          <svg class="icon-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>`;
+}
+
+function homeSettingsDialogMarkup(): string {
+  return `
+  <dialog class="settings-dialog" id="home-settings-dialog" aria-labelledby="home-settings-title">
+    <form method="dialog" class="settings-dialog-inner">
+      <header class="settings-dialog-header">
+        <h2 class="settings-dialog-title" id="home-settings-title">Настройки</h2>
+        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+      <div class="settings-dialog-body">
+        <button type="button" class="btn btn-secondary btn-reset-all" id="btn-reset-all-progress">Сбросить весь прогресс</button>
+        <p class="settings-hint">Удалит все данные о выученных словах и начнёт обучение сначала.</p>
+      </div>
+    </form>
+  </dialog>`;
+}
+
 function layout(
   content: string,
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
   extraScripts: string[] = [],
+  options: { headerActions?: string; bodyEnd?: string } = {},
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -207,6 +238,7 @@ function layout(
       <nav class="site-nav">
         <a href="${sitePath('words/index.html')}">Словарь</a>
         <a href="${sitePath('words/lessons/index.html')}">Уроки</a>
+        ${options.headerActions ?? ''}
       </nav>
     </div>
   </header>
@@ -219,6 +251,7 @@ function layout(
       <p>Учим греческий вместе · ${escapeHtml(SITE_CONFIG.title)}</p>
     </div>
   </footer>
+  ${options.bodyEnd ?? ''}
   ${scripts}
 </body>
 </html>`;
@@ -249,29 +282,7 @@ export function renderHome(
       <div class="hero-actions fade-in">
         <button type="button" class="btn btn-primary btn-continue" id="btn-continue">Продолжить</button>
         <p class="continue-hint" id="continue-hint">Загрузка прогресса…</p>
-      </div>
-      <button type="button" class="btn-icon btn-home-settings fade-in" id="btn-home-settings" aria-label="Настройки" title="Настройки">
-        <svg class="icon-gear" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
-      </button>
-      <dialog class="settings-dialog" id="home-settings-dialog" aria-labelledby="home-settings-title">
-        <form method="dialog" class="settings-dialog-inner">
-          <header class="settings-dialog-header">
-            <h2 class="settings-dialog-title" id="home-settings-title">Настройки</h2>
-            <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </header>
-          <div class="settings-dialog-body">
-            <button type="button" class="btn btn-secondary btn-reset-all" id="btn-reset-all-progress">Сбросить весь прогресс</button>
-            <p class="settings-hint">Удалит все данные о выученных словах и начнёт обучение сначала.</p>
-          </div>
-        </form>
-      </dialog>`
+      </div>`
       : '';
 
   const practiceBlock =
@@ -299,10 +310,16 @@ export function renderHome(
       ${catalogJson}
     </section>`;
 
-  const scripts =
-    globalCatalog && globalCatalog.words.length > 0 ? ['assets/js/home-practice.js'] : [];
+  const hasHomePractice = Boolean(globalCatalog && globalCatalog.words.length > 0);
+  const scripts = hasHomePractice ? ['assets/js/home-practice.js'] : [];
+  const layoutOptions = hasHomePractice
+    ? {
+        headerActions: homeSettingsButtonMarkup(),
+        bodyEnd: homeSettingsDialogMarkup(),
+      }
+    : {};
 
-  return layout(content, 'Главная', undefined, scripts);
+  return layout(content, 'Главная', undefined, scripts, layoutOptions);
 }
 
 function normalizeSitePath(...parts: string[]): string {

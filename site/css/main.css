@@ -102,6 +102,12 @@ body {
   font-size: 1.1rem;
 }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .site-nav a {
   color: var(--text-muted);
   text-decoration: none;
@@ -115,6 +121,11 @@ body {
 .site-nav a:hover {
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+.btn-header-settings {
+  flex-shrink: 0;
+  margin-left: 0.125rem;
 }
 
 /* Main */
@@ -226,12 +237,6 @@ body {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-soft);
-}
-
-.btn-home-settings {
-  position: absolute;
-  top: 0;
-  right: 0;
 }
 
 .settings-dialog {
