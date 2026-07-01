@@ -66,6 +66,27 @@ function progressBarMarkup(slug: string): string {
         </div>`;
 }
 
+function homePracticePanelMarkup(): string {
+  return `
+        <div class="practice-session-bar" id="practice-session-bar">
+          <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
+          <span class="practice-pool-hint" id="practice-pool-hint"></span>
+        </div>
+        ${flashcardMarkup('home-flashcard-root')}
+        <p class="practice-word-source hidden" id="practice-word-source" hidden></p>
+        <div class="practice-block-complete hidden" id="practice-block-complete" hidden>
+          <p class="practice-block-complete-text" id="practice-block-complete-text"></p>
+          <div class="practice-block-complete-actions">
+            <button type="button" class="btn btn-primary" id="btn-repeat-block">Повторить блок</button>
+            <button type="button" class="btn btn-secondary" id="btn-add-words">Добавить слова в набор</button>
+          </div>
+        </div>
+        <div class="practice-catalog-complete hidden" id="practice-catalog-complete" hidden>
+          <p class="practice-catalog-complete-text">Все слова каталога пройдены в обоих направлениях.</p>
+          <button type="button" class="btn btn-primary" id="btn-repeat-catalog">Повторить с начала</button>
+        </div>`;
+}
+
 function practiceCompleteMarkup(): string {
   return `
         <div class="practice-direction-prompt hidden" id="practice-direction-prompt" hidden>
@@ -226,11 +247,6 @@ export function renderHome(
       <div class="hero-actions fade-in">
         <button type="button" class="btn btn-primary btn-continue" id="btn-continue">Продолжить</button>
         <p class="continue-hint" id="continue-hint">Загрузка прогресса…</p>
-        <div class="hero-directions">
-          <span class="hero-directions-label">Направление:</span>
-          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
-          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
-        </div>
       </div>`
       : '';
 
@@ -239,8 +255,7 @@ export function renderHome(
       ? `
     <section class="home-practice list-practice hidden" id="home-practice" aria-hidden="true">
       <div class="practice-panel practice-panel--wide fade-in">
-        ${flashcardMarkup('home-flashcard-root')}
-        ${practiceCompleteMarkup()}
+        ${homePracticePanelMarkup()}
       </div>
       <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← На главную</button>
     </section>`
