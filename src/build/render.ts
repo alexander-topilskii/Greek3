@@ -128,7 +128,11 @@ function flashcardMarkup(id = 'flashcard-root'): string {
       <button type="button" class="btn btn-secondary btn-forget" aria-label="Не помню">←</button>
       <button type="button" class="btn btn-primary btn-random">Случайная</button>
       <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
-      <button type="button" class="btn btn-secondary btn-speak" aria-label="Озвучить по-гречески" title="Озвучить по-гречески">🔊</button>
+      <button type="button" class="speak-switch btn-speak" role="switch" aria-checked="false" aria-label="Автоозвучка" title="Включить автоозвучку">
+        <span class="speak-switch-track" aria-hidden="true">
+          <span class="speak-switch-thumb">🔊</span>
+        </span>
+      </button>
       <button type="button" class="btn btn-secondary btn-remember" aria-label="Помню">→</button>
     </div>`;
 }

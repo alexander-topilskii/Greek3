@@ -21,6 +21,7 @@
 
     let flipped = false;
     let greekLines = [];
+    let autoSpeakEnabled = false;
     let startWithRussian = opts.startWithRussian ?? false;
     let dragging = false;
     let startX = 0;
@@ -73,17 +74,22 @@
     function updateSpeakButton() {
       if (!btnSpeak) return;
       if (speakErrorTimer) return;
-      const canSpeak = !!speak?.isSupported?.() && greekLines.length > 0;
-      btnSpeak.disabled = !canSpeak;
+      const supported = !!speak?.isSupported?.();
+      const canSpeak = supported && greekLines.length > 0;
+      btnSpeak.disabled = !supported;
+      btnSpeak.setAttribute('aria-checked', String(autoSpeakEnabled));
+      btnSpeak.classList.toggle('is-on', autoSpeakEnabled);
       btnSpeak.classList.toggle('is-speaking', !!speak?.isSpeaking?.());
-      if (!speak?.isSupported?.()) {
+      if (!supported) {
         btnSpeak.title = 'Озвучка не поддерживается в этом браузере';
-      } else if (!greekLines.length) {
-        btnSpeak.title = 'Нет греческого текста';
+      } else if (autoSpeakEnabled) {
+        btnSpeak.title = canSpeak
+          ? 'Автоозвучка включена — нажмите, чтобы выключить'
+          : 'Автоозвучка включена';
       } else if (!speak.hasGreekVoice?.()) {
-        btnSpeak.title = 'Озвучить по-гречески (голос el-GR может отсутствовать на устройстве)';
+        btnSpeak.title = 'Включить автоозвучку (голос el-GR может отсутствовать на устройстве)';
       } else {
-        btnSpeak.title = 'Озвучить по-гречески';
+        btnSpeak.title = 'Включить автоозвучку';
       }
     }
 
@@ -99,16 +105,27 @@
 
     function speakCurrent() {
       if (!speak?.isSupported?.() || !greekLines.length) return;
-      if (speak.isSpeaking?.()) {
-        speak.stop();
-        updateSpeakButton();
-        return;
-      }
       btnSpeak?.classList.remove('is-speak-error');
       btnSpeak?.classList.add('is-speaking');
       speak.speakGreek(greekLines).then((result) => {
         if (!result?.ok) setSpeakError(speakFailureReason(result?.reason));
       }).finally(() => updateSpeakButton());
+    }
+
+    function maybeAutoSpeak() {
+      if (autoSpeakEnabled) speakCurrent();
+    }
+
+    function toggleAutoSpeak() {
+      if (!speak?.isSupported?.()) return;
+      autoSpeakEnabled = !autoSpeakEnabled;
+      updateSpeakButton();
+      if (autoSpeakEnabled) {
+        speakCurrent();
+      } else {
+        speak?.stop?.();
+        updateSpeakButton();
+      }
     }
 
     function showPair(greek, translation) {
@@ -119,6 +136,7 @@
         applyFaces(greek, translation, true, false);
       }
       resetFlip();
+      maybeAutoSpeak();
     }
 
     function showMultiLine(frontLines, backLines, frontIsGreek, backIsGreek) {
@@ -136,6 +154,7 @@
         backText.classList.toggle('greek', backIsGreek);
       }
       resetFlip();
+      maybeAutoSpeak();
     }
 
     function escape(s) {
@@ -240,7 +259,7 @@
 
     btnSpeak?.addEventListener('click', (e) => {
       e.stopPropagation();
-      speakCurrent();
+      toggleAutoSpeak();
     });
     updateSpeakButton();
 
