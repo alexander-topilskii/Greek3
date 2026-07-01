@@ -6,7 +6,13 @@
     initialBatchSize: 5,
     batchIncrement: 3,
     masteryReps: 3,
+    /** Правильных ответов в одной сессии — достаточно, чтобы не показывать слово снова до конца сессии. */
+    sessionCorrectThreshold: 2,
   };
+
+  let sessionActive = false;
+  /** @type {Map<string, number>} slug#direction → correct count in current session */
+  const sessionCorrect = new Map();
 
   /** Ελ→Ру ×1, Ру→Ελ ×3 — с русского нужно больше повторений */
   const DIRECTION_REP_FACTOR = {
@@ -75,6 +81,43 @@
 
   function cardDirection(card) {
     return card.direction ?? 'el-ru';
+  }
+
+  function sessionKey(slug, direction) {
+    return `${slug}#${direction}`;
+  }
+
+  function beginSession() {
+    sessionActive = true;
+    sessionCorrect.clear();
+  }
+
+  function endSession() {
+    sessionActive = false;
+    sessionCorrect.clear();
+  }
+
+  function isSessionActive() {
+    return sessionActive;
+  }
+
+  function recordSessionCorrect(slug, direction) {
+    if (!sessionActive) return;
+    const key = sessionKey(slug, direction);
+    sessionCorrect.set(key, (sessionCorrect.get(key) ?? 0) + 1);
+  }
+
+  function getSessionCorrect(slug, direction) {
+    return sessionCorrect.get(sessionKey(slug, direction)) ?? 0;
+  }
+
+  function isSessionSatisfied(slug, direction) {
+    return getSessionCorrect(slug, direction) >= DEFAULTS.sessionCorrectThreshold;
+  }
+
+  function poolSessionSatisfiedInDirection(poolWords, direction) {
+    if (!poolWords.length) return false;
+    return poolWords.every((w) => isSessionSatisfied(w.slug, direction));
   }
 
   function getSummaryCard(cards, slug, direction, db) {
@@ -342,6 +385,14 @@
         continue;
       }
 
+      if (
+        sessionActive &&
+        directionFilter &&
+        isSessionSatisfied(word.slug, directionFilter)
+      ) {
+        continue;
+      }
+
       for (const direction of directions) {
         const summaryCard = getSummaryCard(cards, word.slug, direction, db);
         const inActiveLesson = activeLesson != null && word.lesson === activeLesson;
@@ -463,19 +514,24 @@
     });
   }
 
-  /** Ελ→Ру пока не выучен набор, затем Ру→Ελ. */
+  function poolDoneInDirection(poolWords, cards, db, direction) {
+    if (sessionActive) return poolSessionSatisfiedInDirection(poolWords, direction);
+    return poolMasteredInDirection(poolWords, cards, db, direction);
+  }
+
+  /** Ελ→Ру пока не выучен набор, затем Ру→Ελ. В сессии — по локальному счётчику. */
   function resolveAutoDirection(catalog, cards, db, settings) {
     const pool = getStudyPoolWords(catalog, settings);
-    if (!poolMasteredInDirection(pool, cards, db, 'el-ru')) return 'el-ru';
-    if (!poolMasteredInDirection(pool, cards, db, 'ru-el')) return 'ru-el';
+    if (!poolDoneInDirection(pool, cards, db, 'el-ru')) return 'el-ru';
+    if (!poolDoneInDirection(pool, cards, db, 'ru-el')) return 'ru-el';
     return 'el-ru';
   }
 
   function isStudyPoolFullyMastered(catalog, cards, db, settings) {
     const pool = getStudyPoolWords(catalog, settings);
     return (
-      poolMasteredInDirection(pool, cards, db, 'el-ru') &&
-      poolMasteredInDirection(pool, cards, db, 'ru-el')
+      poolDoneInDirection(pool, cards, db, 'el-ru') &&
+      poolDoneInDirection(pool, cards, db, 'ru-el')
     );
   }
 
@@ -579,6 +635,20 @@
           : pickWeighted(relaxed);
       if (relaxedPick) return relaxedPick;
 
+      if (
+        sessionActive &&
+        options.direction &&
+        poolSessionSatisfiedInDirection(
+          catalog.words.slice(
+            0,
+            getPoolEnd(workingSettings, catalog, allCards, db, options.direction),
+          ),
+          options.direction,
+        )
+      ) {
+        break;
+      }
+
       if (workingSettings.activeLimit >= wordSlugs.length) break;
       if (
         !canExpandActiveLimit(
@@ -662,6 +732,13 @@
     DEFAULTS,
     DIRECTIONS,
     DIRECTION_REP_FACTOR,
+    beginSession,
+    endSession,
+    isSessionActive,
+    recordSessionCorrect,
+    getSessionCorrect,
+    isSessionSatisfied,
+    poolSessionSatisfiedInDirection,
     masteryThreshold,
     gradeCard,
     isDue,

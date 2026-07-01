@@ -179,6 +179,12 @@
     if (!currentPick) return;
     const card = await ensurePickCard(currentPick);
     await db.putCard(srs.gradeCard(card, remembered));
+    if (remembered) {
+      srs.recordSessionCorrect(
+        currentPick.word.slug,
+        practiceDirection ?? currentPick.direction ?? 'el-ru',
+      );
+    }
   }
 
   async function resolveDirection(settings, cards) {
@@ -286,6 +292,7 @@
     const card = initFlashcard();
     if (!card) return;
 
+    srs.beginSession();
     hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
@@ -296,6 +303,7 @@
   }
 
   function closePractice() {
+    srs.endSession();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     sectionsGrid?.classList.remove('hidden');
@@ -305,6 +313,7 @@
   }
 
   async function repeatBlock() {
+    srs.beginSession();
     const settings = await srs.loadDeckSettings(deckId, db);
     await srs.repeatStudyPool(deckId, catalog, db, settings);
     practiceDirection = 'el-ru';
@@ -312,6 +321,7 @@
   }
 
   async function addWordsToSet() {
+    srs.beginSession();
     const settings = await srs.loadDeckSettings(deckId, db);
     await srs.expandStudyPool(deckId, catalog, db, settings);
     practiceDirection = 'el-ru';
@@ -319,6 +329,7 @@
   }
 
   async function repeatCatalog() {
+    srs.beginSession();
     const fullSettings = {
       ...(await srs.loadDeckSettings(deckId, db)),
       activeLimit: catalog.words.length,

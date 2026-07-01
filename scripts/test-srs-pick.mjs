@@ -155,6 +155,69 @@ async function testStudyPoolFullyMastered() {
   console.log('✓ study pool fully mastered detection');
 }
 
+async function testSessionExcludesWordAfterThreshold() {
+  const catalog = makeCatalog(3, false);
+  const db = makeDb();
+  await db.setSetting('deck:global:activeLimit', 3);
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-1', 'el-ru');
+
+  const picks = new Set();
+  for (let i = 0; i < 30; i++) {
+    const pick = await srs.pickNextCard('global', catalog, db, {
+      summaryOnly: true,
+      direction: 'el-ru',
+    });
+    if (pick) picks.add(pick.word.slug);
+  }
+  srs.endSession();
+
+  if (picks.has('word-0')) {
+    throw new Error('word-0 should be excluded after 2 session correct answers');
+  }
+  if (!picks.has('word-1') || !picks.has('word-2')) {
+    throw new Error('word-1 and word-2 should still be pickable in session');
+  }
+  console.log('✓ session excludes word after threshold');
+}
+
+async function testSessionAutoDirection() {
+  const catalog = makeCatalog(3, false);
+  const settings = { activeLimit: 3, batchIncrement: 3, initialBatchSize: 3 };
+  srs.beginSession();
+  for (const w of catalog.words) {
+    srs.recordSessionCorrect(w.slug, 'el-ru');
+    srs.recordSessionCorrect(w.slug, 'el-ru');
+  }
+  const dir = srs.resolveAutoDirection(catalog, [], makeDb(), settings);
+  srs.endSession();
+  if (dir !== 'ru-el') {
+    throw new Error(`Expected ru-el after session el-ru complete, got ${dir}`);
+  }
+  console.log('✓ session switches auto direction without global mastery');
+}
+
+async function testSessionResetsOnEnd() {
+  const catalog = makeCatalog(2, false);
+  const db = makeDb();
+  await db.setSetting('deck:global:activeLimit', 2);
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.endSession();
+
+  srs.beginSession();
+  const pick = await srs.pickNextCard('global', catalog, db, {
+    summaryOnly: true,
+    direction: 'el-ru',
+  });
+  srs.endSession();
+  if (!pick) throw new Error('Expected pick after new session started');
+  console.log('✓ session resets on begin/end');
+}
+
 async function testWordSourceLabel() {
   const word = { lesson: 51, category: 'verbs' };
   if (srs.wordSourceLabel(word, {}) !== 'Урок 51') {
@@ -173,6 +236,9 @@ async function main() {
   await testDirectionPromptBlock();
   await testAutoDirection();
   await testStudyPoolFullyMastered();
+  await testSessionExcludesWordAfterThreshold();
+  await testSessionAutoDirection();
+  await testSessionResetsOnEnd();
   await testWordSourceLabel();
   console.log('\nAll SRS smoke tests passed.');
 }
