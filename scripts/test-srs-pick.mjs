@@ -134,10 +134,46 @@ async function testDirectionPromptBlock() {
   console.log('✓ direction prompt when block el-ru complete');
 }
 
+async function testAutoDirection() {
+  const catalog = makeCatalog(5, false);
+  const cards = catalog.words.map((w) => masteredCard(w.slug, 'el-ru', 3));
+  const settings = { activeLimit: 5, batchIncrement: 3, initialBatchSize: 5 };
+  const dir = srs.resolveAutoDirection(catalog, cards, makeDb(cards), settings);
+  if (dir !== 'ru-el') throw new Error(`Expected ru-el after el-ru mastered, got ${dir}`);
+  console.log('✓ auto direction switches to ru-el');
+}
+
+async function testStudyPoolFullyMastered() {
+  const catalog = makeCatalog(5, false);
+  const cards = [
+    ...catalog.words.map((w) => masteredCard(w.slug, 'el-ru', 3)),
+    ...catalog.words.map((w) => masteredCard(w.slug, 'ru-el', 9)),
+  ];
+  const settings = { activeLimit: 5, batchIncrement: 3, initialBatchSize: 5 };
+  const ok = srs.isStudyPoolFullyMastered(catalog, cards, makeDb(cards), settings);
+  if (!ok) throw new Error('Expected study pool fully mastered');
+  console.log('✓ study pool fully mastered detection');
+}
+
+async function testWordSourceLabel() {
+  const word = { lesson: 51, category: 'verbs' };
+  if (srs.wordSourceLabel(word, {}) !== 'Урок 51') {
+    throw new Error('Expected lesson label');
+  }
+  const word2 = { category: 'verbs' };
+  if (srs.wordSourceLabel(word2, { verbs: 'Глаголы' }) !== 'Глаголы') {
+    throw new Error('Expected category label');
+  }
+  console.log('✓ word source label');
+}
+
 async function main() {
   await testRepeatAfterComplete();
   await testNoExpandBeforeBlockComplete();
   await testDirectionPromptBlock();
+  await testAutoDirection();
+  await testStudyPoolFullyMastered();
+  await testWordSourceLabel();
   console.log('\nAll SRS smoke tests passed.');
 }
 

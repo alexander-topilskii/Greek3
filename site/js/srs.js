@@ -450,6 +450,100 @@
     await saveDeckSettings(deckId, db, { activeLimit: catalog.words.length });
   }
 
+  function getStudyPoolWords(catalog, settings) {
+    const limit = Math.min(settings.activeLimit, catalog.words.length);
+    return catalog.words.slice(0, limit);
+  }
+
+  function poolMasteredInDirection(poolWords, cards, db, direction) {
+    if (!poolWords.length) return false;
+    return poolWords.every((w) => {
+      const card = getSummaryCard(cards, w.slug, direction, db);
+      return card && isMastered(card);
+    });
+  }
+
+  /** Ελ→Ру пока не выучен набор, затем Ру→Ελ. */
+  function resolveAutoDirection(catalog, cards, db, settings) {
+    const pool = getStudyPoolWords(catalog, settings);
+    if (!poolMasteredInDirection(pool, cards, db, 'el-ru')) return 'el-ru';
+    if (!poolMasteredInDirection(pool, cards, db, 'ru-el')) return 'ru-el';
+    return 'el-ru';
+  }
+
+  function isStudyPoolFullyMastered(catalog, cards, db, settings) {
+    const pool = getStudyPoolWords(catalog, settings);
+    return (
+      poolMasteredInDirection(pool, cards, db, 'el-ru') &&
+      poolMasteredInDirection(pool, cards, db, 'ru-el')
+    );
+  }
+
+  function canExpandStudyPool(settings, catalog) {
+    return settings.activeLimit < catalog.words.length;
+  }
+
+  function wordSourceLabel(word, categoryLabels = {}) {
+    if (word.lesson != null) return `Урок ${word.lesson}`;
+    const cat = categoryLabels[word.category] ?? word.category;
+    return cat || 'Словарь';
+  }
+
+  async function resetStudyPoolMastery(catalog, db, settings, now = Date.now()) {
+    const pool = getStudyPoolWords(catalog, settings);
+    const slugs = new Set(pool.map((w) => w.slug));
+    const cards = (await db.getAllCards()).filter((c) => slugs.has(c.wordSlug));
+
+    for (const card of cards) {
+      if (card.type !== 'summary') continue;
+      await db.putCard({
+        ...card,
+        repetitions: 0,
+        remembered: 0,
+        forgotten: 0,
+        nextReview: now,
+        interval: 0,
+        deckId: db.GLOBAL_DECK_ID,
+      });
+    }
+
+    for (const word of pool) {
+      for (const direction of DIRECTIONS) {
+        const id = db.cardId(word.slug, 'summary', null, direction);
+        if (cards.some((c) => c.id === id)) continue;
+        const card = await db.getOrCreateCard(id, {
+          deckId: db.GLOBAL_DECK_ID,
+          wordSlug: word.slug,
+          type: 'summary',
+          direction,
+        });
+        await db.putCard({
+          ...card,
+          repetitions: 0,
+          remembered: 0,
+          forgotten: 0,
+          nextReview: now,
+          interval: 0,
+          deckId: db.GLOBAL_DECK_ID,
+        });
+      }
+    }
+  }
+
+  async function repeatStudyPool(deckId, catalog, db, settings) {
+    await resetStudyPoolMastery(catalog, db, settings);
+  }
+
+  async function expandStudyPool(deckId, catalog, db, settings) {
+    const newLimit = Math.min(
+      catalog.words.length,
+      settings.activeLimit + settings.batchIncrement,
+    );
+    if (newLimit <= settings.activeLimit) return settings.activeLimit;
+    await saveDeckSettings(deckId, db, { activeLimit: newLimit });
+    return newLimit;
+  }
+
   async function pickNextCard(deckId, catalog, db, options = {}) {
     const settings = await loadDeckSettings(deckId, db);
     const slugs = new Set(catalog.words.map((w) => w.slug));
@@ -588,5 +682,14 @@
     repeatCatalogSession,
     getPoolEnd,
     canExpandActiveLimit,
+    getStudyPoolWords,
+    poolMasteredInDirection,
+    resolveAutoDirection,
+    isStudyPoolFullyMastered,
+    canExpandStudyPool,
+    wordSourceLabel,
+    resetStudyPoolMastery,
+    repeatStudyPool,
+    expandStudyPool,
   };
 })(window);

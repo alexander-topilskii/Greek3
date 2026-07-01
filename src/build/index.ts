@@ -218,7 +218,7 @@ function buildGlobalCatalog(
     addCatalogItem(item);
   }
 
-  return { deckId: 'global', words: ordered, blockSize: CATALOG_BLOCK_SIZE };
+  return { deckId: 'global', words: ordered, blockSize: CATALOG_BLOCK_SIZE, categoryLabels: CATEGORY_LABELS };
 }
 
 function buildCatalogForIndex(

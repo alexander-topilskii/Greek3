@@ -72,6 +72,8 @@ export interface VerbCatalog {
   words: CatalogWord[];
   /** Размер блока для подсказки Ру → Εл (по умолчанию 10) */
   blockSize?: number;
+  /** Подписи категорий для UI практики */
+  categoryLabels?: Record<string, string>;
 }
 
 export interface SiteConfig {

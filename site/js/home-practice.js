@@ -20,74 +20,117 @@
 
   const deckId = catalog.deckId ?? 'global';
   const globalDeckId = db.GLOBAL_DECK_ID ?? 'global';
+  const categoryLabels = catalog.categoryLabels ?? {};
   const catalogSlugs = catalog.words.map((w) => w.slug);
   const totalFormsByWord = Object.fromEntries(
     catalog.words.map((w) => [w.slug, w.formCount]),
   );
 
   const btnContinue = document.getElementById('btn-continue');
-  const btnPracticeEl = document.getElementById('btn-practice-el');
-  const btnPracticeRu = document.getElementById('btn-practice-ru');
   const btnClose = document.getElementById('btn-close-practice');
   const practiceSection = document.getElementById('home-practice');
   const sectionsGrid = document.getElementById('sections-grid');
   const heroActions = document.querySelector('.hero-actions');
   const continueHint = document.getElementById('continue-hint');
-  const practiceComplete = document.getElementById('practice-complete');
-  const btnRepeatSession = document.getElementById('btn-repeat-session');
-  const directionPrompt = document.getElementById('practice-direction-prompt');
-  const directionPromptText = document.getElementById('practice-direction-prompt-text');
-  const btnSwitchRuEl = document.getElementById('btn-switch-ru-el');
-  const btnDismissRuElPrompt = document.getElementById('btn-dismiss-ru-el-prompt');
+  const directionBadge = document.getElementById('practice-direction-badge');
+  const poolHint = document.getElementById('practice-pool-hint');
+  const wordSourceEl = document.getElementById('practice-word-source');
+  const sessionBar = document.getElementById('practice-session-bar');
+  const blockComplete = document.getElementById('practice-block-complete');
+  const blockCompleteText = document.getElementById('practice-block-complete-text');
+  const btnRepeatBlock = document.getElementById('btn-repeat-block');
+  const btnAddWords = document.getElementById('btn-add-words');
+  const catalogComplete = document.getElementById('practice-catalog-complete');
+  const btnRepeatCatalog = document.getElementById('btn-repeat-catalog');
 
   let currentPick = null;
-  let practiceDirection = null;
+  let practiceDirection = 'el-ru';
   let fc = null;
-  let pendingBlockPrompt = null;
-
-  function showRussianFirst() {
-    return practiceDirection === 'ru-el';
-  }
-
-  function syncPracticeButtons() {
-    [btnPracticeEl, btnPracticeRu].forEach((btn) => {
-      if (!btn) return;
-      const active = btn.getAttribute('data-practice-direction') === practiceDirection;
-      btn.classList.toggle('btn-primary', active);
-      btn.classList.toggle('btn-secondary', !active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-  }
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnForget = practiceControls?.querySelector('.btn-forget');
   const btnRemember = practiceControls?.querySelector('.btn-remember');
   const btnRandom = practiceControls?.querySelector('.btn-random');
-  const btnLang = practiceControls?.querySelector('.btn-lang');
 
-  function setDirectionPrompt(visible, prompt = null) {
-    pendingBlockPrompt = prompt;
-    directionPrompt?.classList.toggle('hidden', !visible);
-    directionPrompt?.toggleAttribute('hidden', !visible);
-    if (visible && prompt && directionPromptText) {
-      const n = prompt.wordCount;
-      directionPromptText.textContent =
-        `Блок из ${n} слов выучен (Ελ → Ру). Переключитесь на Ру → Ελ — ` +
-        'с русского запоминать сложнее, нужно больше повторений.';
+  function directionLabel(direction) {
+    return direction === 'ru-el' ? 'Ру → Ελ' : 'Ελ → Ру';
+  }
+
+  function showRussianFirst() {
+    return practiceDirection === 'ru-el';
+  }
+
+  function setWordSource(word) {
+    if (!wordSourceEl) return;
+    const label = srs.wordSourceLabel(word, categoryLabels);
+    wordSourceEl.textContent = label;
+    wordSourceEl.classList.remove('hidden');
+    wordSourceEl.removeAttribute('hidden');
+  }
+
+  function hideWordSource() {
+    wordSourceEl?.classList.add('hidden');
+    wordSourceEl?.setAttribute('hidden', '');
+  }
+
+  function syncSessionInfo(settings) {
+    if (directionBadge) {
+      directionBadge.textContent = directionLabel(practiceDirection);
+    }
+    if (poolHint) {
+      const poolSize = srs.getStudyPoolWords(catalog, settings).length;
+      poolHint.textContent = `${poolSize} слов в наборе`;
     }
   }
 
-  function setPracticeComplete(visible) {
-    practiceComplete?.classList.toggle('hidden', !visible);
-    practiceComplete?.toggleAttribute('hidden', !visible);
-    practiceControls?.classList.toggle('hidden', visible);
-    practiceControls?.toggleAttribute('hidden', visible);
+  function hideCompletionPanels() {
+    blockComplete?.classList.add('hidden');
+    blockComplete?.setAttribute('hidden', '');
+    catalogComplete?.classList.add('hidden');
+    catalogComplete?.setAttribute('hidden', '');
+    practiceControls?.classList.remove('hidden');
+    practiceControls?.removeAttribute('hidden');
+    sessionBar?.classList.remove('hidden');
+    sessionBar?.removeAttribute('hidden');
+  }
+
+  function showBlockCompleteUI(settings) {
+    const poolSize = srs.getStudyPoolWords(catalog, settings).length;
+    if (blockCompleteText) {
+      blockCompleteText.textContent =
+        `Набор из ${poolSize} слов выучен в обоих направлениях. Что дальше?`;
+    }
+    if (btnAddWords) {
+      const canExpand = srs.canExpandStudyPool(settings, catalog);
+      btnAddWords.classList.toggle('hidden', !canExpand);
+      btnAddWords.toggleAttribute('hidden', !canExpand);
+    }
+    blockComplete?.classList.remove('hidden');
+    blockComplete?.removeAttribute('hidden');
+    practiceControls?.classList.add('hidden');
+    practiceControls?.setAttribute('hidden', '');
+    hideWordSource();
+    sessionBar?.classList.add('hidden');
+    sessionBar?.setAttribute('hidden', '');
+    const card = initFlashcard();
+    card?.showPair('—', 'Блок выучен!');
+  }
+
+  function showCatalogCompleteUI() {
+    catalogComplete?.classList.remove('hidden');
+    catalogComplete?.removeAttribute('hidden');
+    practiceControls?.classList.add('hidden');
+    practiceControls?.setAttribute('hidden', '');
+    hideWordSource();
+    sessionBar?.classList.add('hidden');
+    sessionBar?.setAttribute('hidden', '');
+    const card = initFlashcard();
+    card?.showPair('—', 'Все слова пройдены!');
   }
 
   function syncCardDisplay() {
     if (!fc) return;
     fc.startWithRussian = showRussianFirst();
-    fc.setLangButton(btnLang);
   }
 
   function initFlashcard() {
@@ -118,6 +161,7 @@
     } else {
       fc.showMultiLine(greekLines, [word.translation], true, false);
     }
+    setWordSource(word);
   }
 
   async function ensurePickCard(pick) {
@@ -136,24 +180,17 @@
     await db.putCard(srs.gradeCard(card, remembered));
   }
 
-  async function updateDirectionPrompt() {
-    if (practiceDirection !== 'el-ru') {
-      setDirectionPrompt(false);
-      return;
-    }
-    try {
-      const prompt = await srs.checkBlockDirectionPrompt(catalog, db);
-      setDirectionPrompt(!!prompt, prompt);
-    } catch (err) {
-      console.error('Direction prompt check error', err);
-      setDirectionPrompt(false);
-    }
+  async function resolveDirection(settings, cards) {
+    practiceDirection = srs.resolveAutoDirection(catalog, cards, db, settings);
+    syncSessionInfo(settings);
   }
 
   async function updateContinueHint() {
     if (!continueHint) return;
     const cards = await db.getCardsForSlugs(catalogSlugs);
+    const settings = await srs.loadDeckSettings(deckId, db);
     const stats = srs.getProgressStats(cards, totalFormsByWord, db);
+    const poolSize = srs.getStudyPoolWords(catalog, settings).length;
     let started = 0;
     let mastered = 0;
     for (const slug of catalogSlugs) {
@@ -162,21 +199,34 @@
       if (st.wordPct >= 100 && st.formsPct >= 100) mastered += 1;
     }
     if (started === 0) {
-      continueHint.textContent = `${catalog.words.length} слов — начните с первой партии`;
+      continueHint.textContent =
+        `${poolSize} слов в первом наборе · сначала Ελ → Ру, затем Ру → Ελ`;
     } else if (mastered === catalogSlugs.length) {
       continueHint.textContent = `Все ${catalogSlugs.length} слов пройдены — можно повторить`;
     } else {
-      continueHint.textContent = `Изучено ${mastered} из ${catalogSlugs.length} · в работе ${started}`;
+      continueHint.textContent =
+        `Изучено ${mastered} из ${catalogSlugs.length} · в наборе ${poolSize} слов`;
     }
   }
 
   async function pickAndShowNext() {
     const card = initFlashcard();
-    if (!card || !practiceDirection) return;
+    if (!card) return;
 
-    setPracticeComplete(false);
-    setDirectionPrompt(false);
-    syncCardDisplay();
+    hideCompletionPanels();
+
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+    await resolveDirection(settings, cards);
+
+    if (srs.isStudyPoolFullyMastered(catalog, cards, db, settings)) {
+      if (!srs.canExpandStudyPool(settings, catalog)) {
+        showCatalogCompleteUI();
+      } else {
+        showBlockCompleteUI(settings);
+      }
+      return;
+    }
 
     try {
       currentPick = await srs.pickNextCard(deckId, catalog, db, {
@@ -191,35 +241,57 @@
     }
 
     if (!currentPick) {
-      card.showPair('—', 'Все слова пройдены!');
-      setPracticeComplete(true);
+      const refreshedCards = await db.getCardsForSlugs(catalogSlugs);
+      const newDir = srs.resolveAutoDirection(catalog, refreshedCards, db, settings);
+      if (newDir !== practiceDirection) {
+        practiceDirection = newDir;
+        syncSessionInfo(settings);
+        return pickAndShowNext();
+      }
+      card.showPair('—', 'Нет слов к повторению — загляните позже');
+      hideWordSource();
       return;
     }
 
     showCardContent(currentPick);
-    await updateDirectionPrompt();
   }
 
   async function gradeAndNext(remembered) {
     await gradeCurrent(remembered);
     await updateContinueHint();
+
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+
+    if (srs.isStudyPoolFullyMastered(catalog, cards, db, settings)) {
+      if (!srs.canExpandStudyPool(settings, catalog)) {
+        showCatalogCompleteUI();
+      } else {
+        showBlockCompleteUI(settings);
+      }
+      return;
+    }
+
+    const prevDir = practiceDirection;
+    await resolveDirection(settings, cards);
+    if (prevDir === 'el-ru' && practiceDirection === 'ru-el') {
+      // Набор выучен с греческого — автоматически переключаемся на русский.
+    }
+
     await pickAndShowNext();
   }
 
-  function openPractice(direction) {
+  async function openPractice() {
     const card = initFlashcard();
     if (!card) return;
 
-    practiceDirection = direction;
-    db.setSetting('practice:lastDirection', direction);
-    syncPracticeButtons();
-    setDirectionPrompt(false);
+    hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     sectionsGrid?.classList.add('hidden');
     heroActions?.classList.add('hidden');
     syncCardDisplay();
-    pickAndShowNext();
+    await pickAndShowNext();
   }
 
   function closePractice() {
@@ -227,56 +299,48 @@
     practiceSection?.setAttribute('aria-hidden', 'true');
     sectionsGrid?.classList.remove('hidden');
     heroActions?.classList.remove('hidden');
-    setPracticeComplete(false);
+    hideCompletionPanels();
     updateContinueHint();
   }
 
-  async function continuePractice() {
-    const last = await db.getSetting('practice:lastDirection', 'el-ru');
-    openPractice(last === 'ru-el' ? 'ru-el' : 'el-ru');
-  }
-
-  async function repeatSession() {
-    if (!practiceDirection) return;
-    await srs.repeatCatalogSession(deckId, catalog, db, practiceDirection);
+  async function repeatBlock() {
+    const settings = await srs.loadDeckSettings(deckId, db);
+    await srs.repeatStudyPool(deckId, catalog, db, settings);
+    practiceDirection = 'el-ru';
     await pickAndShowNext();
   }
 
-  btnContinue?.addEventListener('click', continuePractice);
-  btnPracticeEl?.addEventListener('click', () => {
-    practiceDirection = 'ru-el';
-    db.setSetting('practice:lastDirection', 'ru-el');
-    syncPracticeButtons();
-  });
-  btnPracticeRu?.addEventListener('click', () => {
+  async function addWordsToSet() {
+    const settings = await srs.loadDeckSettings(deckId, db);
+    await srs.expandStudyPool(deckId, catalog, db, settings);
     practiceDirection = 'el-ru';
-    db.setSetting('practice:lastDirection', 'el-ru');
-    syncPracticeButtons();
-  });
+    await pickAndShowNext();
+  }
+
+  async function repeatCatalog() {
+    const fullSettings = {
+      ...(await srs.loadDeckSettings(deckId, db)),
+      activeLimit: catalog.words.length,
+    };
+    await srs.resetStudyPoolMastery(catalog, db, fullSettings);
+    await srs.saveDeckSettings(deckId, db, {
+      activeLimit: srs.DEFAULTS.initialBatchSize,
+    });
+    practiceDirection = 'el-ru';
+    await updateContinueHint();
+    await pickAndShowNext();
+  }
+
+  btnContinue?.addEventListener('click', openPractice);
   btnClose?.addEventListener('click', closePractice);
-  btnRepeatSession?.addEventListener('click', repeatSession);
-  btnSwitchRuEl?.addEventListener('click', () => {
-    practiceDirection = 'ru-el';
-    db.setSetting('practice:lastDirection', 'ru-el');
-    syncPracticeButtons();
-    setDirectionPrompt(false);
-    syncCardDisplay();
-    pickAndShowNext();
-  });
-  btnDismissRuElPrompt?.addEventListener('click', async () => {
-    if (pendingBlockPrompt) {
-      await srs.dismissRuElBlockPrompt(db, pendingBlockPrompt.blockIndex);
-    }
-    setDirectionPrompt(false);
-  });
+  btnRepeatBlock?.addEventListener('click', repeatBlock);
+  btnAddWords?.addEventListener('click', addWordsToSet);
+  btnRepeatCatalog?.addEventListener('click', repeatCatalog);
   btnRandom?.addEventListener('click', pickAndShowNext);
   btnForget?.addEventListener('click', () => gradeAndNext(false));
   btnRemember?.addEventListener('click', () => gradeAndNext(true));
 
   async function initHomePractice() {
-    const last = await db.getSetting('practice:lastDirection', 'el-ru');
-    practiceDirection = last === 'ru-el' ? 'ru-el' : 'el-ru';
-    syncPracticeButtons();
     try {
       await updateContinueHint();
       await db.migrateLegacyCards();

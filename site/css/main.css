@@ -208,17 +208,83 @@ body {
   color: var(--text-muted);
 }
 
-.hero-directions {
+.practice-session-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.practice-direction-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+}
+
+.practice-pool-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.practice-word-source {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.practice-word-source.hidden {
+  display: none;
+}
+
+.practice-block-complete,
+.practice-catalog-complete {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef6ff 0%, #f3f0ff 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+}
+
+.practice-block-complete.hidden,
+.practice-catalog-complete.hidden {
+  display: none;
+}
+
+.practice-block-complete-text,
+.practice-catalog-complete-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #1e3a5f;
+}
+
+.practice-block-complete-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.hero-directions-label {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+.practice-block-complete-actions .btn {
+  flex: 1 1 auto;
+  min-width: 8rem;
 }
 
 .practice-complete {
