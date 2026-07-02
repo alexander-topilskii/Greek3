@@ -78,10 +78,19 @@
     }
     if (poolHint) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-      const { learned, total } = srs.getPoolProgress(pool, cards, db);
-      poolHint.textContent = `Набор: ${learned}/${total} усвоено`;
+      const { learned, inProgress, total } = srs.getPoolProgress(pool, cards, db);
+      if (learned > 0) {
+        poolHint.textContent = `Набор: ${learned}/${total} усвоено`;
+      } else if (inProgress > 0) {
+        poolHint.textContent = `Набор: ${inProgress}/${total} в работе`;
+      } else {
+        poolHint.textContent = `Набор: 0/${total} — свайп вправо «Помню»`;
+      }
       if (poolProgressFill) {
-        const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
+        const pct =
+          total > 0
+            ? Math.round((Math.max(learned, inProgress) / total) * 100)
+            : 0;
         poolProgressFill.style.width = `${pct}%`;
       }
     }
@@ -181,19 +190,22 @@
     const cards = await db.getCardsForSlugs(catalogSlugs);
     const settings = await srs.loadDeckSettings(deckId, db);
     const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-    const { learned, total } = srs.getPoolProgress(pool, cards, db);
+    const { learned, inProgress, total } = srs.getPoolProgress(pool, cards, db);
 
     if (srs.isCatalogFullyMastered(catalog, cards, db)) {
       continueHint.textContent = `Все слова пройдены — можно повторить`;
       return;
     }
 
-    if (learned === 0 && total > 0) {
-      continueHint.textContent =
-        `Группа из ${total} слов · у каждого сначала Ελ → Ру, затем Ру → Ελ`;
-    } else {
+    if (learned > 0) {
       continueHint.textContent =
         `В группе ${learned} из ${total} усвоено · всего в словаре ${catalogSlugs.length}`;
+    } else if (inProgress > 0) {
+      continueHint.textContent =
+        `В группе ${inProgress} из ${total} в работе · всего в словаре ${catalogSlugs.length}`;
+    } else if (total > 0) {
+      continueHint.textContent =
+        `Группа из ${total} слов · свайп вправо «Помню» после переворота`;
     }
   }
 
@@ -271,6 +283,7 @@
     const card = initFlashcard();
     if (!card) return;
 
+    await srs.loadRecentPicks(db);
     srs.beginSession();
     hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
@@ -281,7 +294,7 @@
   }
 
   function closePractice() {
-    srs.endSession();
+    srs.endSession(db);
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     sectionsGrid?.classList.remove('hidden');
@@ -291,6 +304,7 @@
   }
 
   async function repeatCatalog() {
+    await srs.loadRecentPicks(db);
     srs.beginSession();
     const fullSettings = {
       ...(await srs.loadDeckSettings(deckId, db)),
@@ -330,7 +344,7 @@
 
   async function initHomePractice() {
     try {
-      await db.migrateLegacyCards();
+      await db.init();
       await loadHomeSettingsUI();
       await updateContinueHint();
     } catch (err) {

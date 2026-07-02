@@ -285,10 +285,11 @@
     showCardContent(currentPick);
   }
 
-  function openPractice(direction) {
+  async function openPractice(direction) {
     const card = initFlashcard();
     if (!card) return;
 
+    await srs.loadRecentPicks(db);
     srs.beginSession();
     practiceDirection = direction;
     db.setSetting('practice:lastDirection', direction);
@@ -302,7 +303,7 @@
   }
 
   function closePractice() {
-    srs.endSession();
+    srs.endSession(db);
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
@@ -313,6 +314,7 @@
 
   async function repeatSession() {
     if (!practiceDirection) return;
+    await srs.loadRecentPicks(db);
     srs.beginSession();
     await srs.repeatCatalogSession(deckId, catalog, db, practiceDirection);
     await pickAndShowNext();
@@ -342,7 +344,7 @@
     if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();
   });
 
-  db.migrateLegacyCards().then(() => {
+  db.init().then(() => {
     loadSettingsUI();
     updateProgressUI();
   });
