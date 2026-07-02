@@ -13,6 +13,11 @@
   let sessionActive = false;
   /** @type {Map<string, number>} slug#direction → correct count in current session */
   const sessionCorrect = new Map();
+  /** @type {{ slug: string, direction: string }[]} newest first */
+  const recentPicks = [];
+  const RECENT_PICK_HISTORY = 3;
+  const SAME_DIRECTION_GAP = 2;
+  const REVERSE_DIRECTION_GAP = 1;
 
   /** Ελ→Ру ×1, Ру→Ελ ×3 — с русского нужно больше повторений */
   const DIRECTION_REP_FACTOR = {
@@ -90,11 +95,38 @@
   function beginSession() {
     sessionActive = true;
     sessionCorrect.clear();
+    recentPicks.length = 0;
   }
 
   function endSession() {
     sessionActive = false;
     sessionCorrect.clear();
+    recentPicks.length = 0;
+  }
+
+  function recordRecentPick(slug, direction) {
+    recentPicks.unshift({ slug, direction });
+    if (recentPicks.length > RECENT_PICK_HISTORY) {
+      recentPicks.length = RECENT_PICK_HISTORY;
+    }
+  }
+
+  function isPickTooSoon(slug, direction) {
+    for (let i = 0; i < recentPicks.length; i++) {
+      const prev = recentPicks[i];
+      if (prev.slug !== slug) continue;
+      const distance = i + 1;
+      if (prev.direction === direction && distance <= SAME_DIRECTION_GAP) return true;
+      if (prev.direction !== direction && distance <= REVERSE_DIRECTION_GAP) return true;
+    }
+    return false;
+  }
+
+  function filterRecentPicks(candidates) {
+    const filtered = candidates.filter(
+      (c) => !isPickTooSoon(c.word.slug, c.direction),
+    );
+    return filtered.length ? filtered : candidates;
   }
 
   function isSessionActive() {
@@ -382,15 +414,16 @@
 
   function pickWeighted(candidates) {
     if (!candidates.length) return null;
+    const pool = filterRecentPicks(candidates);
     let total = 0;
-    for (const c of candidates) total += c.weight;
-    if (total <= 0) return candidates[0];
+    for (const c of pool) total += c.weight;
+    if (total <= 0) return pool[0];
     let r = Math.random() * total;
-    for (const c of candidates) {
+    for (const c of pool) {
       r -= c.weight;
       if (r <= 0) return c;
     }
-    return candidates[candidates.length - 1];
+    return pool[pool.length - 1];
   }
 
   function collectCandidates(settings, catalog, cards, db, now, options) {
@@ -634,14 +667,29 @@
     await resetStudyPoolMastery(catalog, db, settings);
   }
 
-  async function expandStudyPool(deckId, catalog, db, settings) {
-    const newLimit = Math.min(
-      catalog.words.length,
-      settings.activeLimit + settings.batchIncrement,
-    );
+  async function expandStudyPool(deckId, catalog, db, settings, increment = null) {
+    const step = increment ?? settings.batchIncrement;
+    const newLimit = Math.min(catalog.words.length, settings.activeLimit + step);
     if (newLimit <= settings.activeLimit) return settings.activeLimit;
     await saveDeckSettings(deckId, db, { activeLimit: newLimit });
     return newLimit;
+  }
+
+  /** Добавить одно слово в набор, когда предыдущее выучено. */
+  async function expandPoolOnWordLearned(deckId, catalog, db, settings) {
+    if (settings.activeLimit >= catalog.words.length) return settings.activeLimit;
+    return expandStudyPool(deckId, catalog, db, settings, 1);
+  }
+
+  function countPoolLearned(poolWords, cards, db) {
+    if (!poolWords.length) return 0;
+    return poolWords.filter((w) => isWordDoneForPool(w.slug, cards, db)).length;
+  }
+
+  function getPoolProgress(poolWords, cards, db) {
+    const total = poolWords.length;
+    const learned = countPoolLearned(poolWords, cards, db);
+    return { learned, total, remaining: total - learned };
   }
 
   async function pickNextCard(deckId, catalog, db, options = {}) {
@@ -660,7 +708,10 @@
         options,
       );
       const pick = pickWeighted(candidates);
-      if (pick) return pick;
+      if (pick) {
+        recordRecentPick(pick.word.slug, pick.direction);
+        return pick;
+      }
 
       const relaxed = collectCandidates(
         settings,
@@ -680,7 +731,10 @@
           getActivePoolWords(catalog, allCards, db, settings).length === 0)
           ? null
           : pickWeighted(relaxed);
-      if (relaxedPick) return relaxedPick;
+      if (relaxedPick) {
+        recordRecentPick(relaxedPick.word.slug, relaxedPick.direction);
+        return relaxedPick;
+      }
 
       if (
         sessionActive &&
@@ -765,7 +819,11 @@
     endSession,
     isSessionActive,
     recordSessionCorrect,
+    recordRecentPick,
+    isPickTooSoon,
     getSessionCorrect,
+    getPoolProgress,
+    countPoolLearned,
     isSessionSatisfied,
     poolSessionSatisfiedInDirection,
     masteryThreshold,
@@ -801,5 +859,6 @@
     resetStudyPoolMastery,
     repeatStudyPool,
     expandStudyPool,
+    expandPoolOnWordLearned,
   };
 })(window);

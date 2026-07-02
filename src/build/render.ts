@@ -70,7 +70,12 @@ function homePracticePanelMarkup(): string {
   return `
         <div class="practice-session-bar" id="practice-session-bar">
           <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
-          <span class="practice-pool-hint" id="practice-pool-hint"></span>
+          <span class="practice-pool-progress" id="practice-pool-progress">
+            <span class="practice-pool-hint" id="practice-pool-hint"></span>
+            <span class="practice-pool-progress-bar" aria-hidden="true">
+              <span class="practice-pool-progress-fill" id="practice-pool-progress-fill"></span>
+            </span>
+          </span>
         </div>
         ${flashcardMarkup('home-flashcard-root')}
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>
@@ -157,7 +162,7 @@ function settingsPanel(scope: 'word' | 'deck', maxWords = 999): string {
           <span>Активных слов</span>
           <input type="number" id="setting-active-limit" min="1" max="${maxWords}" value="5">
         </label>
-        <p class="settings-hint">После выучивания группы новые слова добавляются автоматически. Старые повторяются реже, но по расписанию SRS.</p>
+        <p class="settings-hint">При выучивании слова в набор автоматически добавляется новое. Старые повторяются реже, но по расписанию SRS.</p>
         <div class="settings-actions">
           <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
           <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
@@ -189,6 +194,15 @@ function homeSettingsDialogMarkup(): string {
         </button>
       </header>
       <div class="settings-dialog-body">
+        <label class="settings-field">
+          <span>Слов в группе</span>
+          <input type="number" id="home-setting-group-size" min="1" max="30" value="5">
+        </label>
+        <p class="settings-hint">Сколько слов одновременно в активном наборе. При выучивании слова в набор добавляется новое.</p>
+        <div class="settings-actions">
+          <button type="button" class="btn btn-secondary" id="btn-save-home-settings">Сохранить</button>
+        </div>
+        <hr class="settings-divider">
         <button type="button" class="btn btn-secondary btn-reset-all" id="btn-reset-all-progress">Сбросить весь прогресс</button>
         <p class="settings-hint">Удалит все данные о выученных словах и начнёт обучение сначала.</p>
       </div>

@@ -229,13 +229,23 @@
 
   async function gradeCurrent(remembered) {
     if (!currentPick) return;
+    const slug = currentPick.word.slug;
+    const direction = practiceDirection ?? currentPick.direction ?? 'el-ru';
+    const cardsBefore = await getCatalogCards();
+    const wasDone = srs.isWordDoneForPool(slug, cardsBefore, db);
+
     const card = await ensurePickCard(currentPick);
     await db.putCard(srs.gradeCard(card, remembered));
     if (remembered) {
-      srs.recordSessionCorrect(
-        currentPick.word.slug,
-        practiceDirection ?? currentPick.direction ?? 'el-ru',
-      );
+      srs.recordSessionCorrect(slug, direction);
+    }
+
+    if (remembered && !wasDone) {
+      const cardsAfter = await getCatalogCards();
+      if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
+        const settings = await srs.loadDeckSettings(deckId, db);
+        await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
+      }
     }
   }
 

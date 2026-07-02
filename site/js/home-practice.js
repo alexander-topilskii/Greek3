@@ -41,6 +41,9 @@
   const btnHomeSettings = document.getElementById('btn-home-settings');
   const settingsDialog = document.getElementById('home-settings-dialog');
   const btnResetAll = document.getElementById('btn-reset-all-progress');
+  const inputGroupSize = document.getElementById('home-setting-group-size');
+  const btnSaveHomeSettings = document.getElementById('btn-save-home-settings');
+  const poolProgressFill = document.getElementById('practice-pool-progress-fill');
 
   let currentPick = null;
   let fc = null;
@@ -75,7 +78,12 @@
     }
     if (poolHint) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-      poolHint.textContent = `${pool.length} слов в наборе`;
+      const { learned, total } = srs.getPoolProgress(pool, cards, db);
+      poolHint.textContent = `Набор: ${learned}/${total} усвоено`;
+      if (poolProgressFill) {
+        const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
+        poolProgressFill.style.width = `${pct}%`;
+      }
     }
   }
 
@@ -149,10 +157,22 @@
 
   async function gradeCurrent(remembered) {
     if (!currentPick) return;
+    const slug = currentPick.word.slug;
+    const cardsBefore = await db.getCardsForSlugs(catalogSlugs);
+    const wasDone = srs.isWordDoneForPool(slug, cardsBefore, db);
+
     const card = await ensurePickCard(currentPick);
     await db.putCard(srs.gradeCard(card, remembered));
     if (remembered && currentPick.direction) {
-      srs.recordSessionCorrect(currentPick.word.slug, currentPick.direction);
+      srs.recordSessionCorrect(slug, currentPick.direction);
+    }
+
+    if (remembered && !wasDone) {
+      const cardsAfter = await db.getCardsForSlugs(catalogSlugs);
+      if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
+        const settings = await srs.loadDeckSettings(deckId, db);
+        await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
+      }
     }
   }
 
@@ -160,23 +180,40 @@
     if (!continueHint) return;
     const cards = await db.getCardsForSlugs(catalogSlugs);
     const settings = await srs.loadDeckSettings(deckId, db);
-    const stats = srs.getProgressStats(cards, totalFormsByWord, db);
     const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-    let started = 0;
-    let mastered = 0;
-    for (const slug of catalogSlugs) {
-      const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
-      if (st.wordPct > 0 || st.formsPct > 0) started += 1;
-      if (st.wordPct >= 100 && st.formsPct >= 100) mastered += 1;
+    const { learned, total } = srs.getPoolProgress(pool, cards, db);
+
+    if (srs.isCatalogFullyMastered(catalog, cards, db)) {
+      continueHint.textContent = `Все слова пройдены — можно повторить`;
+      return;
     }
-    if (started === 0) {
+
+    if (learned === 0 && total > 0) {
       continueHint.textContent =
-        `${pool.length} слов в наборе · у каждого сначала Ελ → Ру, затем Ру → Ελ`;
-    } else if (mastered === catalogSlugs.length) {
-      continueHint.textContent = `Все ${catalogSlugs.length} слов пройдены — можно повторить`;
+        `Группа из ${total} слов · у каждого сначала Ελ → Ру, затем Ру → Ελ`;
     } else {
       continueHint.textContent =
-        `Изучено ${mastered} из ${catalogSlugs.length} · в наборе ${pool.length} слов`;
+        `В группе ${learned} из ${total} усвоено · всего в словаре ${catalogSlugs.length}`;
+    }
+  }
+
+  async function loadHomeSettingsUI() {
+    const s = await srs.loadDeckSettings(deckId, db);
+    if (inputGroupSize) inputGroupSize.value = String(s.initialBatchSize);
+  }
+
+  async function saveHomeSettings() {
+    const groupSize = parseInt(inputGroupSize?.value ?? '5', 10);
+    const clamped = Math.max(1, Math.min(30, groupSize));
+    await srs.saveDeckSettings(deckId, db, {
+      initialBatchSize: clamped,
+      activeLimit: clamped,
+    });
+    if (inputGroupSize) inputGroupSize.value = String(clamped);
+    settingsDialog?.close();
+    await updateContinueHint();
+    if (!practiceSection?.classList.contains('hidden')) {
+      await pickAndShowNext();
     }
   }
 
@@ -273,9 +310,12 @@
   btnRepeatCatalog?.addEventListener('click', repeatCatalog);
   btnRandom?.addEventListener('click', pickAndShowNext);
 
-  btnHomeSettings?.addEventListener('click', () => {
+  btnHomeSettings?.addEventListener('click', async () => {
+    await loadHomeSettingsUI();
     settingsDialog?.showModal();
   });
+
+  btnSaveHomeSettings?.addEventListener('click', saveHomeSettings);
 
   btnResetAll?.addEventListener('click', async () => {
     if (!confirm('Сбросить весь прогресс? Все выученные слова будут забыты.')) return;
@@ -290,8 +330,8 @@
 
   async function initHomePractice() {
     try {
-      await updateContinueHint();
       await db.migrateLegacyCards();
+      await loadHomeSettingsUI();
       await updateContinueHint();
     } catch (err) {
       console.error('Home practice init error', err);

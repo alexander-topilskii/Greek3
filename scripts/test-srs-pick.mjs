@@ -291,6 +291,55 @@ async function testWordSourceLabel() {
   console.log('✓ word source label');
 }
 
+async function testNoConsecutiveSameWord() {
+  srs.beginSession();
+  srs.recordRecentPick('word-0', 'el-ru');
+  if (!srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Expected same direction blocked at distance 1');
+  }
+  if (!srs.isPickTooSoon('word-0', 'ru-el')) {
+    throw new Error('Expected reverse direction blocked at distance 1');
+  }
+  srs.recordRecentPick('word-1', 'el-ru');
+  if (!srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Expected same direction blocked at distance 2');
+  }
+  if (srs.isPickTooSoon('word-0', 'ru-el')) {
+    throw new Error('Reverse direction should be allowed at distance 2');
+  }
+  srs.recordRecentPick('word-2', 'el-ru');
+  if (srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Same direction should be allowed at distance 3');
+  }
+  srs.recordRecentPick('word-3', 'ru-el');
+  if (!srs.isPickTooSoon('word-3', 'el-ru')) {
+    throw new Error('Expected reverse direction blocked at distance 1');
+  }
+  srs.endSession();
+  console.log('✓ no consecutive same word picks');
+}
+
+async function testExpandPoolOnWordLearned() {
+  const catalog = makeCatalog(8, false);
+  const db = makeDb();
+  const settings = { activeLimit: 5, batchIncrement: 3, initialBatchSize: 5 };
+  await db.setSetting('deck:global:activeLimit', 5);
+
+  srs.beginSession();
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'el-ru');
+  srs.recordSessionCorrect('word-0', 'ru-el');
+  srs.recordSessionCorrect('word-0', 'ru-el');
+
+  const newLimit = await srs.expandPoolOnWordLearned('global', catalog, db, settings);
+  srs.endSession();
+
+  if (newLimit !== 6) {
+    throw new Error(`Expected activeLimit 6 after one word learned, got ${newLimit}`);
+  }
+  console.log('✓ pool expands by 1 when word learned');
+}
+
 async function main() {
   await testRepeatAfterComplete();
   await testSlidingPoolReplacesMasteredWords();
@@ -301,6 +350,8 @@ async function main() {
   await testSessionExcludesWordAfterThreshold();
   await testSessionAutoDirection();
   await testSessionResetsOnEnd();
+  await testNoConsecutiveSameWord();
+  await testExpandPoolOnWordLearned();
   await testLessonOrderReversed();
   await testWordSourceLabel();
   console.log('\nAll SRS smoke tests passed.');
