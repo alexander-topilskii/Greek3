@@ -73,10 +73,12 @@
     if (mode === 'summary') {
       const card = await ensureSummaryCard();
       await db.putCard(srs.gradeCard(card, remembered));
+      await db.flushBackup();
       return;
     }
     const card = await ensureFormCard(currentIndex);
     await db.putCard(srs.gradeCard(card, remembered));
+    await db.flushBackup();
   }
 
   function highlightRow() {

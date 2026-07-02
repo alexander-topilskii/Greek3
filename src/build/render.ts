@@ -20,6 +20,9 @@ const SITE_CONFIG: SiteConfig = {
   baseUrl: process.env.SITE_BASE_URL ?? '',
 };
 
+/** Bust browser cache for static assets after deploy. */
+const ASSET_VERSION = process.env.BUILD_ID ?? '2';
+
 const SHARED_SCRIPTS = [
   'assets/js/db.js',
   'assets/js/srs.js',
@@ -226,7 +229,7 @@ function layout(
     .join('<span class="crumb-sep">/</span>') ?? '';
 
   const scripts = [...SHARED_SCRIPTS, ...extraScripts]
-    .map((s) => `<script src="${sitePath(s)}" defer></script>`)
+    .map((s) => `<script src="${sitePath(s)}?v=${ASSET_VERSION}" defer></script>`)
     .join('\n  ');
 
   return `<!DOCTYPE html>
@@ -239,7 +242,7 @@ function layout(
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="${sitePath('assets/css/main.css')}">
+  <link rel="stylesheet" href="${sitePath('assets/css/main.css')}?v=${ASSET_VERSION}">
 </head>
 <body>
   <div class="page-bg"></div>

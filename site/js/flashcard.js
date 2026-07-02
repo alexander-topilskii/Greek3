@@ -223,6 +223,9 @@
     function finishSwipe(remembered) {
       speak?.stop?.();
       updateSpeakButton();
+      // Save progress immediately — iOS may suspend the page during the exit animation.
+      opts.onGrade?.(remembered);
+
       const dir = remembered ? 1 : -1;
       const layer = dragLayer || inner;
       root.classList.add(remembered ? 'is-exit-right' : 'is-exit-left');
@@ -231,7 +234,6 @@
       setTimeout(() => {
         root.classList.remove('is-exit-right', 'is-exit-left');
         clearTransform();
-        opts.onGrade?.(remembered);
       }, 280);
     }
 
