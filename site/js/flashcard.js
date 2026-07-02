@@ -201,6 +201,8 @@
       if (!layer) return;
       const rotate = x * 0.04;
       layer.style.transform = `translateX(${x}px) rotate(${rotate}deg)`;
+      const tint = Math.min(1, Math.abs(x) / threshold);
+      root.style.setProperty('--swipe-tint', String(tint));
       root.classList.toggle('is-dragging', Math.abs(x) > 8);
       root.classList.toggle('is-swipe-right', x > 20);
       root.classList.toggle('is-swipe-left', x < -20);
@@ -212,6 +214,7 @@
       const layer = dragLayer || inner;
       if (!layer) return;
       layer.style.transform = '';
+      root.style.removeProperty('--swipe-tint');
       root.classList.remove('is-dragging', 'is-swipe-right', 'is-swipe-left');
       if (hintRight) hintRight.style.opacity = '0';
       if (hintLeft) hintLeft.style.opacity = '0';
