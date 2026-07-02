@@ -236,6 +236,7 @@
 
     const card = await ensurePickCard(currentPick);
     await db.putCard(srs.gradeCard(card, remembered));
+    await db.flushBackup();
     if (remembered) {
       srs.recordSessionCorrect(slug, direction);
     }

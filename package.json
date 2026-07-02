@@ -6,6 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:site": "npm run build && node dist/build/index.js",
+    "test:srs": "node scripts/test-srs-pick.mjs",
+    "test:db": "node scripts/test-db-backup.mjs",
     "build:pages": "SITE_BASE_URL=/Greek3 npm run build:site",
     "dev": "npm run build:site && node scripts/dev.mjs",
     "dev:pages": "npm run build:pages && SITE_BASE_URL=/Greek3 node scripts/dev.mjs",

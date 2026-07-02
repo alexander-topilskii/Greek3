@@ -731,7 +731,7 @@
     if (isWordDoneForPool(slug, cards, db)) return false;
     for (const dir of DIRECTIONS) {
       const card = getSummaryCard(cards, slug, dir, db);
-      if ((card?.repetitions ?? 0) > 0) return true;
+      if ((card?.repetitions ?? 0) > 0 || (card?.remembered ?? 0) > 0) return true;
     }
     return false;
   }

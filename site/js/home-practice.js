@@ -171,7 +171,9 @@
     const wasDone = srs.isWordDoneForPool(slug, cardsBefore, db);
 
     const card = await ensurePickCard(currentPick);
-    await db.putCard(srs.gradeCard(card, remembered));
+    const graded = srs.gradeCard(card, remembered);
+    await db.putCard(graded);
+    await db.flushBackup();
     if (remembered && currentPick.direction) {
       srs.recordSessionCorrect(slug, currentPick.direction);
     }
@@ -283,6 +285,16 @@
     const card = initFlashcard();
     if (!card) return;
 
+    try {
+      await db.init();
+    } catch (err) {
+      console.error('Home practice init error', err);
+      if (continueHint) {
+        continueHint.textContent = 'Не удалось загрузить прогресс — проверьте, что сайт не в режиме инкогнито';
+      }
+      return;
+    }
+
     await srs.loadRecentPicks(db);
     srs.beginSession();
     hideCompletionPanels();
@@ -350,7 +362,7 @@
     } catch (err) {
       console.error('Home practice init error', err);
       if (continueHint) {
-        continueHint.textContent = 'Не удалось загрузить прогресс';
+        continueHint.textContent = 'Не удалось загрузить прогресс — проверьте, что сайт не в режиме инкогнито';
       }
     }
   }
