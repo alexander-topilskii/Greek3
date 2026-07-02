@@ -1,4 +1,18 @@
 (function (global) {
+  const AUTO_SPEAK_COOKIE = 'greek3_auto_speak';
+  const AUTO_SPEAK_MAX_AGE = 365 * 24 * 60 * 60;
+
+  function readAutoSpeakCookie() {
+    const match = global.document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${AUTO_SPEAK_COOKIE}=([^;]*)`),
+    );
+    return match?.[1] === '1';
+  }
+
+  function writeAutoSpeakCookie(enabled) {
+    global.document.cookie = `${AUTO_SPEAK_COOKIE}=${enabled ? '1' : '0'}; path=/; max-age=${AUTO_SPEAK_MAX_AGE}; SameSite=Lax`;
+  }
+
   /**
    * Shared flashcard with swipe grading.
    * opts: { onGrade(remembered), onFlip? }
@@ -21,7 +35,7 @@
 
     let flipped = false;
     let greekLines = [];
-    let autoSpeakEnabled = false;
+    let autoSpeakEnabled = readAutoSpeakCookie();
     let startWithRussian = opts.startWithRussian ?? false;
     let dragging = false;
     let startX = 0;
@@ -112,16 +126,21 @@
       }).finally(() => updateSpeakButton());
     }
 
+    function isGreekVisible() {
+      return startWithRussian ? flipped : !flipped;
+    }
+
     function maybeAutoSpeak() {
-      if (autoSpeakEnabled) speakCurrent();
+      if (autoSpeakEnabled && isGreekVisible()) speakCurrent();
     }
 
     function toggleAutoSpeak() {
       if (!speak?.isSupported?.()) return;
       autoSpeakEnabled = !autoSpeakEnabled;
+      writeAutoSpeakCookie(autoSpeakEnabled);
       updateSpeakButton();
       if (autoSpeakEnabled) {
-        speakCurrent();
+        maybeAutoSpeak();
       } else {
         speak?.stop?.();
         updateSpeakButton();
@@ -174,6 +193,7 @@
       flipped = !flipped;
       card?.classList.toggle('is-flipped', flipped);
       opts.onFlip?.(flipped);
+      maybeAutoSpeak();
     }
 
     function setTransform(x) {
