@@ -849,6 +849,7 @@
     getStudyPoolWords,
     getActivePoolWords,
     getWordPracticeDirection,
+    isWordDoneForPool,
     isWordFullyDoneGlobal,
     isCatalogFullyMastered,
     poolMasteredInDirection,

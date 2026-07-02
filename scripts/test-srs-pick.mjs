@@ -340,6 +340,13 @@ async function testExpandPoolOnWordLearned() {
   console.log('✓ pool expands by 1 when word learned');
 }
 
+async function testIsWordDoneForPoolExported() {
+  if (typeof srs.isWordDoneForPool !== 'function') {
+    throw new Error('isWordDoneForPool must be exported for gradeCurrent');
+  }
+  console.log('✓ isWordDoneForPool exported');
+}
+
 async function main() {
   await testRepeatAfterComplete();
   await testSlidingPoolReplacesMasteredWords();
@@ -352,6 +359,7 @@ async function main() {
   await testSessionResetsOnEnd();
   await testNoConsecutiveSameWord();
   await testExpandPoolOnWordLearned();
+  await testIsWordDoneForPoolExported();
   await testLessonOrderReversed();
   await testWordSourceLabel();
   console.log('\nAll SRS smoke tests passed.');
