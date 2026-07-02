@@ -19,6 +19,8 @@
   const SAME_DIRECTION_GAP = 2;
   const REVERSE_DIRECTION_GAP = 1;
 
+  const RECENT_PICKS_KEY = 'practice:recentPicks';
+
   /** Ελ→Ру ×1, Ру→Ελ ×3 — с русского нужно больше повторений */
   const DIRECTION_REP_FACTOR = {
     'el-ru': 1,
@@ -95,19 +97,57 @@
   function beginSession() {
     sessionActive = true;
     sessionCorrect.clear();
-    recentPicks.length = 0;
   }
 
-  function endSession() {
+  async function loadRecentPicks(db) {
+    recentPicks.length = 0;
+    if (!db) return;
+    const stored = await db.getSetting(RECENT_PICKS_KEY, []);
+    if (!Array.isArray(stored)) return;
+    for (const item of stored.slice(0, RECENT_PICK_HISTORY)) {
+      if (item?.slug && item?.direction) {
+        recentPicks.push({ slug: item.slug, direction: item.direction });
+      }
+    }
+  }
+
+  async function persistRecentPicks(db) {
+    if (!db) return;
+    await db.setSetting(
+      RECENT_PICKS_KEY,
+      recentPicks.slice(0, RECENT_PICK_HISTORY).map((p) => ({
+        slug: p.slug,
+        direction: p.direction,
+      })),
+    );
+  }
+
+  function recencyFactor(card, now = Date.now()) {
+    const last = card?.lastReview ?? 0;
+    if (!last) return 1;
+    const hoursSince = (now - last) / (60 * 60 * 1000);
+    return Math.min(1, 0.25 + hoursSince * 0.25);
+  }
+
+  function endSession(db) {
     sessionActive = false;
     sessionCorrect.clear();
-    recentPicks.length = 0;
+    if (db) {
+      persistRecentPicks(db).catch((err) => {
+        console.error('Failed to persist recent picks', err);
+      });
+    }
   }
 
-  function recordRecentPick(slug, direction) {
+  function recordRecentPick(slug, direction, db) {
     recentPicks.unshift({ slug, direction });
     if (recentPicks.length > RECENT_PICK_HISTORY) {
       recentPicks.length = RECENT_PICK_HISTORY;
+    }
+    if (db) {
+      persistRecentPicks(db).catch((err) => {
+        console.error('Failed to persist recent picks', err);
+      });
     }
   }
 
@@ -492,6 +532,7 @@
           } else {
             continue;
           }
+          weight *= recencyFactor(summaryCard, now);
           if (relaxDue && !due) weight *= 0.6;
           candidates.push({
             card: summaryCard,
@@ -686,10 +727,25 @@
     return poolWords.filter((w) => isWordDoneForPool(w.slug, cards, db)).length;
   }
 
+  function isWordInProgress(slug, cards, db) {
+    if (isWordDoneForPool(slug, cards, db)) return false;
+    for (const dir of DIRECTIONS) {
+      const card = getSummaryCard(cards, slug, dir, db);
+      if ((card?.repetitions ?? 0) > 0) return true;
+    }
+    return false;
+  }
+
+  function countPoolInProgress(poolWords, cards, db) {
+    if (!poolWords.length) return 0;
+    return poolWords.filter((w) => isWordInProgress(w.slug, cards, db)).length;
+  }
+
   function getPoolProgress(poolWords, cards, db) {
     const total = poolWords.length;
     const learned = countPoolLearned(poolWords, cards, db);
-    return { learned, total, remaining: total - learned };
+    const inProgress = countPoolInProgress(poolWords, cards, db);
+    return { learned, inProgress, total, remaining: total - learned };
   }
 
   async function pickNextCard(deckId, catalog, db, options = {}) {
@@ -709,7 +765,7 @@
       );
       const pick = pickWeighted(candidates);
       if (pick) {
-        recordRecentPick(pick.word.slug, pick.direction);
+        recordRecentPick(pick.word.slug, pick.direction, db);
         return pick;
       }
 
@@ -732,7 +788,7 @@
           ? null
           : pickWeighted(relaxed);
       if (relaxedPick) {
-        recordRecentPick(relaxedPick.word.slug, relaxedPick.direction);
+        recordRecentPick(relaxedPick.word.slug, relaxedPick.direction, db);
         return relaxedPick;
       }
 
@@ -817,6 +873,7 @@
     DIRECTION_REP_FACTOR,
     beginSession,
     endSession,
+    loadRecentPicks,
     isSessionActive,
     recordSessionCorrect,
     recordRecentPick,
@@ -824,6 +881,8 @@
     getSessionCorrect,
     getPoolProgress,
     countPoolLearned,
+    countPoolInProgress,
+    isWordInProgress,
     isSessionSatisfied,
     poolSessionSatisfiedInDirection,
     masteryThreshold,

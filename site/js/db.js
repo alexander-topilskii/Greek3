@@ -9,6 +9,17 @@
 
   let dbPromise = null;
   let migrationPromise = null;
+  let initPromise = null;
+
+  async function ensurePersistentStorage() {
+    if (typeof navigator === 'undefined' || !navigator.storage?.persist) return false;
+    try {
+      if (await navigator.storage.persisted()) return true;
+      return navigator.storage.persist();
+    } catch {
+      return false;
+    }
+  }
 
   function openDb() {
     if (dbPromise) return dbPromise;
@@ -118,6 +129,17 @@
   }
 
   const GreekDB = {
+    async init() {
+      if (!initPromise) {
+        initPromise = (async () => {
+          await ensurePersistentStorage();
+          await openDb();
+          await this.migrateLegacyCards();
+        })();
+      }
+      return initPromise;
+    },
+
     async getCard(id) {
       return tx('cards', 'readonly', (store) => {
         return new Promise((resolve, reject) => {
@@ -245,6 +267,7 @@
 
     async migrateLegacyCards() {
       if (migrationPromise) return migrationPromise;
+      await openDb();
 
       migrationPromise = (async () => {
         const directionDone = await this.getSetting('migration:direction-v2', false);

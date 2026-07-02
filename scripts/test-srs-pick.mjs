@@ -340,6 +340,46 @@ async function testExpandPoolOnWordLearned() {
   console.log('✓ pool expands by 1 when word learned');
 }
 
+async function testRecentPicksPersist() {
+  const db = makeDb();
+  srs.beginSession();
+  srs.recordRecentPick('word-0', 'el-ru', db);
+  await Promise.resolve();
+  srs.endSession(db);
+  await Promise.resolve();
+
+  srs.beginSession();
+  await srs.loadRecentPicks(db);
+  if (!srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Expected recent pick persisted across sessions');
+  }
+  srs.endSession(db);
+  console.log('✓ recent picks persist across sessions');
+}
+
+async function testPoolInProgress() {
+  const catalog = makeCatalog(3, false);
+  const db = makeDb();
+  const partial = {
+    id: 'word-0#summary#el-ru',
+    deckId: 'global',
+    wordSlug: 'word-0',
+    type: 'summary',
+    direction: 'el-ru',
+    repetitions: 1,
+    nextReview: Date.now() + 600000,
+  };
+  await db.putCard(partial);
+  const allCards = await db.getAllCards();
+  const settings = { activeLimit: 3, batchIncrement: 3, initialBatchSize: 3 };
+  const pool = srs.getActivePoolWords(catalog, allCards, db, settings);
+  const { inProgress, learned } = srs.getPoolProgress(pool, allCards, db);
+  if (inProgress !== 1 || learned !== 0) {
+    throw new Error(`Expected 1 in progress, 0 learned, got ${inProgress}/${learned}`);
+  }
+  console.log('✓ pool in-progress count');
+}
+
 async function testIsWordDoneForPoolExported() {
   if (typeof srs.isWordDoneForPool !== 'function') {
     throw new Error('isWordDoneForPool must be exported for gradeCurrent');
@@ -359,6 +399,8 @@ async function main() {
   await testSessionResetsOnEnd();
   await testNoConsecutiveSameWord();
   await testExpandPoolOnWordLearned();
+  await testRecentPicksPersist();
+  await testPoolInProgress();
   await testIsWordDoneForPoolExported();
   await testLessonOrderReversed();
   await testWordSourceLabel();

@@ -147,7 +147,7 @@
   fc.setLangButton(btnLang);
   randomMixed();
 
-  db.migrateLegacyCards()
+  db.init()
     .then(() => updateWordProgress())
     .catch(() => {});
 })();
