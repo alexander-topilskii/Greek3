@@ -35,12 +35,21 @@
     return examples
       .map(
         (example) => `
-      <div class="context-bubble">
-        <p class="context-bubble-greek greek">${escapeHtml(example.greek)}</p>
-        <p class="context-bubble-ru">${escapeHtml(example.translation)}</p>
-      </div>`,
+      <button type="button" class="context-bubble context-bubble--tap" aria-expanded="false">
+        <span class="context-bubble-greek greek">${escapeHtml(example.greek)}</span>
+        <span class="context-bubble-ru">${escapeHtml(example.translation)}</span>
+      </button>`,
       )
       .join('');
+  }
+
+  function bindBubbleToggles() {
+    bodyEl?.querySelectorAll('.context-bubble--tap').forEach((bubble) => {
+      bubble.addEventListener('click', () => {
+        const revealed = bubble.classList.toggle('is-revealed');
+        bubble.setAttribute('aria-expanded', String(revealed));
+      });
+    });
   }
 
   function hasExamples(word) {
@@ -61,10 +70,10 @@
 
   function show(word) {
     if (!ensureDialog() || !hasExamples(word)) return;
-    const title = word.translation || word.label || 'Примеры';
-    if (titleEl) titleEl.textContent = title;
+    if (titleEl) titleEl.textContent = 'Примеры';
     if (bodyEl) {
       bodyEl.innerHTML = `<div class="context-bubbles">${renderBubbles(word.examples)}</div>`;
+      bindBubbleToggles();
     }
     dialog.showModal();
   }
