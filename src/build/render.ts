@@ -187,7 +187,7 @@ function wordSettingsDialogMarkup(): string {
         </button>
       </header>
       <div class="settings-dialog-body">
-        <button type="button" class="btn btn-secondary btn-reset-word" id="btn-reset-word">Сбросить этот глагол</button>
+        <button type="button" class="btn btn-secondary btn-reset-word" id="btn-reset-word">Сбросить слово</button>
       </div>
     </form>
   </dialog>`;
