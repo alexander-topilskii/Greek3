@@ -79,7 +79,9 @@ jobs:
                     pullRequestId: $prId,
                     mergeMethod: MERGE
                   }) {
-                    pullRequest { autoMergeEnabled }
+                    pullRequest {
+                      autoMergeRequest { enabledAt }
+                    }
                   }
                 }`,
                 { prId: pr.node_id }
