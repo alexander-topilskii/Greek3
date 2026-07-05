@@ -34,76 +34,6 @@ jobs:
           SITE_BASE_URL: /${{ github.event.repository.name }}
           BUILD_ID: ${{ github.sha }}
 
-  enable-automerge:
-    if: |
-      github.event_name == 'pull_request' &&
-      startsWith(github.head_ref, 'cursor/') &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.base.ref == 'main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Enable auto-merge
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
-            if (pr.merged || pr.state !== 'open') {
-              core.info('PR is not open — skipping auto-merge.');
-              return;
-            }
-
-            const { owner, repo } = context.repo;
-
-            const { repository } = await github.graphql(
-              `query($owner: String!, $repo: String!, $number: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  pullRequest(number: $number) {
-                    autoMergeRequest { enabledAt }
-                  }
-                }
-              }`,
-              { owner, repo, number: pr.number }
-            );
-
-            if (repository.pullRequest.autoMergeRequest) {
-              core.info('Auto-merge already enabled.');
-              return;
-            }
-
-            const mutation = `mutation($prId: ID!) {
-              enablePullRequestAutoMerge(input: {
-                pullRequestId: $prId,
-                mergeMethod: MERGE
-              }) {
-                pullRequest {
-                  autoMergeRequest { enabledAt }
-                }
-              }
-            }`;
-
-            for (let attempt = 1; attempt <= 5; attempt++) {
-              try {
-                await github.graphql(mutation, { prId: pr.node_id });
-                core.info('Auto-merge enabled.');
-                return;
-              } catch (error) {
-                const message = String(error?.message || error);
-                if (message.includes('clean status')) {
-                  core.info('PR is already mergeable — auto-merge not required.');
-                  return;
-                }
-                if (message.includes('unstable status') && attempt < 5) {
-                  core.info(`PR unstable, retry ${attempt}/5…`);
-                  await new Promise((resolve) => setTimeout(resolve, attempt * 3000));
-                  continue;
-                }
-                throw error;
-              }
-            }
-
   approve:
     needs: build
     if: |
@@ -115,18 +45,43 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     steps:
-      - name: Approve PR
+      - name: Approve and merge
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
             if (pr.merged || pr.state !== 'open') {
-              core.info('PR is not open — skipping approve.');
+              core.info('PR is not open — skipping.');
               return;
             }
 
             const { owner, repo } = context.repo;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            async function autoMergeEnabled() {
+              const { repository } = await github.graphql(
+                `query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $number) {
+                      autoMergeRequest { enabledAt }
+                    }
+                  }
+                }`,
+                { owner, repo, number: pr.number }
+              );
+              return Boolean(repository.pullRequest.autoMergeRequest);
+            }
+
+            async function getPullRequest() {
+              const { data } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pr.number,
+              });
+              return data;
+            }
 
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner,
@@ -137,15 +92,65 @@ jobs:
               (review) => review.user?.login === 'github-actions[bot]' && review.state === 'APPROVED'
             );
 
-            if (alreadyApproved) {
+            if (!alreadyApproved) {
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: pr.number,
+                event: 'APPROVE',
+                body: 'CI passed — merging Cursor agent PR.',
+              });
+              core.info('PR approved.');
+            } else {
               core.info('PR already approved by github-actions[bot].');
+            }
+
+            for (let attempt = 1; attempt <= 12; attempt++) {
+              const current = await getPullRequest();
+              if (current.merged) {
+                core.info('PR already merged.');
+                return;
+              }
+              if (await autoMergeEnabled()) {
+                core.info('Auto-merge enabled — GitHub will merge when ready.');
+                return;
+              }
+              if (current.mergeable === true && current.mergeable_state === 'clean') {
+                break;
+              }
+              core.info(`Waiting for mergeability (${attempt}/12)…`);
+              await sleep(5000);
+            }
+
+            const ready = await getPullRequest();
+            if (ready.merged) {
+              core.info('PR already merged.');
+              return;
+            }
+            if (await autoMergeEnabled()) {
+              core.info('Auto-merge enabled — GitHub will merge when ready.');
               return;
             }
 
-            await github.rest.pulls.createReview({
+            if (ready.mergeable !== true || ready.mergeable_state !== 'clean') {
+              core.warning(
+                `PR is not mergeable yet (state: ${ready.mergeable_state}). Manual merge may be required.`
+              );
+              return;
+            }
+
+            await github.rest.pulls.merge({
               owner,
               repo,
               pull_number: pr.number,
-              event: 'APPROVE',
-              body: 'CI passed — auto-merge enabled for Cursor agent PR.',
+              merge_method: 'merge',
             });
+            core.info('Merged PR directly (auto-merge was not enabled).');
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'deploy.yml',
+              ref: 'main',
+            });
+            core.info('Triggered deploy workflow.');
