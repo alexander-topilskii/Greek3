@@ -17,7 +17,12 @@
   }
 
   function normalizeQuery(text) {
-    return text.trim().toLowerCase();
+    return text
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}+/gu, '')
+      .replace(/ё/g, 'е');
   }
 
   function renderResults(items) {
