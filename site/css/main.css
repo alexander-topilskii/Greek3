@@ -760,6 +760,14 @@ body {
   margin: 0.25rem 0;
 }
 
+.pwa-install-section .btn {
+  width: 100%;
+}
+
+.pwa-install-section[hidden] {
+  display: none !important;
+}
+
 .word-header .word-progress {
   margin-top: 0.75rem;
 }

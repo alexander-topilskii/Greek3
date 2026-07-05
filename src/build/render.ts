@@ -1,6 +1,7 @@
 import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
 import { renderMarkdown } from './markdown';
 import { getSpecialSection, parseContextExamples } from './parse-word';
+import { pwaScope } from './pwa';
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
   verb: 'глагол',
@@ -29,6 +30,7 @@ const SHARED_SCRIPTS = [
   'assets/js/speak.js',
   'assets/js/flashcard.js',
   'assets/js/examples-dialog.js',
+  'assets/js/pwa.js',
 ];
 
 function escapeHtml(text: string): string {
@@ -263,6 +265,11 @@ function homeSettingsDialogMarkup(): string {
           <button type="button" class="btn btn-secondary" id="btn-save-home-settings">Сохранить</button>
         </div>
         <hr class="settings-divider">
+        <div class="pwa-install-section" id="pwa-install-section" hidden>
+          <button type="button" class="btn btn-secondary" id="btn-install-app">Установить приложение</button>
+          <p class="settings-hint" id="pwa-install-hint">Добавьте Greek3 на главный экран для быстрого доступа и офлайн-режима.</p>
+        </div>
+        <hr class="settings-divider">
         <button type="button" class="btn btn-secondary btn-reset-all" id="btn-reset-all-progress">Сбросить весь прогресс</button>
         <p class="settings-hint">Удалит все данные о выученных словах и начнёт обучение сначала.</p>
       </div>
@@ -289,12 +296,21 @@ function layout(
     .map((s) => `<script src="${sitePath(s)}?v=${ASSET_VERSION}" defer></script>`)
     .join('\n  ');
 
+  const scope = pwaScope(SITE_CONFIG.baseUrl);
+
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="${escapeHtml(SITE_CONFIG.description)}">
+  <meta id="pwa-meta" data-sw="${escapeHtml(sitePath('sw.js'))}" data-scope="${escapeHtml(scope)}">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Greek3">
+  <link rel="manifest" href="${sitePath('manifest.webmanifest')}">
+  <link rel="icon" href="${sitePath('assets/icons/icon.svg')}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="${sitePath('assets/icons/icon-192.png')}">
   <title>${escapeHtml(pageTitle)} · ${escapeHtml(SITE_CONFIG.title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

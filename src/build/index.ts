@@ -25,6 +25,7 @@ import {
   syntheticIndexFromCatalog,
   wordOutputPath,
 } from './render';
+import { writeManifest, writeServiceWorker } from './pwa';
 import type { CatalogWord, IndexLink, IndexPage, VerbCatalog, WordEntry } from './types';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -447,6 +448,12 @@ function main(): void {
   const searchIndex = buildSearchIndex(globalWords);
   writeHtml('search.html', renderSearch(searchIndex));
   console.log(`  🔍 search.html (${searchIndex.length} words)`);
+
+  const baseUrl = process.env.SITE_BASE_URL ?? '';
+  const buildId = process.env.BUILD_ID ?? 'dev';
+  writeManifest(DIST_DIR, baseUrl);
+  writeServiceWorker(DIST_DIR, baseUrl, buildId);
+  console.log('  📱 manifest.webmanifest + sw.js');
 
   console.log(`✅ Done — ${words.length} word(s), output: dist/`);
 }
