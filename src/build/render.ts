@@ -57,13 +57,13 @@ function embedJson(data: unknown): string {
 
 function progressBarMarkup(slug: string): string {
   return `
-        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}">
+        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}" title="Прогресс: Ελ→Ру · Ру→Ελ">
           <div class="word-progress-track">
-            <div class="word-progress-half word-progress-half--left">
-              <div class="word-progress-fill progress-word"></div>
+            <div class="word-progress-half word-progress-half--left" title="Ελ → Ру">
+              <div class="word-progress-fill progress-word" aria-label="Ελ → Ру"></div>
             </div>
-            <div class="word-progress-half word-progress-half--right">
-              <div class="word-progress-fill progress-forms"></div>
+            <div class="word-progress-half word-progress-half--right" title="Ру → Ελ">
+              <div class="word-progress-fill progress-ru-el" aria-label="Ру → Ελ"></div>
             </div>
           </div>
         </div>`;

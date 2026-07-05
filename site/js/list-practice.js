@@ -243,8 +243,24 @@
 
     if (remembered && !wasDone) {
       const cardsAfter = await getCatalogCards();
+      const settings = await srs.loadDeckSettings(deckId, db);
+      const hadProgress = cardsBefore.some(
+        (c) =>
+          c.wordSlug === slug &&
+          c.type === 'summary' &&
+          ((c.repetitions ?? 0) > 0 || (c.remembered ?? 0) > 0),
+      );
+      if (!hadProgress) {
+        await srs.expandPoolOnFirstTouch(
+          deckId,
+          catalog,
+          db,
+          settings,
+          slug,
+          cardsBefore,
+        );
+      }
       if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
-        const settings = await srs.loadDeckSettings(deckId, db);
         await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
       }
     }

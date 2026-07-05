@@ -304,15 +304,28 @@ async function testNoConsecutiveSameWord() {
   if (!srs.isPickTooSoon('word-0', 'el-ru')) {
     throw new Error('Expected same direction blocked at distance 2');
   }
-  if (srs.isPickTooSoon('word-0', 'ru-el')) {
-    throw new Error('Reverse direction should be allowed at distance 2');
+  if (!srs.isPickTooSoon('word-0', 'ru-el')) {
+    throw new Error('Expected reverse direction blocked at distance 2');
   }
   srs.recordRecentPick('word-2', 'el-ru');
-  if (srs.isPickTooSoon('word-0', 'el-ru')) {
-    throw new Error('Same direction should be allowed at distance 3');
+  if (!srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Expected same direction blocked at distance 3');
   }
-  srs.recordRecentPick('word-3', 'ru-el');
-  if (!srs.isPickTooSoon('word-3', 'el-ru')) {
+  srs.recordRecentPick('word-3', 'el-ru');
+  if (srs.isPickTooSoon('word-0', 'el-ru')) {
+    throw new Error('Same direction should be allowed at distance 4');
+  }
+  if (!srs.isPickTooSoon('word-0', 'ru-el')) {
+    throw new Error('Reverse direction should still be blocked at distance 4');
+  }
+  for (let i = 4; i <= 8; i++) {
+    srs.recordRecentPick(`word-${i}`, 'el-ru');
+  }
+  if (srs.isPickTooSoon('word-0', 'ru-el')) {
+    throw new Error('Reverse direction should be allowed at distance 9');
+  }
+  srs.recordRecentPick('word-9', 'ru-el');
+  if (!srs.isPickTooSoon('word-9', 'el-ru')) {
     throw new Error('Expected reverse direction blocked at distance 1');
   }
   srs.endSession();
@@ -334,10 +347,10 @@ async function testExpandPoolOnWordLearned() {
   const newLimit = await srs.expandPoolOnWordLearned('global', catalog, db, settings);
   srs.endSession();
 
-  if (newLimit !== 6) {
-    throw new Error(`Expected activeLimit 6 after one word learned, got ${newLimit}`);
+  if (newLimit !== 7) {
+    throw new Error(`Expected activeLimit 7 after one word learned, got ${newLimit}`);
   }
-  console.log('✓ pool expands by 1 when word learned');
+  console.log('✓ pool expands by 2 when word learned');
 }
 
 async function testRecentPicksPersist() {

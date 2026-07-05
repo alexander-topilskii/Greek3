@@ -3,21 +3,29 @@
   const DAY = 24 * 60 * MINUTES;
 
   const DEFAULTS = {
-    initialBatchSize: 5,
+    initialBatchSize: 8,
     batchIncrement: 3,
+    /** Сколько слов добавлять в набор при полном усвоении одного. */
+    poolExpandOnLearn: 2,
+    /** После стольких новых/учебных карточек вставить повторение выученного слова. */
+    reviewInsertEvery: 4,
     masteryReps: 3,
     /** Правильных ответов в одной сессии — достаточно, чтобы не показывать слово снова до конца сессии. */
     sessionCorrectThreshold: 2,
+    /** Для выученных слов в сессии достаточно одного правильного ответа. */
+    sessionReviewThreshold: 1,
   };
 
   let sessionActive = false;
   /** @type {Map<string, number>} slug#direction → correct count in current session */
   const sessionCorrect = new Map();
+  /** Карточек с новыми/учебными словами с последнего повторения в сессии. */
+  let sessionCardsSinceReview = 0;
   /** @type {{ slug: string, direction: string }[]} newest first */
   const recentPicks = [];
-  const RECENT_PICK_HISTORY = 3;
-  const SAME_DIRECTION_GAP = 2;
-  const REVERSE_DIRECTION_GAP = 1;
+  const RECENT_PICK_HISTORY = 10;
+  const SAME_DIRECTION_GAP = 3;
+  const REVERSE_DIRECTION_GAP = 8;
 
   const RECENT_PICKS_KEY = 'practice:recentPicks';
 
@@ -97,6 +105,7 @@
   function beginSession() {
     sessionActive = true;
     sessionCorrect.clear();
+    sessionCardsSinceReview = 0;
   }
 
   async function loadRecentPicks(db) {
@@ -132,6 +141,7 @@
   function endSession(db) {
     sessionActive = false;
     sessionCorrect.clear();
+    sessionCardsSinceReview = 0;
     if (db) {
       persistRecentPicks(db).catch((err) => {
         console.error('Failed to persist recent picks', err);
@@ -183,13 +193,24 @@
     return sessionCorrect.get(sessionKey(slug, direction)) ?? 0;
   }
 
-  function isSessionSatisfied(slug, direction) {
-    return getSessionCorrect(slug, direction) >= DEFAULTS.sessionCorrectThreshold;
+  function isSessionSatisfied(slug, direction, cards, db, now = Date.now()) {
+    const card =
+      cards && db ? getSummaryCard(cards, slug, direction, db) : null;
+    if (card && isMastered(card) && !isDue(card, now)) {
+      return true;
+    }
+    const threshold =
+      card && isMastered(card)
+        ? DEFAULTS.sessionReviewThreshold
+        : DEFAULTS.sessionCorrectThreshold;
+    return getSessionCorrect(slug, direction) >= threshold;
   }
 
-  function poolSessionSatisfiedInDirection(poolWords, direction) {
+  function poolSessionSatisfiedInDirection(poolWords, direction, cards, db) {
     if (!poolWords.length) return false;
-    return poolWords.every((w) => isSessionSatisfied(w.slug, direction));
+    return poolWords.every((w) =>
+      isSessionSatisfied(w.slug, direction, cards, db),
+    );
   }
 
   function isWordFullyDoneGlobal(slug, cards, db) {
@@ -201,8 +222,8 @@
   function isWordDoneForPool(slug, cards, db, now = Date.now()) {
     if (
       sessionActive &&
-      isSessionSatisfied(slug, 'el-ru') &&
-      isSessionSatisfied(slug, 'ru-el')
+      isSessionSatisfied(slug, 'el-ru', cards, db, now) &&
+      isSessionSatisfied(slug, 'ru-el', cards, db, now)
     ) {
       return true;
     }
@@ -214,16 +235,42 @@
     return true;
   }
 
-  /** Текущее направление для слова: Ελ→Ру, затем Ру→Ελ; null — слово выучено. */
-  function getWordPracticeDirection(slug, cards, db) {
+  /**
+   * Одно направление за раз: сначала Ελ→Ру, затем Ру→Ελ.
+   * В сессии не переключает направления подряд — gap в isPickTooSoon.
+   */
+  function getWordPracticeDirection(slug, cards, db, now = Date.now()) {
+    const elRu = getSummaryCard(cards, slug, 'el-ru', db);
+    const ruEl = getSummaryCard(cards, slug, 'ru-el', db);
+
     if (sessionActive) {
-      if (!isSessionSatisfied(slug, 'el-ru')) return 'el-ru';
-      if (!isSessionSatisfied(slug, 'ru-el')) return 'ru-el';
+      const elRuMastered = elRu && isMastered(elRu);
+      const elRuDoneThisSession = isSessionSatisfied(
+        slug,
+        'el-ru',
+        cards,
+        db,
+        now,
+      );
+
+      if (!elRuMastered && !elRuDoneThisSession) {
+        return 'el-ru';
+      }
+
+      const canPracticeRuEl = elRuMastered || elRuDoneThisSession;
+      if (canPracticeRuEl && !isSessionSatisfied(slug, 'ru-el', cards, db, now)) {
+        if (!ruEl || !isMastered(ruEl)) return 'ru-el';
+        if (isDue(ruEl, now)) return 'ru-el';
+      }
+
+      if (elRuMastered && !elRuDoneThisSession && isDue(elRu, now)) {
+        return 'el-ru';
+      }
+
       return null;
     }
-    const elRu = getSummaryCard(cards, slug, 'el-ru', db);
+
     if (!elRu || !isMastered(elRu)) return 'el-ru';
-    const ruEl = getSummaryCard(cards, slug, 'ru-el', db);
     if (!ruEl || !isMastered(ruEl)) return 'ru-el';
     return null;
   }
@@ -287,18 +334,22 @@
   }
 
   function statsForWord(cards, slug, formCount, db) {
+    const elRuPct = directionPct(cards, slug, formCount, 'el-ru', db);
+    const ruElPct = directionPct(cards, slug, formCount, 'ru-el', db);
     return {
-      wordPct: directionPct(cards, slug, formCount, 'el-ru', db),
-      formsPct: directionPct(cards, slug, formCount, 'ru-el', db),
+      wordPct: elRuPct,
+      formsPct: ruElPct,
+      elRuPct,
+      ruElPct,
     };
   }
 
   function applyProgressBar(el, wordPct, formsPct) {
     if (!el) return;
     const wordFill = el.querySelector('.progress-word');
-    const formsFill = el.querySelector('.progress-forms');
+    const ruElFill = el.querySelector('.progress-ru-el') ?? el.querySelector('.progress-forms');
     if (wordFill) wordFill.style.width = `${wordPct}%`;
-    if (formsFill) formsFill.style.width = `${formsPct}%`;
+    if (ruElFill) ruElFill.style.width = `${formsPct}%`;
   }
 
   function getProgressStats(cards, totalFormsByWord, db) {
@@ -449,7 +500,7 @@
   }
 
   function reviewWeight(age) {
-    return 35 / (1 + age * 0.35);
+    return 50 / (1 + age * 0.25);
   }
 
   function pickWeighted(candidates) {
@@ -464,6 +515,50 @@
       if (r <= 0) return c;
     }
     return pool[pool.length - 1];
+  }
+
+  function partitionCandidates(candidates) {
+    const reviews = [];
+    const learning = [];
+    for (const c of candidates) {
+      if (c.card && isMastered(c.card) && !c.isNew) {
+        reviews.push(c);
+      } else {
+        learning.push(c);
+      }
+    }
+    return { reviews, learning };
+  }
+
+  /** Вставляет повторения выученных слов между новыми карточками сессии. */
+  function pickWithSessionMix(candidates) {
+    if (!candidates.length) return null;
+
+    const filtered = filterRecentPicks(candidates);
+    const pool = filtered.length ? filtered : candidates;
+
+    if (sessionActive && DEFAULTS.reviewInsertEvery > 0) {
+      const { reviews, learning } = partitionCandidates(pool);
+      if (
+        sessionCardsSinceReview >= DEFAULTS.reviewInsertEvery &&
+        reviews.length &&
+        learning.length
+      ) {
+        sessionCardsSinceReview = 0;
+        const reviewPick = pickWeighted(reviews);
+        if (reviewPick) return reviewPick;
+      }
+    }
+
+    const pick = pickWeighted(pool);
+    if (pick && sessionActive) {
+      if (pick.card && isMastered(pick.card) && !pick.isNew) {
+        sessionCardsSinceReview = 0;
+      } else {
+        sessionCardsSinceReview += 1;
+      }
+    }
+    return pick;
   }
 
   function collectCandidates(settings, catalog, cards, db, now, options) {
@@ -492,11 +587,14 @@
 
       let directions;
       if (perWordDirection) {
-        const wordDir = getWordPracticeDirection(word.slug, cards, db);
+        const wordDir = getWordPracticeDirection(word.slug, cards, db, now);
         if (!wordDir) continue;
         directions = [wordDir];
       } else if (directionFilter) {
-        if (sessionActive && isSessionSatisfied(word.slug, directionFilter)) {
+        if (
+          sessionActive &&
+          isSessionSatisfied(word.slug, directionFilter, cards, db, now)
+        ) {
           continue;
         }
         directions = [directionFilter];
@@ -547,7 +645,7 @@
       if (summaryOnly) continue;
 
       const formDirections = perWordDirection
-        ? [getWordPracticeDirection(word.slug, cards, db)].filter(Boolean)
+        ? [getWordPracticeDirection(word.slug, cards, db, now)].filter(Boolean)
         : directionFilter
           ? [directionFilter]
           : DIRECTIONS;
@@ -636,7 +734,9 @@
   }
 
   function poolDoneInDirection(poolWords, cards, db, direction) {
-    if (sessionActive) return poolSessionSatisfiedInDirection(poolWords, direction);
+    if (sessionActive) {
+      return poolSessionSatisfiedInDirection(poolWords, direction, cards, db);
+    }
     return poolMasteredInDirection(poolWords, cards, db, direction);
   }
 
@@ -716,9 +816,22 @@
     return newLimit;
   }
 
-  /** Добавить одно слово в набор, когда предыдущее выучено. */
+  /** Добавить слова в набор, когда предыдущее выучено. */
   async function expandPoolOnWordLearned(deckId, catalog, db, settings) {
     if (settings.activeLimit >= catalog.words.length) return settings.activeLimit;
+    const step = DEFAULTS.poolExpandOnLearn ?? 2;
+    return expandStudyPool(deckId, catalog, db, settings, step);
+  }
+
+  /** Расширить набор при первом касании нового слова. */
+  async function expandPoolOnFirstTouch(deckId, catalog, db, settings, slug, cards) {
+    if (settings.activeLimit >= catalog.words.length) return settings.activeLimit;
+    for (const direction of DIRECTIONS) {
+      const card = getSummaryCard(cards, slug, direction, db);
+      if ((card?.repetitions ?? 0) > 0 || (card?.remembered ?? 0) > 0) {
+        return settings.activeLimit;
+      }
+    }
     return expandStudyPool(deckId, catalog, db, settings, 1);
   }
 
@@ -763,7 +876,7 @@
         now,
         options,
       );
-      const pick = pickWeighted(candidates);
+      const pick = pickWithSessionMix(candidates);
       if (pick) {
         recordRecentPick(pick.word.slug, pick.direction, db);
         return pick;
@@ -777,16 +890,12 @@
         now,
         { ...options, relaxDue: true },
       );
-      const practiceDirection =
-        options.perWordDirection || !options.direction
-          ? 'el-ru'
-          : options.direction;
       const relaxedPick =
         isCatalogFullyMastered(catalog, allCards, db) ||
         (options.perWordDirection &&
           getActivePoolWords(catalog, allCards, db, settings).length === 0)
           ? null
-          : pickWeighted(relaxed);
+          : pickWithSessionMix(relaxed);
       if (relaxedPick) {
         recordRecentPick(relaxedPick.word.slug, relaxedPick.direction, db);
         return relaxedPick;
@@ -799,6 +908,8 @@
         poolSessionSatisfiedInDirection(
           getActivePoolWords(catalog, allCards, db, settings),
           options.direction,
+          allCards,
+          db,
         )
       ) {
         break;
@@ -920,5 +1031,6 @@
     repeatStudyPool,
     expandStudyPool,
     expandPoolOnWordLearned,
+    expandPoolOnFirstTouch,
   };
 })(window);
