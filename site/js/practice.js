@@ -142,7 +142,7 @@
   });
 
   btnReset?.addEventListener('click', async () => {
-    if (!confirm('Сбросить прогресс этого глагола?')) return;
+    if (!confirm('Сбросить прогресс этого слова?')) return;
     await db.deleteWordCards(wordSlug);
     await updateWordProgress();
     randomMixed();
