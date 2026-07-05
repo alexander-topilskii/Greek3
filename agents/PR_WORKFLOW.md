@@ -23,7 +23,8 @@ Cloud Agents открывают PR из веток `cursor/<описание>-b6
 
 - **Require a pull request before merging** — включить (агенты всё равно работают через PR).
 - **Require status checks to pass before merging** — включить.
-  - Обязательный check: **`build`** (job из workflow **CI**). Имя должно совпадать точно — без `enable-automerge` и `approve`.
+  - Обязательный check: **только `build`** (job из workflow **CI**). Имя должно совпадать точно.
+  - **Не** добавлять `approve`, `enable-automerge` или workflow **Agent Auto-merge** — иначе PR застрянет в `unstable` и merge не сработает.
 - **Require approvals** — включить (approve даёт job `approve` от `github-actions[bot]`).
 - **Allow specified actors to bypass required pull requests** — **не** включать для ботов, если хотите единый путь через PR.
 
@@ -46,6 +47,8 @@ Cloud Agents открывают PR из веток `cursor/<описание>-b6
 
 **Почему auto-merge в отдельном workflow:** GitHub API часто отклоняет `enablePullRequestAutoMerge` с `unstable status`, если вызывать его после зелёного CI. Отдельный workflow `Agent Auto-merge` стартует сразу при открытии PR; job **не падает** при `unstable` — это нормально.
 
-**Запасной путь:** если auto-merge так и не включился, job `approve` после зелёного `build` мержит PR напрямую и запускает `Deploy Site` через `workflow_dispatch` (merge от `GITHUB_TOKEN` не триггерит push-workflow).
+**Запасной путь (основной на практике):** job `approve` после зелёного `build` ставит approve и мержит PR напрямую через API с ретраями (~2 мин). GitHub API `enablePullRequestAutoMerge` часто отвечает `unstable status`, а `mergeable_state` остаётся `unstable`, пока сам job `approve` ещё выполняется — поэтому ждать `clean` нельзя. После merge запускается `Deploy Site` через `workflow_dispatch` (merge от `GITHUB_TOKEN` не триггерит push-workflow).
+
+**Важно:** в branch protection обязательный status check — **только `build`**. Не добавляйте `approve` и `enable-automerge` в required checks — иначе PR навсегда в `unstable` (job ждёт сам себя).
 
 Агент **не** мержит PR вручную — только создаёт и обновляет PR; merge выполняет GitHub Actions после checks и approve.
