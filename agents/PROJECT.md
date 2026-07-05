@@ -41,3 +41,5 @@ npm run dev          # Сборка + локальный сервер на :3000
 Push в `main` → GitHub Action `Deploy Site` → GitHub Pages.
 
 В настройках репозитория: **Settings → Pages → Source: GitHub Actions**.
+
+PR от Cloud Agents (`cursor/*`) → workflow **CI** → approve + auto-merge → push в `main` → deploy. Подробнее: `agents/PR_WORKFLOW.md`.

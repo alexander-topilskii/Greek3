@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build:site
+        env:
+          SITE_BASE_URL: /${{ github.event.repository.name }}
+          BUILD_ID: ${{ github.sha }}
+
+  automerge:
+    needs: build
+    if: |
+      github.event_name == 'pull_request' &&
+      startsWith(github.head_ref, 'cursor/') &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Approve and enable auto-merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: pr.number,
+            });
+            const alreadyApproved = reviews.some(
+              (review) => review.user?.login === 'github-actions[bot]' && review.state === 'APPROVED'
+            );
+
+            if (!alreadyApproved) {
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: pr.number,
+                event: 'APPROVE',
+                body: 'CI passed — auto-merge enabled for Cursor agent PR.',
+              });
+            }
+
+            if (!pr.auto_merge) {
+              await github.graphql(
+                `mutation($prId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $prId,
+                    mergeMethod: MERGE
+                  }) {
+                    pullRequest { autoMergeEnabled }
+                  }
+                }`,
+                { prId: pr.node_id }
+              );
+            }

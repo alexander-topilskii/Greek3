@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Greek3
 
-Перед работой прочитай `agents/AGENTS.md` и связанные файлы в `agents/`.
+Перед работой прочитай `agents/AGENTS.md` и связанные файлы в `agents/`. Для Cloud Agents и PR — `agents/PR_WORKFLOW.md`.
 
 ## Принципы
 
@@ -19,4 +19,5 @@ alwaysApply: true
 
 - Генератор: `src/build/`
 - Статика: `site/css/`, `site/js/`
-- CI: `.github/workflows/deploy.yml`
+- CI: `.github/workflows/ci.yml` (PR + auto-merge для `cursor/*`)
+- Deploy: `.github/workflows/deploy.yml` (push в `main` → GitHub Pages)

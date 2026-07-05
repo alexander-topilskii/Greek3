@@ -5,6 +5,7 @@
 1. Прочитай `agents/PROJECT.md` — цели и структура
 2. Прочитай `agents/ARCHITECTURE.md` — как устроена сборка
 3. При работе с контентом — `agents/MD_FORMAT.md`
+4. При работе через Cloud Agent / PR — `agents/PR_WORKFLOW.md`
 
 ## Правила
 
@@ -14,6 +15,7 @@
 - **Сборка** — изменения в генераторе: `src/build/`; статика: `site/`
 - **Не коммитить** `dist/` — генерируется в CI
 - **Язык UI** — русский; греческий текст — в Unicode (не translit)
+- **Pull request** — ветка `cursor/<описание>-b6d3`, PR не в draft; после зелёного CI auto-merge сработает сам (см. `agents/PR_WORKFLOW.md`). **Не мержить PR вручную** — только создавать и обновлять
 
 ## Типичные задачи
 
