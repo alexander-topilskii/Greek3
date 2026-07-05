@@ -79,18 +79,16 @@
     if (poolHint) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
       const { learned, inProgress, total } = srs.getPoolProgress(pool, cards, db);
+      const remaining = total - learned;
       if (learned > 0) {
-        poolHint.textContent = `Набор: ${learned}/${total} усвоено`;
+        poolHint.textContent = `Набор: ${learned}/${total} усвоено · ${inProgress} в работе`;
       } else if (inProgress > 0) {
-        poolHint.textContent = `Набор: ${inProgress}/${total} в работе`;
+        poolHint.textContent = `Набор: ${inProgress}/${total} в работе · ${remaining} осталось`;
       } else {
         poolHint.textContent = `Набор: 0/${total} — свайп вправо «Помню»`;
       }
       if (poolProgressFill) {
-        const pct =
-          total > 0
-            ? Math.round((Math.max(learned, inProgress) / total) * 100)
-            : 0;
+        const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
         poolProgressFill.style.width = `${pct}%`;
       }
     }
@@ -180,8 +178,24 @@
 
     if (remembered && !wasDone) {
       const cardsAfter = await db.getCardsForSlugs(catalogSlugs);
+      const settings = await srs.loadDeckSettings(deckId, db);
+      const hadProgress = cardsBefore.some(
+        (c) =>
+          c.wordSlug === slug &&
+          c.type === 'summary' &&
+          ((c.repetitions ?? 0) > 0 || (c.remembered ?? 0) > 0),
+      );
+      if (!hadProgress) {
+        await srs.expandPoolOnFirstTouch(
+          deckId,
+          catalog,
+          db,
+          settings,
+          slug,
+          cardsBefore,
+        );
+      }
       if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
-        const settings = await srs.loadDeckSettings(deckId, db);
         await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
       }
     }
@@ -201,7 +215,7 @@
 
     if (learned > 0) {
       continueHint.textContent =
-        `В группе ${learned} из ${total} усвоено · всего в словаре ${catalogSlugs.length}`;
+        `В группе ${learned} из ${total} усвоено, ${inProgress} в работе · всего в словаре ${catalogSlugs.length}`;
     } else if (inProgress > 0) {
       continueHint.textContent =
         `В группе ${inProgress} из ${total} в работе · всего в словаре ${catalogSlugs.length}`;
