@@ -80,7 +80,7 @@ function homePracticePanelMarkup(): string {
             </span>
           </span>
         </div>
-        ${flashcardMarkup('home-flashcard-root')}
+        ${flashcardMarkup('home-flashcard-root', 'word-link')}
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>
         <div class="practice-block-complete hidden" id="practice-block-complete" hidden>
           <p class="practice-block-complete-text" id="practice-block-complete-text"></p>
@@ -110,7 +110,16 @@ function practiceCompleteMarkup(): string {
         </div>`;
 }
 
-function flashcardMarkup(id = 'flashcard-root'): string {
+type FlashcardControls = 'random' | 'word-link';
+
+function flashcardPrimaryControl(kind: FlashcardControls): string {
+  if (kind === 'word-link') {
+    return `<a href="#" class="btn btn-secondary btn-word-link hidden" id="btn-word-link" hidden aria-disabled="true">В слово →</a>`;
+  }
+  return `<button type="button" class="btn btn-primary btn-random">Случайная</button>`;
+}
+
+function flashcardMarkup(id = 'flashcard-root', controls: FlashcardControls = 'random'): string {
   return `
     <div class="flashcard-root" id="${id}">
       <div class="flashcard-hints" aria-hidden="true">
@@ -133,7 +142,7 @@ function flashcardMarkup(id = 'flashcard-root'): string {
       </div>
     </div>
     <div class="practice-controls">
-      <button type="button" class="btn btn-primary btn-random">Случайная</button>
+      ${flashcardPrimaryControl(controls)}
       <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
       <button type="button" class="speak-switch btn-speak" role="switch" aria-checked="false" aria-label="Автоозвучка" title="Включить автоозвучку">
         <span class="speak-switch-track" aria-hidden="true">
@@ -296,8 +305,11 @@ export function renderHome(
   const continueBlock =
     globalCatalog && globalCatalog.words.length > 0
       ? `
-      <div class="hero-actions fade-in">
-        <button type="button" class="btn btn-primary btn-continue" id="btn-continue">Продолжить</button>
+      <div class="hero-continue fade-in" id="hero-continue">
+        <button type="button" class="btn btn-primary btn-continue" id="btn-continue">
+          <span class="btn-continue-label">Продолжить</span>
+          <span class="btn-continue-arrow" aria-hidden="true">→</span>
+        </button>
         <p class="continue-hint" id="continue-hint">Загрузка прогресса…</p>
       </div>`
       : '';

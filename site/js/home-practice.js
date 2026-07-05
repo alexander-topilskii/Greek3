@@ -30,7 +30,7 @@
   const btnClose = document.getElementById('btn-close-practice');
   const practiceSection = document.getElementById('home-practice');
   const sectionsGrid = document.getElementById('sections-grid');
-  const heroActions = document.querySelector('.hero-actions');
+  const heroContinue = document.getElementById('hero-continue');
   const continueHint = document.getElementById('continue-hint');
   const directionBadge = document.getElementById('practice-direction-badge');
   const poolHint = document.getElementById('practice-pool-hint');
@@ -49,7 +49,85 @@
   let fc = null;
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
-  const btnRandom = practiceControls?.querySelector('.btn-random');
+  const btnWordLink = practiceControls?.querySelector('.btn-word-link');
+
+  const RESUME_KEY = 'greek3:home-practice-resume';
+
+  function siteBasePrefix() {
+    const logoHref = document.querySelector('.logo')?.getAttribute('href') ?? '/';
+    return logoHref.replace(/\/?index\.html$/, '').replace(/\/$/, '');
+  }
+
+  function wordPageHref(href) {
+    const base = siteBasePrefix();
+    const encoded = href
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+    return `${base}/words/${encoded}`;
+  }
+
+  function saveResumeState() {
+    if (!currentPick?.word?.slug) return;
+    try {
+      sessionStorage.setItem(
+        RESUME_KEY,
+        JSON.stringify({
+          slug: currentPick.word.slug,
+          direction: currentPick.direction ?? 'el-ru',
+        }),
+      );
+    } catch (err) {
+      console.warn('Could not save practice resume state', err);
+    }
+  }
+
+  function clearResumeState() {
+    try {
+      sessionStorage.removeItem(RESUME_KEY);
+    } catch (err) {
+      console.warn('Could not clear practice resume state', err);
+    }
+  }
+
+  function readResumeState() {
+    try {
+      const raw = sessionStorage.getItem(RESUME_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.slug) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function scrollToHeroContinue() {
+    (heroContinue ?? btnContinue)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function syncWordLink(pick) {
+    if (!btnWordLink) return;
+    if (!pick?.word?.href) {
+      btnWordLink.classList.add('hidden');
+      btnWordLink.setAttribute('hidden', '');
+      btnWordLink.setAttribute('aria-disabled', 'true');
+      btnWordLink.removeAttribute('href');
+      return;
+    }
+    btnWordLink.href = wordPageHref(pick.word.href);
+    btnWordLink.classList.remove('hidden');
+    btnWordLink.removeAttribute('hidden');
+    btnWordLink.removeAttribute('aria-disabled');
+  }
+
+  function hideWordLink() {
+    if (!btnWordLink) return;
+    btnWordLink.classList.add('hidden');
+    btnWordLink.setAttribute('hidden', '');
+    btnWordLink.setAttribute('aria-disabled', 'true');
+    btnWordLink.removeAttribute('href');
+  }
 
   function directionLabel(direction) {
     return direction === 'ru-el' ? 'Ру → Ελ' : 'Ελ → Ру';
@@ -109,6 +187,7 @@
     practiceControls?.classList.add('hidden');
     practiceControls?.setAttribute('hidden', '');
     hideWordSource();
+    hideWordLink();
     sessionBar?.classList.add('hidden');
     sessionBar?.setAttribute('hidden', '');
     const card = initFlashcard();
@@ -150,6 +229,7 @@
       fc.showMultiLine(greekLines, [word.translation], true, false);
     }
     setWordSource(word, pick.direction);
+    syncWordLink(pick);
   }
 
   async function ensurePickCard(pick) {
@@ -282,6 +362,7 @@
     if (!currentPick) {
       card.showPair('—', 'Нет слов к повторению — загляните позже');
       hideWordSource();
+      hideWordLink();
       return;
     }
 
@@ -295,7 +376,7 @@
     await pickAndShowNext();
   }
 
-  async function openPractice() {
+  async function openPractice(resumePick) {
     const card = initFlashcard();
     if (!card) return;
 
@@ -315,16 +396,29 @@
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
     sectionsGrid?.classList.add('hidden');
-    heroActions?.classList.add('hidden');
+    heroContinue?.classList.add('hidden');
+    heroContinue?.setAttribute('hidden', '');
+
+    if (resumePick) {
+      currentPick = resumePick;
+      showCardContent(currentPick);
+      const settings = await srs.loadDeckSettings(deckId, db);
+      const cards = await db.getCardsForSlugs(catalogSlugs);
+      await syncSessionInfo(settings, cards);
+      return;
+    }
+
     await pickAndShowNext();
   }
 
   function closePractice() {
     srs.endSession(db);
+    clearResumeState();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     sectionsGrid?.classList.remove('hidden');
-    heroActions?.classList.remove('hidden');
+    heroContinue?.classList.remove('hidden');
+    heroContinue?.removeAttribute('hidden');
     hideCompletionPanels();
     updateContinueHint();
   }
@@ -345,10 +439,17 @@
     await pickAndShowNext();
   }
 
-  btnContinue?.addEventListener('click', openPractice);
+  btnContinue?.addEventListener('click', () => openPractice());
   btnClose?.addEventListener('click', closePractice);
   btnRepeatCatalog?.addEventListener('click', repeatCatalog);
-  btnRandom?.addEventListener('click', pickAndShowNext);
+
+  btnWordLink?.addEventListener('click', (event) => {
+    if (!currentPick?.word?.href) {
+      event.preventDefault();
+      return;
+    }
+    saveResumeState();
+  });
 
   btnHomeSettings?.addEventListener('click', async () => {
     await loadHomeSettingsUI();
@@ -368,11 +469,31 @@
     }
   });
 
+  async function tryResumePractice() {
+    const state = readResumeState();
+    if (!state) return;
+
+    clearResumeState();
+
+    const word = catalog.words.find((w) => w.slug === state.slug);
+    if (!word) return;
+
+    scrollToHeroContinue();
+
+    await openPractice({
+      word,
+      direction: state.direction ?? srs.getWordPracticeDirection(word.slug, await db.getCardsForSlugs(catalogSlugs), db) ?? 'el-ru',
+      type: 'summary',
+      isNew: false,
+    });
+  }
+
   async function initHomePractice() {
     try {
       await db.init();
       await loadHomeSettingsUI();
       await updateContinueHint();
+      await tryResumePractice();
     } catch (err) {
       console.error('Home practice init error', err);
       if (continueHint) {
