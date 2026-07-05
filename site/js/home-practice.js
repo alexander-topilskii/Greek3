@@ -38,7 +38,7 @@
   const sessionBar = document.getElementById('practice-session-bar');
   const catalogComplete = document.getElementById('practice-catalog-complete');
   const btnRepeatCatalog = document.getElementById('btn-repeat-catalog');
-  const btnHomeSettings = document.getElementById('btn-home-settings');
+  const btnHeaderSettings = document.getElementById('btn-header-settings');
   const settingsDialog = document.getElementById('home-settings-dialog');
   const btnResetAll = document.getElementById('btn-reset-all-progress');
   const inputGroupSize = document.getElementById('home-setting-group-size');
@@ -467,7 +467,7 @@
     if (currentPick?.word) examples?.show(currentPick.word);
   });
 
-  btnHomeSettings?.addEventListener('click', async () => {
+  btnHeaderSettings?.addEventListener('click', async () => {
     await loadHomeSettingsUI();
     settingsDialog?.showModal();
   });

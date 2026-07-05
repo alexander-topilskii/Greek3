@@ -13,10 +13,12 @@ import { buildSlugIndexMap, indexOutputPath, parseIndexFile } from './parse-inde
 import { isWordFile, parseWordFile } from './parse-word';
 import {
   buildCatalogWord,
+  buildSearchIndex,
   outputDirFor,
   renderCasesIndex,
   renderHome,
   renderIndex,
+  renderSearch,
   renderTopicLevelHub,
   renderWord,
   sitePath,
@@ -441,6 +443,11 @@ function main(): void {
 
   writeHtml('index.html', renderHome(homeSections, globalCatalog));
   console.log('  🏠 index.html');
+
+  const searchIndex = buildSearchIndex(globalWords);
+  writeHtml('search.html', renderSearch(searchIndex));
+  console.log(`  🔍 search.html (${searchIndex.length} words)`);
+
   console.log(`✅ Done — ${words.length} word(s), output: dist/`);
 }
 

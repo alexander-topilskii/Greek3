@@ -28,7 +28,9 @@
   const panel = root?.closest('.practice-panel');
   const btnRandom = panel?.querySelector('.btn-random');
   const btnLang = panel?.querySelector('.btn-lang');
-  const btnReset = document.querySelector('.btn-reset-word');
+  const btnHeaderSettings = document.getElementById('btn-header-settings');
+  const settingsDialog = document.getElementById('word-settings-dialog');
+  const btnReset = document.getElementById('btn-reset-word');
   const formRows = document.querySelectorAll('.form-row');
 
   let currentIndex = 0;
@@ -144,6 +146,11 @@
     await db.deleteWordCards(wordSlug);
     await updateWordProgress();
     randomMixed();
+    settingsDialog?.close();
+  });
+
+  btnHeaderSettings?.addEventListener('click', () => {
+    settingsDialog?.showModal();
   });
 
   fc.setLangButton(btnLang);

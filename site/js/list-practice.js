@@ -31,6 +31,8 @@
   const btnClose = document.getElementById('btn-close-practice');
   const practiceSection = document.getElementById('list-practice');
   const linksSection = document.getElementById('verbs-links');
+  const btnHeaderSettings = document.getElementById('btn-header-settings');
+  const settingsDialog = document.getElementById('deck-settings-dialog');
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const btnResetDeck = document.getElementById('btn-reset-deck');
   const inputInitial = document.getElementById('setting-initial-batch');
@@ -368,6 +370,7 @@
     });
     await loadSettingsUI();
     updateProgressUI();
+    settingsDialog?.close();
   });
 
   btnResetDeck?.addEventListener('click', async () => {
@@ -376,6 +379,12 @@
     await db.setSetting(`deck:${deckId}:activeLimit`, parseInt(inputInitial?.value ?? '5', 10));
     updateProgressUI();
     if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();
+    settingsDialog?.close();
+  });
+
+  btnHeaderSettings?.addEventListener('click', async () => {
+    await loadSettingsUI();
+    settingsDialog?.showModal();
   });
 
   db.init().then(() => {

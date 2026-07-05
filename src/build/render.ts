@@ -154,20 +154,58 @@ function flashcardMarkup(id = 'flashcard-root', controls: FlashcardControls = 'r
     </div>`;
 }
 
-function settingsPanel(scope: 'word' | 'deck', maxWords = 999): string {
-  if (scope === 'word') {
-    return `
-    <details class="settings-panel fade-in">
-      <summary class="settings-summary">Настройки прогресса</summary>
-      <div class="settings-body">
-        <button type="button" class="btn btn-secondary btn-reset-word">Сбросить этот глагол</button>
-      </div>
-    </details>`;
-  }
+function searchButtonMarkup(): string {
   return `
-    <details class="settings-panel fade-in" id="deck-settings">
-      <summary class="settings-summary">Настройки прогресса</summary>
-      <div class="settings-body">
+        <a href="${sitePath('search.html')}" class="btn-icon btn-header-search" aria-label="Поиск" title="Поиск">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </a>`;
+}
+
+function settingsButtonMarkup(): string {
+  return `
+        <button type="button" class="btn-icon btn-header-settings" id="btn-header-settings" aria-label="Настройки" title="Настройки">
+          <svg class="icon-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>`;
+}
+
+function wordSettingsDialogMarkup(): string {
+  return `
+  <dialog class="settings-dialog" id="word-settings-dialog" aria-labelledby="word-settings-title">
+    <form method="dialog" class="settings-dialog-inner">
+      <header class="settings-dialog-header">
+        <h2 class="settings-dialog-title" id="word-settings-title">Настройки прогресса</h2>
+        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+      <div class="settings-dialog-body">
+        <button type="button" class="btn btn-secondary btn-reset-word" id="btn-reset-word">Сбросить этот глагол</button>
+      </div>
+    </form>
+  </dialog>`;
+}
+
+function deckSettingsDialogMarkup(maxWords: number): string {
+  return `
+  <dialog class="settings-dialog" id="deck-settings-dialog" aria-labelledby="deck-settings-title">
+    <form method="dialog" class="settings-dialog-inner">
+      <header class="settings-dialog-header">
+        <h2 class="settings-dialog-title" id="deck-settings-title">Настройки прогресса</h2>
+        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+      <div class="settings-dialog-body">
         <label class="settings-field">
           <span>Начальная группа</span>
           <input type="number" id="setting-initial-batch" min="1" max="30" value="5">
@@ -182,17 +220,8 @@ function settingsPanel(scope: 'word' | 'deck', maxWords = 999): string {
           <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
         </div>
       </div>
-    </details>`;
-}
-
-function homeSettingsButtonMarkup(): string {
-  return `
-        <button type="button" class="btn-icon btn-header-settings" id="btn-home-settings" aria-label="Настройки" title="Настройки">
-          <svg class="icon-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-          </svg>
-        </button>`;
+    </form>
+  </dialog>`;
 }
 
 function examplesDialogMarkup(): string {
@@ -246,7 +275,7 @@ function layout(
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
   extraScripts: string[] = [],
-  options: { headerActions?: string; bodyEnd?: string } = {},
+  options: { showSettings?: boolean; bodyEnd?: string } = {},
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -281,9 +310,8 @@ function layout(
         <span class="logo-text">${escapeHtml(SITE_CONFIG.title)}</span>
       </a>
       <nav class="site-nav">
-        <a href="${sitePath('words/index.html')}">Словарь</a>
-        <a href="${sitePath('words/lessons/index.html')}">Уроки</a>
-        ${options.headerActions ?? ''}
+        ${searchButtonMarkup()}
+        ${options.showSettings ? settingsButtonMarkup() : ''}
       </nav>
     </div>
   </header>
@@ -362,7 +390,7 @@ export function renderHome(
   const scripts = hasHomePractice ? ['assets/js/home-practice.js'] : [];
   const layoutOptions = hasHomePractice
     ? {
-        headerActions: homeSettingsButtonMarkup(),
+        showSettings: true,
         bodyEnd: `${examplesDialogMarkup()}${homeSettingsDialogMarkup()}`,
       }
     : {};
@@ -543,8 +571,6 @@ export function renderIndex(
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
       </section>
 
-      ${catalog ? settingsPanel('deck', catalog.words.length) : ''}
-
       <section class="links-list" id="verbs-links">
         ${links}
       </section>
@@ -556,8 +582,13 @@ export function renderIndex(
       ? ['assets/js/list-controls.js', 'assets/js/list-practice.js']
       : [];
 
-  const layoutOptions =
-    catalog && catalog.words.length > 0 ? { bodyEnd: examplesDialogMarkup() } : {};
+  const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const layoutOptions = hasDeckPractice
+    ? {
+        showSettings: true,
+        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+      }
+    : {};
 
   return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
 }
@@ -776,8 +807,6 @@ export function renderWord(
         ${flashcardMarkup('flashcard-root')}
       </section>
 
-      ${settingsPanel('word')}
-
       ${
         word.forms.length
           ? `
@@ -799,7 +828,71 @@ export function renderWord(
       ${extraHtml}
     </article>`;
 
-  return layout(content, word.translation || word.title, breadcrumbs, ['assets/js/practice.js']);
+  return layout(content, word.translation || word.title, breadcrumbs, ['assets/js/practice.js'], {
+    showSettings: true,
+    bodyEnd: wordSettingsDialogMarkup(),
+  });
+}
+
+export interface SearchIndexEntry {
+  slug: string;
+  label: string;
+  href: string;
+  greek: string;
+  searchText: string;
+}
+
+export function buildSearchIndex(words: CatalogWord[]): SearchIndexEntry[] {
+  return words.map((word) => {
+    const greekParts = [
+      word.primaryGreek,
+      ...word.baseForms,
+      ...word.forms.map((f) => f.greek),
+    ].filter(Boolean);
+    const ruParts = [
+      word.label,
+      word.translation,
+      ...word.forms.map((f) => f.translation),
+    ].filter(Boolean);
+    const greek = greekParts[0] ?? '';
+    const searchText = [...new Set([...greekParts, ...ruParts])].join(' ').toLowerCase();
+    return {
+      slug: word.slug,
+      label: word.label,
+      href: sitePath(`words/${word.href}`),
+      greek,
+      searchText,
+    };
+  });
+}
+
+export function renderSearch(searchIndex: SearchIndexEntry[]): string {
+  const indexJson = `<script type="application/json" id="search-index">${embedJson(searchIndex)}</script>`;
+
+  const content = `
+    <section class="search-page fade-in">
+      <div class="page-head">
+        <h1>Поиск</h1>
+        <p class="page-intro">Ищите по греческому или русскому тексту среди всех слов словаря.</p>
+      </div>
+      <div class="search-field-wrap">
+        <input
+          type="search"
+          class="search-input"
+          id="search-input"
+          placeholder="Греческий или русский…"
+          autocomplete="off"
+          enterkeyhint="search"
+          autofocus>
+      </div>
+      <p class="search-status" id="search-status" aria-live="polite"></p>
+      <div class="search-results" id="search-results"></div>
+      ${indexJson}
+    </section>`;
+
+  return layout(content, 'Поиск', [{ label: 'Главная', href: sitePath('index.html') }, { label: 'Поиск' }], [
+    'assets/js/search.js',
+  ]);
 }
 
 export function wordOutputPath(slug: string): string {
