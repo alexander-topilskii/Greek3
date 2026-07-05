@@ -105,7 +105,10 @@ jobs:
               core.info('PR already approved by github-actions[bot].');
             }
 
-            for (let attempt = 1; attempt <= 12; attempt++) {
+            // mergeable_state often stays "unstable" while this job is running
+            // (especially if approve/enable-automerge are required checks).
+            // Use the merge API with retries instead of waiting for "clean".
+            for (let attempt = 1; attempt <= 24; attempt++) {
               const current = await getPullRequest();
               if (current.merged) {
                 core.info('PR already merged.');
@@ -115,42 +118,35 @@ jobs:
                 core.info('Auto-merge enabled — GitHub will merge when ready.');
                 return;
               }
-              if (current.mergeable === true && current.mergeable_state === 'clean') {
-                break;
+
+              try {
+                const { data: result } = await github.rest.pulls.merge({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  merge_method: 'merge',
+                });
+                if (result.merged) {
+                  core.info('Merged PR directly.');
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner,
+                    repo,
+                    workflow_id: 'deploy.yml',
+                    ref: 'main',
+                  });
+                  core.info('Triggered deploy workflow.');
+                  return;
+                }
+              } catch (error) {
+                const status = error.status;
+                const message = String(error.message || error);
+                if (status === 405 || status === 409 || message.includes('not mergeable')) {
+                  core.info(`Merge not ready (${attempt}/24), retrying…`);
+                  await sleep(5000);
+                  continue;
+                }
+                throw error;
               }
-              core.info(`Waiting for mergeability (${attempt}/12)…`);
-              await sleep(5000);
             }
 
-            const ready = await getPullRequest();
-            if (ready.merged) {
-              core.info('PR already merged.');
-              return;
-            }
-            if (await autoMergeEnabled()) {
-              core.info('Auto-merge enabled — GitHub will merge when ready.');
-              return;
-            }
-
-            if (ready.mergeable !== true || ready.mergeable_state !== 'clean') {
-              core.warning(
-                `PR is not mergeable yet (state: ${ready.mergeable_state}). Manual merge may be required.`
-              );
-              return;
-            }
-
-            await github.rest.pulls.merge({
-              owner,
-              repo,
-              pull_number: pr.number,
-              merge_method: 'merge',
-            });
-            core.info('Merged PR directly (auto-merge was not enabled).');
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id: 'deploy.yml',
-              ref: 'main',
-            });
-            core.info('Triggered deploy workflow.');
+            core.warning('Could not merge PR after retries. Manual merge may be required.');
