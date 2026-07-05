@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { parseFrontmatter } from './parse-frontmatter';
-import type { WordEntry, WordForm, WordMeta } from './types';
+import type { WordEntry, WordExample, WordForm, WordMeta } from './types';
 
 const SECTION_BASE = 'база';
 const SECTION_FORMS = 'формы';
@@ -136,4 +136,28 @@ export function getSpecialSection(
 ): { title: string; lines: string[] } | null {
   const key = title.toLowerCase();
   return word.extraSections.find((s) => s.title.toLowerCase() === key) ?? null;
+}
+
+/** Парсит секцию «Контекст»: `- **греч.** — перевод` */
+export function parseContextExamples(word: WordEntry): WordExample[] {
+  const section = getSpecialSection(word, 'контекст');
+  if (!section) return [];
+
+  const examples: WordExample[] = [];
+  for (const line of section.lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('-')) continue;
+
+    const content = trimmed.replace(/^-\s*/, '');
+    const parts = content.split(/\s+[—–-]\s+/);
+    if (parts.length < 2) continue;
+
+    const greek = parts[0].replace(/\*\*/g, '').trim();
+    const translation = parts.slice(1).join(' — ').trim();
+    if (greek && translation) {
+      examples.push({ greek, translation });
+    }
+  }
+
+  return examples;
 }

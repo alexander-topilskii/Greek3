@@ -50,6 +50,8 @@
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnWordLink = practiceControls?.querySelector('.btn-word-link');
+  const btnExamples = practiceControls?.querySelector('.btn-examples');
+  const examples = window.GreekExamples;
 
   const RESUME_KEY = 'greek3:home-practice-resume';
 
@@ -121,12 +123,21 @@
     btnWordLink.removeAttribute('aria-disabled');
   }
 
+  function syncExamplesButton(word) {
+    examples?.syncButton(btnExamples, word);
+  }
+
+  function hideExamplesButton() {
+    examples?.hideButton(btnExamples);
+  }
+
   function hideWordLink() {
     if (!btnWordLink) return;
     btnWordLink.classList.add('hidden');
     btnWordLink.setAttribute('hidden', '');
     btnWordLink.setAttribute('aria-disabled', 'true');
     btnWordLink.removeAttribute('href');
+    hideExamplesButton();
   }
 
   function directionLabel(direction) {
@@ -230,6 +241,7 @@
     }
     setWordSource(word, pick.direction);
     syncWordLink(pick);
+    syncExamplesButton(word);
   }
 
   async function ensurePickCard(pick) {
@@ -449,6 +461,10 @@
       return;
     }
     saveResumeState();
+  });
+
+  btnExamples?.addEventListener('click', () => {
+    if (currentPick?.word) examples?.show(currentPick.word);
   });
 
   btnHomeSettings?.addEventListener('click', async () => {

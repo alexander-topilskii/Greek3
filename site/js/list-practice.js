@@ -68,6 +68,7 @@
     practiceComplete?.toggleAttribute('hidden', !visible);
     practiceControls?.classList.toggle('hidden', visible);
     practiceControls?.toggleAttribute('hidden', visible);
+    if (visible) hideExamplesButton();
   }
 
   function initFlashcard() {
@@ -92,6 +93,16 @@
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnRandom = practiceControls?.querySelector('.btn-random');
   const btnLang = practiceControls?.querySelector('.btn-lang');
+  const btnExamples = practiceControls?.querySelector('.btn-examples');
+  const examples = window.GreekExamples;
+
+  function syncExamplesButton(word) {
+    examples?.syncButton(btnExamples, word);
+  }
+
+  function hideExamplesButton() {
+    examples?.hideButton(btnExamples);
+  }
 
   async function loadSettingsUI() {
     const s = await srs.loadDeckSettings(deckId, db);
@@ -295,11 +306,13 @@
           ? 'Направление пройдено в этой сессии — смените режим или закройте практику'
           : 'Все слова пройдены!',
       );
+      hideExamplesButton();
       setPracticeComplete(true);
       return;
     }
 
     showCardContent(currentPick);
+    syncExamplesButton(currentPick.word);
   }
 
   async function openPractice(direction) {
@@ -343,6 +356,10 @@
   btnRepeatSession?.addEventListener('click', repeatSession);
 
   btnRandom?.addEventListener('click', pickAndShowNext);
+
+  btnExamples?.addEventListener('click', () => {
+    if (currentPick?.word) examples?.show(currentPick.word);
+  });
 
   btnSaveSettings?.addEventListener('click', async () => {
     await srs.saveDeckSettings(deckId, db, {

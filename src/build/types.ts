@@ -3,6 +3,11 @@ export interface WordForm {
   translation: string;
 }
 
+export interface WordExample {
+  greek: string;
+  translation: string;
+}
+
 export interface WordMeta {
   level: string;
   topics: string[];
@@ -65,6 +70,8 @@ export interface CatalogWord {
   blockIndex?: number;
   /** Уровень чисел: 0 = 1–20, 1 = десятки, 2 = сотни, 3 = тысячи */
   numberTier?: number;
+  /** Примеры из секции «Контекст» на странице слова */
+  examples?: WordExample[];
 }
 
 export interface VerbCatalog {

@@ -1,6 +1,6 @@
 import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
 import { renderMarkdown } from './markdown';
-import { getSpecialSection } from './parse-word';
+import { getSpecialSection, parseContextExamples } from './parse-word';
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
   verb: 'глагол',
@@ -28,6 +28,7 @@ const SHARED_SCRIPTS = [
   'assets/js/srs.js',
   'assets/js/speak.js',
   'assets/js/flashcard.js',
+  'assets/js/examples-dialog.js',
 ];
 
 function escapeHtml(text: string): string {
@@ -143,6 +144,7 @@ function flashcardMarkup(id = 'flashcard-root', controls: FlashcardControls = 'r
     </div>
     <div class="practice-controls">
       ${flashcardPrimaryControl(controls)}
+      <button type="button" class="btn btn-secondary btn-examples hidden" hidden aria-label="Примеры использования">Примеры</button>
       <button type="button" class="btn btn-secondary btn-lang" aria-pressed="false" title="Показывать сначала по-русски">⇄ RU</button>
       <button type="button" class="speak-switch btn-speak" role="switch" aria-checked="false" aria-label="Автоозвучка" title="Включить автоозвучку">
         <span class="speak-switch-track" aria-hidden="true">
@@ -191,6 +193,23 @@ function homeSettingsButtonMarkup(): string {
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
           </svg>
         </button>`;
+}
+
+function examplesDialogMarkup(): string {
+  return `
+  <dialog class="settings-dialog examples-dialog" id="examples-dialog" aria-labelledby="examples-dialog-title">
+    <div class="settings-dialog-inner">
+      <header class="settings-dialog-header">
+        <h2 class="settings-dialog-title" id="examples-dialog-title">Примеры</h2>
+        <button type="button" class="btn-icon btn-dialog-close" id="btn-close-examples" aria-label="Закрыть">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+      <div class="settings-dialog-body examples-dialog-body" id="examples-dialog-body"></div>
+    </div>
+  </dialog>`;
 }
 
 function homeSettingsDialogMarkup(): string {
@@ -344,7 +363,7 @@ export function renderHome(
   const layoutOptions = hasHomePractice
     ? {
         headerActions: homeSettingsButtonMarkup(),
-        bodyEnd: homeSettingsDialogMarkup(),
+        bodyEnd: `${examplesDialogMarkup()}${homeSettingsDialogMarkup()}`,
       }
     : {};
 
@@ -537,7 +556,10 @@ export function renderIndex(
       ? ['assets/js/list-controls.js', 'assets/js/list-practice.js']
       : [];
 
-  return layout(content, page.title, breadcrumbs, scripts);
+  const layoutOptions =
+    catalog && catalog.words.length > 0 ? { bodyEnd: examplesDialogMarkup() } : {};
+
+  return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
 }
 
 function casesCheatSheetCell(text: string): string {
@@ -801,6 +823,7 @@ export function depthForOutput(relativeHtmlPath: string): number {
 }
 
 export function buildCatalogWord(word: WordEntry, href: string, label: string): CatalogWord {
+  const examples = parseContextExamples(word);
   return {
     slug: word.slug,
     translation: word.translation || word.title,
@@ -816,6 +839,7 @@ export function buildCatalogWord(word: WordEntry, href: string, label: string): 
     recordType: word.meta.recordType,
     primaryGreek: word.primaryGreek,
     category: word.category,
+    ...(examples.length > 0 ? { examples } : {}),
   };
 }
 
