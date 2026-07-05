@@ -7,7 +7,8 @@ Cloud Agents открывают PR из веток `cursor/<описание>-b6
 | Workflow | Когда | Что |
 |----------|-------|-----|
 | `CI` (`.github/workflows/ci.yml`) | PR и push в `main` | `npm ci` + `npm run build:site` |
-| `CI` → job `automerge` | PR в ветке `cursor/*` → `main`, CI зелёный, не draft | Approve + `enablePullRequestAutoMerge` |
+| `CI` → job `enable-automerge` | PR в ветке `cursor/*` → `main`, не draft | Включить auto-merge **до** прохождения checks (GitHub ждёт `build` + approve) |
+| `CI` → job `approve` | после зелёного `build` | Approve от `github-actions[bot]` |
 | `Deploy Site` (`.github/workflows/deploy.yml`) | Push в `main` | Сборка и публикация на GitHub Pages |
 
 ## Что настроить вручную (один раз)
@@ -40,7 +41,9 @@ Cloud Agents открывают PR из веток `cursor/<описание>-b6
 1. Ветка `cursor/<описание>-b6d3` от `main`
 2. Коммиты, push, открытие PR (не draft)
 3. Дождаться зелёного **CI**
-4. Workflow одобрит PR и включит auto-merge
-5. GitHub смержит в `main` → запустится **Deploy Site**
+4. Workflow включит auto-merge сразу при открытии PR, после зелёного CI — approve
+5. GitHub смержит в `main`, когда выполнены checks и approve → запустится **Deploy Site**
+
+**Почему auto-merge включается до CI:** GitHub API отклоняет `enablePullRequestAutoMerge`, если все требования уже выполнены (`unstable` / `clean status`). Поэтому auto-merge ставится в начале, а approve — после `build`.
 
 Агент **не** мержит PR вручную — только создаёт и обновляет PR; merge выполняет GitHub после checks и approve.
