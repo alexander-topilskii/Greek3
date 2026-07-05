@@ -1,6 +1,7 @@
 import type { CatalogWord, IndexLink, IndexPage, SiteConfig, VerbCatalog, WordEntry } from './types';
 import { renderMarkdown } from './markdown';
 import { getSpecialSection, parseContextExamples } from './parse-word';
+import { normalizeSearchText } from './normalize-search';
 import { pwaScope } from './pwa';
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
@@ -871,7 +872,9 @@ export function buildSearchIndex(words: CatalogWord[]): SearchIndexEntry[] {
       ...word.forms.map((f) => f.translation),
     ].filter(Boolean);
     const greek = greekParts[0] ?? '';
-    const searchText = [...new Set([...greekParts, ...ruParts])].join(' ').toLowerCase();
+    const searchText = normalizeSearchText(
+      [...new Set([...greekParts, ...ruParts])].join(' '),
+    );
     return {
       slug: word.slug,
       label: word.label,
