@@ -208,15 +208,54 @@ body {
   gap: 0.75rem;
 }
 
+.hero-continue {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  max-width: 22rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem 1.1rem 1.05rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #f8fbff 0%, #f5f3ff 100%);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+}
+
+.hero-continue.hidden {
+  display: none;
+}
+
 .btn-continue {
-  min-width: 12rem;
-  font-size: 1rem;
-  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+}
+
+.btn-continue-arrow {
+  font-size: 1.125rem;
+  line-height: 1;
+  transition: transform var(--transition);
+}
+
+.btn-continue:hover .btn-continue-arrow,
+.btn-continue:focus-visible .btn-continue-arrow {
+  transform: translateX(0.15rem);
 }
 
 .continue-hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  text-align: center;
   color: var(--text-muted);
 }
 
@@ -993,9 +1032,19 @@ body {
   flex: 0 0 auto;
 }
 
-.practice-controls .btn-random {
+.practice-controls .btn-random,
+.practice-controls .btn-word-link {
   flex: 1 1 auto;
   max-width: 14rem;
+}
+
+.practice-controls .btn-word-link {
+  text-decoration: none;
+  text-align: center;
+}
+
+.practice-controls .btn-word-link.hidden {
+  display: none;
 }
 
 .speak-switch {
