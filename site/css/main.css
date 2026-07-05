@@ -325,6 +325,15 @@ body {
   gap: 0.625rem;
 }
 
+.examples-dialog {
+  max-width: min(28rem, calc(100vw - 2rem));
+}
+
+.examples-dialog-body {
+  max-height: min(60vh, 24rem);
+  overflow-y: auto;
+}
+
 .btn-reset-all:hover {
   border-color: var(--error);
   color: var(--error);
@@ -1033,9 +1042,14 @@ body {
 }
 
 .practice-controls .btn-random,
-.practice-controls .btn-word-link {
+.practice-controls .btn-word-link,
+.practice-controls .btn-examples {
   flex: 1 1 auto;
   max-width: 14rem;
+}
+
+.practice-controls .btn-examples.hidden {
+  display: none;
 }
 
 .practice-controls .btn-word-link {
