@@ -3,6 +3,8 @@
   const installSection = document.getElementById('pwa-install-section');
   const btnInstall = document.getElementById('btn-install-app');
   const installHint = document.getElementById('pwa-install-hint');
+  const defaultHint =
+    'Добавьте Greek3 на главный экран для быстрого доступа и офлайн-режима.';
   let deferredPrompt = null;
 
   function isInstalled() {
@@ -18,8 +20,12 @@
     return isIOS && !window.MSStream;
   }
 
+  function isAndroid() {
+    return /Android/i.test(window.navigator.userAgent);
+  }
+
   function showInstallSection() {
-    if (!installSection || isInstalled()) return;
+    if (!installSection) return;
     installSection.hidden = false;
   }
 
@@ -27,28 +33,50 @@
     if (installSection) installSection.hidden = true;
   }
 
+  function setInstallHint(text) {
+    if (installHint) installHint.textContent = text;
+  }
+
   function updateInstallUi() {
     if (!installSection) return;
 
     if (isInstalled()) {
-      hideInstallSection();
+      showInstallSection();
+      if (btnInstall) btnInstall.hidden = true;
+      setInstallHint(
+        'Приложение установлено. Чтобы обновить иконку: удалите Greek3 с главного экрана, откройте сайт в Chrome и установите снова.',
+      );
       return;
     }
 
     if (deferredPrompt) {
       showInstallSection();
       if (btnInstall) btnInstall.hidden = false;
+      setInstallHint(defaultHint);
       return;
     }
 
     if (isIosSafari()) {
       showInstallSection();
       if (btnInstall) btnInstall.hidden = true;
-      if (installHint) {
-        installHint.textContent =
-          'В Safari нажмите «Поделиться» и выберите «На экран Домой», чтобы добавить Greek3.';
-      }
+      setInstallHint(
+        'В Safari нажмите «Поделиться» и выберите «На экран Домой», чтобы добавить Greek3.',
+      );
+      return;
     }
+
+    if (isAndroid()) {
+      showInstallSection();
+      if (btnInstall) btnInstall.hidden = true;
+      setInstallHint(
+        'В Chrome откройте меню (⋮) и выберите «Установить приложение» или «Добавить на главный экран».',
+      );
+      return;
+    }
+
+    showInstallSection();
+    if (btnInstall) btnInstall.hidden = true;
+    setInstallHint('В Chrome или Edge нажмите значок установки в адресной строке.');
   }
 
   window.addEventListener('beforeinstallprompt', (event) => {
@@ -62,13 +90,13 @@
     deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
     deferredPrompt = null;
-    if (choice.outcome === 'accepted') hideInstallSection();
+    if (choice.outcome === 'accepted') updateInstallUi();
     else updateInstallUi();
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    hideInstallSection();
+    updateInstallUi();
   });
 
   const swUrl = meta?.dataset.sw;
