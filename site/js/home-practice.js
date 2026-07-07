@@ -33,7 +33,13 @@
   const heroContinue = document.getElementById('hero-continue');
   const continueHint = document.getElementById('continue-hint');
   const directionBadge = document.getElementById('practice-direction-badge');
-  const poolHint = document.getElementById('practice-pool-hint');
+  const poolProgress = document.getElementById('practice-pool-progress');
+  const poolSegmentLearned = document.getElementById('practice-pool-segment-learned');
+  const poolSegmentActive = document.getElementById('practice-pool-segment-active');
+  const poolSegmentNew = document.getElementById('practice-pool-segment-new');
+  const poolLabelLearned = document.getElementById('practice-pool-label-learned');
+  const poolLabelActive = document.getElementById('practice-pool-label-active');
+  const poolLabelNew = document.getElementById('practice-pool-label-new');
   const wordSourceEl = document.getElementById('practice-word-source');
   const sessionBar = document.getElementById('practice-session-bar');
   const catalogComplete = document.getElementById('practice-catalog-complete');
@@ -43,7 +49,6 @@
   const btnResetAll = document.getElementById('btn-reset-all-progress');
   const inputGroupSize = document.getElementById('home-setting-group-size');
   const btnSaveHomeSettings = document.getElementById('btn-save-home-settings');
-  const poolProgressFill = document.getElementById('practice-pool-progress-fill');
 
   let currentPick = null;
   let fc = null;
@@ -159,27 +164,33 @@
     wordSourceEl?.setAttribute('hidden', '');
   }
 
+  function poolSegmentPct(count, total) {
+    return total > 0 ? `${(count / total) * 100}%` : '0%';
+  }
+
   async function syncSessionInfo(settings, cards) {
     if (directionBadge && currentPick?.direction) {
       directionBadge.textContent = directionLabel(currentPick.direction);
     } else if (directionBadge) {
       directionBadge.textContent = 'По словам';
     }
-    if (poolHint) {
+    if (poolProgress) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-      const { learned, inProgress, total } = srs.getPoolProgress(pool, cards, db);
-      const remaining = total - learned;
-      if (learned > 0) {
-        poolHint.textContent = `Набор: ${learned}/${total} усвоено · ${inProgress} в работе`;
-      } else if (inProgress > 0) {
-        poolHint.textContent = `Набор: ${inProgress}/${total} в работе · ${remaining} осталось`;
-      } else {
-        poolHint.textContent = `Набор: 0/${total} — свайп вправо «Помню»`;
+      const { learned, inProgress, total, fresh } = srs.getPoolProgress(pool, cards, db);
+
+      if (poolSegmentLearned) {
+        poolSegmentLearned.style.width = poolSegmentPct(learned, total);
       }
-      if (poolProgressFill) {
-        const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
-        poolProgressFill.style.width = `${pct}%`;
+      if (poolSegmentActive) {
+        poolSegmentActive.style.width = poolSegmentPct(inProgress, total);
       }
+      if (poolSegmentNew) {
+        poolSegmentNew.style.width = poolSegmentPct(fresh, total);
+      }
+
+      if (poolLabelLearned) poolLabelLearned.textContent = `${learned} усвоено`;
+      if (poolLabelActive) poolLabelActive.textContent = `${inProgress} в работе`;
+      if (poolLabelNew) poolLabelNew.textContent = `${fresh} новых`;
     }
   }
 
