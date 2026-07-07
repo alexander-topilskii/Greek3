@@ -420,10 +420,16 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-content: center;
   gap: var(--pool-dot-gap, 0.35rem);
   width: 100%;
   max-width: 100%;
+  margin-inline: auto;
   padding: 0.1rem 0;
+}
+
+.pool-dots--multirow {
+  row-gap: calc(var(--pool-dot-gap, 0.35rem) + 1px);
 }
 
 .pool-dots--compact {

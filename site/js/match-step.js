@@ -17,6 +17,7 @@
     let locked = false;
     let pairs = [];
     let matchedCount = 0;
+    let matchedPairIds = new Set();
     let selectedGreek = null;
     let selectedRu = null;
 
@@ -79,14 +80,27 @@
       requestAnimationFrame(() => row.classList.add('learn-match-pair-row--visible'));
     }
 
+    function findPairIndex(greekText, ruText) {
+      return pairs.findIndex(
+        (pair, index) =>
+          !matchedPairIds.has(index) &&
+          pair.greek === greekText &&
+          pair.translation === ruText,
+      );
+    }
+
     function tryPair() {
       if (selectedGreek == null || selectedRu == null) return;
 
       const greekBtn = greekCol?.querySelector(`[data-match-id="${selectedGreek}"]`);
       const ruBtn = ruCol?.querySelector(`[data-match-id="${selectedRu}"]`);
+      const greekText = greekBtn?.textContent?.trim() ?? '';
+      const ruText = ruBtn?.textContent?.trim() ?? '';
+      const pairIndex = findPairIndex(greekText, ruText);
 
-      if (selectedGreek === selectedRu) {
-        const pair = pairs[selectedGreek];
+      if (pairIndex >= 0) {
+        const pair = pairs[pairIndex];
+        matchedPairIds.add(pairIndex);
         lockChip(greekBtn);
         lockChip(ruBtn);
         addMatchedRow(pair.greek, pair.translation);
@@ -157,6 +171,7 @@
     function show({ matchPairs }) {
       locked = false;
       matchedCount = 0;
+      matchedPairIds = new Set();
       pairs = matchPairs ?? [];
       selectedGreek = null;
       selectedRu = null;
