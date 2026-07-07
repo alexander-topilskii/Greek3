@@ -89,7 +89,17 @@ function homePracticePanelMarkup(): string {
         <div class="practice-session-bar" id="practice-session-bar">
           <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
           <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс набора" aria-expanded="false">
+            <span class="pool-side-stat pool-side-stat--resting">
+              <span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span>
+              <span class="pool-side-stat-value" id="practice-pool-count-resting">0</span>
+              <span class="pool-side-stat-label">отдыхает</span>
+            </span>
             <span class="pool-dots" id="practice-pool-dots" role="list" aria-hidden="true"></span>
+            <span class="pool-side-stat pool-side-stat--total">
+              <span class="progress-swatch progress-swatch--total" aria-hidden="true"></span>
+              <span class="pool-side-stat-value" id="practice-pool-count-total">0</span>
+              <span class="pool-side-stat-label">всего</span>
+            </span>
             <span class="practice-pool-labels">
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-label-learned">0 усвоено</span></span>
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-label-active">0 в работе</span></span>

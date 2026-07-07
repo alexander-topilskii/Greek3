@@ -13,6 +13,10 @@
   --warning: #d97706;
   --progress-active: #ea580c;
   --progress-active-soft: #ffedd5;
+  --pool-learning: #059669;
+  --pool-learning-soft: #d1fae5;
+  --pool-mastered: #2563eb;
+  --pool-resting: #eab308;
   --progress-new: #cbd5e1;
   --error: #dc2626;
   --radius: 16px;
@@ -353,10 +357,11 @@ body {
 
 .practice-pool-progress {
   flex: 1 1 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
   width: 100%;
   margin: 0;
   padding: 0.15rem 0;
@@ -366,6 +371,49 @@ body {
   color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.pool-side-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+
+.pool-side-stat--resting {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.pool-side-stat--total {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.pool-side-stat-label {
+  display: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.practice-pool-progress.progress-labeled .pool-side-stat-label {
+  display: inline;
+}
+
+.practice-pool-progress .pool-dots {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.practice-pool-progress .practice-pool-labels {
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 .pool-dots {
@@ -390,7 +438,7 @@ body {
   border-radius: 999px;
   flex-shrink: 0;
   background: var(--progress-new);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 .pool-dot--new {
@@ -400,26 +448,78 @@ body {
 }
 
 .pool-dot--learning {
-  box-shadow: inset 0 0 0 1.5px var(--progress-active);
+  box-shadow: inset 0 0 0 1.5px var(--pool-learning);
   background: conic-gradient(
-    var(--progress-active) var(--pool-dot-progress, 0%),
-    var(--progress-active-soft) 0
+    var(--pool-learning) var(--pool-dot-progress, 0%),
+    var(--pool-learning-soft) 0
   );
 }
 
 .pool-dot--resting {
-  background: var(--accent);
-  opacity: 0.45;
+  background: var(--pool-resting);
 }
 
 .pool-dot--mastered {
-  background: var(--success);
+  background: var(--pool-mastered);
 }
 
 .pool-dot--current {
-  transform: scale(1.35);
-  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 3.5px var(--accent);
+  transform: scale(1.12);
+  box-shadow: 0 0 0 1.5px var(--bg-card), 0 0 0 2.5px color-mix(in srgb, var(--text-muted) 35%, transparent);
   z-index: 1;
+}
+
+@keyframes pool-dot-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pool-dot-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-0.55rem) scale(0.55);
+  }
+}
+
+@keyframes pool-dot-mastered-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.2) translateY(-0.15rem);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.pool-dot--enter {
+  animation: pool-dot-enter 0.35s ease-out both;
+}
+
+.pool-dot--exit {
+  pointer-events: none;
+  animation: pool-dot-exit 0.4s ease-in forwards;
+  z-index: 2;
+}
+
+.pool-dot--mastered-pop {
+  animation: pool-dot-mastered-pop 0.45s ease-out;
+}
+
+.pool-dot--current.pool-dot--enter,
+.pool-dot--current.pool-dot--mastered-pop {
+  animation-duration: 0.35s;
 }
 
 .practice-pool-progress:focus-visible {
@@ -484,16 +584,19 @@ body {
 }
 
 .progress-swatch--learned {
-  background: var(--success);
+  background: var(--pool-mastered);
 }
 
 .progress-swatch--active {
-  background: var(--progress-active);
+  background: var(--pool-learning);
 }
 
 .progress-swatch--resting {
-  background: var(--accent);
-  opacity: 0.55;
+  background: var(--pool-resting);
+}
+
+.progress-swatch--total {
+  background: var(--progress-new);
 }
 
 .progress-swatch--new {
