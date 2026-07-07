@@ -322,7 +322,7 @@ function layout(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="${escapeHtml(SITE_CONFIG.description)}">
-  <meta id="pwa-meta" data-sw="${escapeHtml(sitePath('sw.js'))}" data-scope="${escapeHtml(scope)}">
+  <meta id="pwa-meta" data-sw="${escapeHtml(sitePath('sw.js'))}" data-scope="${escapeHtml(scope)}" data-build="${ASSET_VERSION}">
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Greek3">

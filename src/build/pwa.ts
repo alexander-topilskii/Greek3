@@ -102,20 +102,63 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isHtmlNavigation(request) {
+  if (request.mode === 'navigate') return true;
+  const accept = request.headers.get('accept') || '';
+  return accept.includes('text/html');
+}
+
+function isVersionedAsset(url) {
+  return url.searchParams.has('v');
+}
+
+function cacheResponse(request, response) {
+  if (!response || response.status !== 200 || response.type === 'opaque') return;
+  const copy = response.clone();
+  caches.open(CACHE).then((cache) => cache.put(request, copy));
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
+  const url = new URL(event.request.url);
+
+  if (isHtmlNavigation(event.request)) {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
-          if (!response || response.status !== 200 || response.type === 'opaque') return response;
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          cacheResponse(event.request, response);
           return response;
         })
-        .catch(() => caches.match(event.request));
+        .catch(() => caches.match(event.request)),
+    );
+    return;
+  }
+
+  if (isVersionedAsset(url)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request)
+          .then((response) => {
+            cacheResponse(event.request, response);
+            return response;
+          })
+          .catch(() => caches.match(event.request));
+      }),
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      const network = fetch(event.request)
+        .then((response) => {
+          cacheResponse(event.request, response);
+          return response;
+        })
+        .catch(() => cached);
+      return cached || network;
     }),
   );
 });
