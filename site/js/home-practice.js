@@ -34,11 +34,10 @@
   const continueHint = document.getElementById('continue-hint');
   const directionBadge = document.getElementById('practice-direction-badge');
   const poolProgress = document.getElementById('practice-pool-progress');
-  const poolSegmentLearned = document.getElementById('practice-pool-segment-learned');
-  const poolSegmentActive = document.getElementById('practice-pool-segment-active');
-  const poolSegmentNew = document.getElementById('practice-pool-segment-new');
+  const poolDotsEl = document.getElementById('practice-pool-dots');
   const poolLabelLearned = document.getElementById('practice-pool-label-learned');
   const poolLabelActive = document.getElementById('practice-pool-label-active');
+  const poolLabelResting = document.getElementById('practice-pool-label-resting');
   const poolLabelNew = document.getElementById('practice-pool-label-new');
   const wordSourceEl = document.getElementById('practice-word-source');
   const sessionBar = document.getElementById('practice-session-bar');
@@ -164,8 +163,20 @@
     wordSourceEl?.setAttribute('hidden', '');
   }
 
-  function poolSegmentPct(count, total) {
-    return total > 0 ? `${(count / total) * 100}%` : '0%';
+  function syncPoolDots(pool, cards, currentSlug) {
+    if (!poolDotsEl) return;
+    const dots = srs.getPoolDots(pool, cards, db, currentSlug);
+    poolDotsEl.replaceChildren();
+    for (const dot of dots) {
+      const el = document.createElement('span');
+      el.className = 'pool-dot';
+      el.classList.add(`pool-dot--${dot.state}`);
+      if (dot.isCurrent) el.classList.add('pool-dot--current');
+      el.setAttribute('role', 'listitem');
+      el.setAttribute('title', dot.label);
+      el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
+      poolDotsEl.appendChild(el);
+    }
   }
 
   async function syncSessionInfo(settings, cards) {
@@ -176,21 +187,32 @@
     }
     if (poolProgress) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-      const { learned, inProgress, total, fresh } = srs.getPoolProgress(pool, cards, db);
+      const direction = currentPick?.direction ?? srs.resolveAutoDirection(catalog, cards, db, settings);
+      const {
+        learned,
+        total,
+        directionMastered,
+        directionLearning,
+        directionNew,
+      } = srs.getPoolProgress(pool, cards, db, direction);
 
-      if (poolSegmentLearned) {
-        poolSegmentLearned.style.width = poolSegmentPct(learned, total);
-      }
-      if (poolSegmentActive) {
-        poolSegmentActive.style.width = poolSegmentPct(inProgress, total);
-      }
-      if (poolSegmentNew) {
-        poolSegmentNew.style.width = poolSegmentPct(fresh, total);
-      }
+      const dots = srs.getPoolDots(pool, cards, db, currentPick?.word?.slug ?? null);
+      const resting = dots.filter((d) => d.state === 'resting').length;
 
-      if (poolLabelLearned) poolLabelLearned.textContent = `${learned} усвоено`;
-      if (poolLabelActive) poolLabelActive.textContent = `${inProgress} в работе`;
-      if (poolLabelNew) poolLabelNew.textContent = `${fresh} новых`;
+      syncPoolDots(pool, cards, currentPick?.word?.slug ?? null);
+
+      if (poolLabelLearned) {
+        poolLabelLearned.textContent = `${directionMastered || learned} усвоено`;
+      }
+      if (poolLabelActive) {
+        poolLabelActive.textContent = `${directionLearning} в работе`;
+      }
+      if (poolLabelResting) {
+        poolLabelResting.textContent = `${resting} отдыхает`;
+      }
+      if (poolLabelNew) {
+        poolLabelNew.textContent = `${directionNew} новых`;
+      }
     }
   }
 
@@ -309,16 +331,24 @@
     const cards = await db.getCardsForSlugs(catalogSlugs);
     const settings = await srs.loadDeckSettings(deckId, db);
     const pool = srs.getActivePoolWords(catalog, cards, db, settings);
-    const { learned, inProgress, total } = srs.getPoolProgress(pool, cards, db);
+    const direction = srs.resolveAutoDirection(catalog, cards, db, settings);
+    const { learned, directionLearning, total, directionMastered } = srs.getPoolProgress(
+      pool,
+      cards,
+      db,
+      direction,
+    );
+    const inProgress = directionLearning;
 
     if (srs.isCatalogFullyMastered(catalog, cards, db)) {
       continueHint.textContent = `Все слова пройдены — можно повторить`;
       return;
     }
 
-    if (learned > 0) {
+    const mastered = directionMastered || learned;
+    if (mastered > 0) {
       continueHint.textContent =
-        `В группе ${learned} из ${total} усвоено, ${inProgress} в работе · всего в словаре ${catalogSlugs.length}`;
+        `В группе ${mastered} из ${total} усвоено, ${inProgress} в работе · всего в словаре ${catalogSlugs.length}`;
     } else if (inProgress > 0) {
       continueHint.textContent =
         `В группе ${inProgress} из ${total} в работе · всего в словаре ${catalogSlugs.length}`;

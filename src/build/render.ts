@@ -66,7 +66,7 @@ function progressBarMarkup(slug: string): string {
           <div class="word-progress-row">
             <span class="word-progress-meta">
               <span class="word-progress-label">Ελ → Ру</span>
-              <span class="word-progress-fraction progress-el-ru-fraction">0/5</span>
+              <span class="word-progress-fraction progress-el-ru-fraction">0/2</span>
             </span>
             <div class="word-progress-track word-progress-track--single" aria-hidden="true">
               <div class="word-progress-fill progress-word"></div>
@@ -75,7 +75,7 @@ function progressBarMarkup(slug: string): string {
           <div class="word-progress-row">
             <span class="word-progress-meta">
               <span class="word-progress-label">Ру → Ελ</span>
-              <span class="word-progress-fraction progress-ru-el-fraction">0/5</span>
+              <span class="word-progress-fraction progress-ru-el-fraction">0/4</span>
             </span>
             <div class="word-progress-track word-progress-track--single" aria-hidden="true">
               <div class="word-progress-fill progress-ru-el"></div>
@@ -89,14 +89,11 @@ function homePracticePanelMarkup(): string {
         <div class="practice-session-bar" id="practice-session-bar">
           <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
           <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс набора" aria-expanded="false">
-            <span class="practice-pool-progress-bar" aria-hidden="true">
-              <span class="practice-pool-segment practice-pool-segment--learned" id="practice-pool-segment-learned"></span>
-              <span class="practice-pool-segment practice-pool-segment--active" id="practice-pool-segment-active"></span>
-              <span class="practice-pool-segment practice-pool-segment--new" id="practice-pool-segment-new"></span>
-            </span>
+            <span class="pool-dots" id="practice-pool-dots" role="list" aria-hidden="true"></span>
             <span class="practice-pool-labels">
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-label-learned">0 усвоено</span></span>
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-label-active">0 в работе</span></span>
+              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span><span id="practice-pool-label-resting">0 отдыхает</span></span>
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="practice-pool-label-new">0 новых</span></span>
             </span>
           </button>

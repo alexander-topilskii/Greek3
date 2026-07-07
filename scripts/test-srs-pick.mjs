@@ -63,7 +63,8 @@ function makeCatalog(n, withBlocks = true) {
   };
 }
 
-function masteredCard(slug, direction, reps = 3) {
+function masteredCard(slug, direction, reps = null) {
+  const defaultReps = direction === 'ru-el' ? 4 : 2;
   const id = `${slug}#summary#${direction}`;
   return {
     id,
@@ -71,7 +72,7 @@ function masteredCard(slug, direction, reps = 3) {
     wordSlug: slug,
     type: 'summary',
     direction,
-    repetitions: reps,
+    repetitions: reps ?? defaultReps,
     nextReview: Date.now() + 86400000,
   };
 }
@@ -181,32 +182,31 @@ async function testStudyPoolFullyMastered() {
   console.log('✓ study pool fully mastered detection');
 }
 
-async function testSessionExcludesWordAfterThreshold() {
+async function testSessionSoftExclusion() {
   const catalog = makeCatalog(3, false);
   const db = makeDb();
   await db.setSetting('deck:global:activeLimit', 3);
   srs.beginSession();
   srs.recordSessionCorrect('word-0', 'el-ru');
   srs.recordSessionCorrect('word-0', 'el-ru');
-  srs.recordSessionCorrect('word-1', 'el-ru');
 
-  const picks = new Set();
-  for (let i = 0; i < 30; i++) {
+  let word0Count = 0;
+  for (let i = 0; i < 60; i++) {
     const pick = await srs.pickNextCard('global', catalog, db, {
       summaryOnly: true,
       direction: 'el-ru',
     });
-    if (pick) picks.add(pick.word.slug);
+    if (pick?.word.slug === 'word-0') word0Count += 1;
   }
   srs.endSession();
 
-  if (picks.has('word-0')) {
-    throw new Error('word-0 should be excluded after 2 session correct answers');
+  if (word0Count === 0) {
+    throw new Error('word-0 should still appear occasionally with soft session exclusion');
   }
-  if (!picks.has('word-1') || !picks.has('word-2')) {
-    throw new Error('word-1 and word-2 should still be pickable in session');
+  if (word0Count > 20) {
+    throw new Error(`word-0 should be rare after session threshold, got ${word0Count}/60`);
   }
-  console.log('✓ session excludes word after threshold');
+  console.log('✓ session soft-excludes saturated words');
 }
 
 async function testSessionAutoDirection() {
@@ -370,7 +370,7 @@ async function testRecentPicksPersist() {
   console.log('✓ recent picks persist across sessions');
 }
 
-async function testPoolInProgress() {
+async function testPoolDots() {
   const catalog = makeCatalog(3, false);
   const db = makeDb();
   const partial = {
@@ -386,11 +386,12 @@ async function testPoolInProgress() {
   const allCards = await db.getAllCards();
   const settings = { activeLimit: 3, batchIncrement: 3, initialBatchSize: 3 };
   const pool = srs.getActivePoolWords(catalog, allCards, db, settings);
-  const { inProgress, learned } = srs.getPoolProgress(pool, allCards, db);
-  if (inProgress !== 1 || learned !== 0) {
-    throw new Error(`Expected 1 in progress, 0 learned, got ${inProgress}/${learned}`);
+  const dots = srs.getPoolDots(pool, allCards, db, 'word-0');
+  const word0 = dots.find((d) => d.slug === 'word-0');
+  if (!word0?.isCurrent || word0.state !== 'learning' || word0.progress !== 50) {
+    throw new Error(`Expected word-0 learning 50%, got ${JSON.stringify(word0)}`);
   }
-  console.log('✓ pool in-progress count');
+  console.log('✓ pool dots state');
 }
 
 async function testIsWordDoneForPoolExported() {
@@ -407,13 +408,13 @@ async function main() {
   await testDirectionPromptBlock();
   await testAutoDirection();
   await testStudyPoolFullyMastered();
-  await testSessionExcludesWordAfterThreshold();
+  await testSessionSoftExclusion();
   await testSessionAutoDirection();
   await testSessionResetsOnEnd();
   await testNoConsecutiveSameWord();
   await testExpandPoolOnWordLearned();
   await testRecentPicksPersist();
-  await testPoolInProgress();
+  await testPoolDots();
   await testIsWordDoneForPoolExported();
   await testLessonOrderReversed();
   await testWordSourceLabel();

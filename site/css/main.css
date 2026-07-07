@@ -366,6 +366,54 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.pool-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.1rem 0;
+}
+
+.pool-dot {
+  --pool-dot-size: 0.65rem;
+  position: relative;
+  width: var(--pool-dot-size);
+  height: var(--pool-dot-size);
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--progress-new);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pool-dot--new {
+  background: transparent;
+  border: 2px solid var(--progress-new);
+  box-sizing: border-box;
+}
+
+.pool-dot--learning {
+  background: conic-gradient(
+    var(--warning) calc(var(--pool-dot-progress, 0%) * 1%),
+    var(--border) 0
+  );
+}
+
+.pool-dot--resting {
+  background: var(--accent);
+  opacity: 0.45;
+}
+
+.pool-dot--mastered {
+  background: var(--success);
+}
+
+.pool-dot--current {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent);
+  z-index: 1;
+}
+
 .practice-pool-progress:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -433,6 +481,11 @@ body {
 
 .progress-swatch--active {
   background: var(--warning);
+}
+
+.progress-swatch--resting {
+  background: var(--accent);
+  opacity: 0.55;
 }
 
 .progress-swatch--new {
