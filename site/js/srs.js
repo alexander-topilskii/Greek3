@@ -8,12 +8,16 @@
     /** Сколько слов добавлять в набор при полном усвоении одного. */
     poolExpandOnLearn: 2,
     /** После стольких новых/учебных карточек вставить повторение выученного слова. */
-    reviewInsertEvery: 4,
-    masteryReps: 3,
-    /** Правильных ответов в одной сессии — достаточно, чтобы не показывать слово снова до конца сессии. */
+    reviewInsertEvery: 3,
+    masteryReps: 2,
+    /** Правильных ответов в одной сессии — достаточно, чтобы снизить частоту слова. */
     sessionCorrectThreshold: 2,
     /** Для выученных слов в сессии достаточно одного правильного ответа. */
     sessionReviewThreshold: 1,
+    /** Вес слова в сессии после достижения порога (мягкое исключение, не полный запрет). */
+    sessionSatisfiedWeight: 0.12,
+    /** Макс. интервал до повтора для учебных карточек во время сессии. */
+    sessionLearningMaxInterval: 8 * MINUTES,
   };
 
   let sessionActive = false;
@@ -29,10 +33,10 @@
 
   const RECENT_PICKS_KEY = 'practice:recentPicks';
 
-  /** Ελ→Ру ×1, Ру→Ελ ×3 — с русского нужно больше повторений */
+  /** Ελ→Ру ×1, Ру→Ελ ×2 — с русского нужно больше повторений, но не втрое */
   const DIRECTION_REP_FACTOR = {
     'el-ru': 1,
-    'ru-el': 3,
+    'ru-el': 2,
   };
 
   const WEIGHT = {
@@ -50,28 +54,40 @@
     return DEFAULTS.masteryReps * factor;
   }
 
-  /** SM-2 inspired scheduling */
+  /** SM-2 inspired scheduling; в сессии учебные карточки возвращаются быстрее. */
   function gradeCard(card, remembered) {
     const now = Date.now();
     const updated = { ...card, lastReview: now };
+    const dir = cardDirection(card);
+    const masteredBefore = (card.repetitions ?? 0) >= masteryThreshold(dir);
 
     if (remembered) {
       updated.remembered = (updated.remembered ?? 0) + 1;
       updated.repetitions = (updated.repetitions ?? 0) + 1;
 
       if (updated.repetitions === 1) {
-        updated.interval = 10 * MINUTES;
+        updated.interval = 3 * MINUTES;
       } else if (updated.repetitions === 2) {
-        updated.interval = DAY;
+        updated.interval = 20 * MINUTES;
+      } else if (updated.repetitions === 3) {
+        updated.interval = 2 * 60 * MINUTES;
       } else {
         updated.ease = Math.min(3, (updated.ease ?? 2.5) + 0.1);
         updated.interval = Math.round((updated.interval || DAY) * updated.ease);
+      }
+
+      const masteredAfter = updated.repetitions >= masteryThreshold(dir);
+      if (sessionActive && !masteredBefore && !masteredAfter) {
+        updated.interval = Math.min(
+          updated.interval,
+          DEFAULTS.sessionLearningMaxInterval,
+        );
       }
       updated.nextReview = now + updated.interval;
     } else {
       updated.forgotten = (updated.forgotten ?? 0) + 1;
       updated.repetitions = 0;
-      updated.interval = 5 * MINUTES;
+      updated.interval = 3 * MINUTES;
       updated.ease = Math.max(1.3, (updated.ease ?? 2.5) - 0.2);
       updated.nextReview = now + updated.interval;
     }
@@ -607,15 +623,18 @@
       let directions;
       if (perWordDirection) {
         const wordDir = getWordPracticeDirection(word.slug, cards, db, now);
-        if (!wordDir) continue;
-        directions = [wordDir];
-      } else if (directionFilter) {
-        if (
-          sessionActive &&
-          isSessionSatisfied(word.slug, directionFilter, cards, db, now)
-        ) {
+        if (wordDir) {
+          directions = [wordDir];
+        } else if (isWordDoneForPool(word.slug, cards, db, now)) {
           continue;
+        } else {
+          directions = DIRECTIONS.filter((d) => {
+            const card = getSummaryCard(cards, word.slug, d, db);
+            return card && !isMastered(card);
+          });
+          if (!directions.length) continue;
         }
+      } else if (directionFilter) {
         directions = [directionFilter];
       } else {
         directions = DIRECTIONS;
@@ -651,6 +670,12 @@
           }
           weight *= recencyFactor(summaryCard, now);
           if (relaxDue && !due) weight *= 0.6;
+          if (
+            sessionActive &&
+            isSessionSatisfied(word.slug, direction, cards, db, now)
+          ) {
+            weight *= DEFAULTS.sessionSatisfiedWeight;
+          }
           candidates.push({
             card: summaryCard,
             word,
@@ -873,12 +898,84 @@
     return poolWords.filter((w) => isWordInProgress(w.slug, cards, db)).length;
   }
 
-  function getPoolProgress(poolWords, cards, db) {
+  function getPoolProgress(poolWords, cards, db, direction = null) {
     const total = poolWords.length;
     const learned = countPoolLearned(poolWords, cards, db);
     const inProgress = countPoolInProgress(poolWords, cards, db);
     const fresh = Math.max(0, total - learned - inProgress);
-    return { learned, inProgress, total, remaining: total - learned, fresh };
+
+    let directionMastered = 0;
+    let directionLearning = 0;
+    let directionNew = 0;
+    if (direction) {
+      for (const word of poolWords) {
+        const card = getSummaryCard(cards, word.slug, direction, db);
+        if (card && isMastered(card)) {
+          directionMastered += 1;
+        } else if ((card?.repetitions ?? 0) > 0) {
+          directionLearning += 1;
+        } else {
+          directionNew += 1;
+        }
+      }
+    }
+
+    return {
+      learned,
+      inProgress,
+      total,
+      remaining: total - learned,
+      fresh,
+      directionMastered,
+      directionLearning,
+      directionNew,
+    };
+  }
+
+  /**
+   * Состояние слова в пуле для точки прогресса.
+   * @returns {{ state: 'new'|'learning'|'resting'|'mastered', progress: number, direction: string|null }}
+   */
+  function getWordPoolDotState(slug, cards, db, now = Date.now()) {
+    const direction = getWordPracticeDirection(slug, cards, db, now) ?? 'el-ru';
+    const card = getSummaryCard(cards, slug, direction, db);
+    const reps = card?.repetitions ?? 0;
+    const max = masteryThreshold(direction);
+    const progress = Math.min(100, Math.round((reps / max) * 100));
+
+    if (card && isMastered(card)) {
+      const due = isDue(card, now);
+      return {
+        state: due ? 'mastered' : 'resting',
+        progress: 100,
+        direction,
+      };
+    }
+
+    if (
+      sessionActive &&
+      isSessionSatisfied(slug, direction, cards, db, now)
+    ) {
+      return { state: 'resting', progress, direction };
+    }
+
+    if (reps > 0) {
+      return { state: 'learning', progress, direction };
+    }
+
+    return { state: 'new', progress: 0, direction };
+  }
+
+  function getPoolDots(poolWords, cards, db, currentSlug = null, now = Date.now()) {
+    return poolWords.map((word) => {
+      const dot = getWordPoolDotState(word.slug, cards, db, now);
+      return {
+        slug: word.slug,
+        label: word.translation || word.title || word.slug,
+        isCurrent: currentSlug === word.slug,
+        ...dot,
+      };
+    });
   }
 
   async function pickNextCard(deckId, catalog, db, options = {}) {
@@ -1011,6 +1108,8 @@
     isPickTooSoon,
     getSessionCorrect,
     getPoolProgress,
+    getPoolDots,
+    getWordPoolDotState,
     countPoolLearned,
     countPoolInProgress,
     isWordInProgress,
