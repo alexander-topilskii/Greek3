@@ -35,6 +35,8 @@
   const directionBadge = document.getElementById('practice-direction-badge');
   const poolProgress = document.getElementById('practice-pool-progress');
   const poolDotsEl = document.getElementById('practice-pool-dots');
+  const poolCountResting = document.getElementById('practice-pool-count-resting');
+  const poolCountTotal = document.getElementById('practice-pool-count-total');
   const poolLabelLearned = document.getElementById('practice-pool-label-learned');
   const poolLabelActive = document.getElementById('practice-pool-label-active');
   const poolLabelResting = document.getElementById('practice-pool-label-resting');
@@ -51,6 +53,7 @@
 
   let currentPick = null;
   let fc = null;
+  let poolDotsSnapshot = { slugs: [], slugToState: new Map() };
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnWordLink = practiceControls?.querySelector('.btn-word-link');
@@ -174,21 +177,90 @@
     poolDotsEl.classList.toggle('pool-dots--compact', count > 12);
   }
 
+  function createPoolDotEl(dot) {
+    const el = document.createElement('span');
+    el.className = 'pool-dot';
+    el.classList.add(`pool-dot--${dot.state}`);
+    if (dot.isCurrent) el.classList.add('pool-dot--current');
+    el.dataset.slug = dot.slug;
+    el.setAttribute('role', 'listitem');
+    el.setAttribute('title', dot.label);
+    el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
+    return el;
+  }
+
+  function updatePoolDotEl(el, dot) {
+    el.className = 'pool-dot';
+    el.classList.add(`pool-dot--${dot.state}`);
+    if (dot.isCurrent) el.classList.add('pool-dot--current');
+    el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
+    el.setAttribute('title', dot.label);
+  }
+
+  function animatePoolDotExit(el) {
+    if (!el || el.classList.contains('pool-dot--exit')) return;
+    el.classList.add('pool-dot--exit');
+    const remove = () => el.remove();
+    el.addEventListener('animationend', remove, { once: true });
+    setTimeout(remove, 450);
+  }
+
   function syncPoolDots(pool, cards, currentSlug) {
     if (!poolDotsEl) return;
     const dots = srs.getPoolDots(pool, cards, db, currentSlug);
     applyPoolDotsLayout(dots.length);
-    poolDotsEl.replaceChildren();
-    for (const dot of dots) {
-      const el = document.createElement('span');
-      el.className = 'pool-dot';
-      el.classList.add(`pool-dot--${dot.state}`);
-      if (dot.isCurrent) el.classList.add('pool-dot--current');
-      el.setAttribute('role', 'listitem');
-      el.setAttribute('title', dot.label);
-      el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
-      poolDotsEl.appendChild(el);
+
+    const newSlugOrder = dots.map((d) => d.slug);
+    const prevSlugs = new Set(poolDotsSnapshot.slugs);
+    const prevStates = poolDotsSnapshot.slugToState;
+    const newSlugs = new Set(newSlugOrder);
+
+    for (const slug of prevSlugs) {
+      if (newSlugs.has(slug)) continue;
+      const oldEl = poolDotsEl.querySelector(`.pool-dot[data-slug="${slug}"]`);
+      if (oldEl && !oldEl.classList.contains('pool-dot--exit')) {
+        animatePoolDotExit(oldEl);
+      }
     }
+
+    const existingBySlug = new Map();
+    poolDotsEl.querySelectorAll('.pool-dot').forEach((el) => {
+      if (el.dataset.slug && !el.classList.contains('pool-dot--exit')) {
+        existingBySlug.set(el.dataset.slug, el);
+      }
+    });
+
+    const nextEls = [];
+    for (const dot of dots) {
+      const prevState = prevStates.get(dot.slug);
+      let el = existingBySlug.get(dot.slug);
+
+      if (el) {
+        existingBySlug.delete(dot.slug);
+        updatePoolDotEl(el, dot);
+        if (dot.state === 'mastered' && prevState && prevState !== 'mastered') {
+          el.classList.add('pool-dot--mastered-pop');
+        }
+      } else {
+        el = createPoolDotEl(dot);
+        if (!prevSlugs.has(dot.slug)) {
+          el.classList.add('pool-dot--enter');
+        }
+      }
+      nextEls.push(el);
+    }
+
+    for (const [, el] of existingBySlug) {
+      el.remove();
+    }
+
+    const exitingEls = [...poolDotsEl.querySelectorAll('.pool-dot--exit')];
+    poolDotsEl.replaceChildren(...nextEls, ...exitingEls);
+
+    poolDotsSnapshot = {
+      slugs: newSlugOrder,
+      slugToState: new Map(dots.map((d) => [d.slug, d.state])),
+    };
   }
 
   async function syncSessionInfo(settings, cards) {
@@ -212,6 +284,9 @@
       const resting = dots.filter((d) => d.state === 'resting').length;
 
       syncPoolDots(pool, cards, currentPick?.word?.slug ?? null);
+
+      if (poolCountResting) poolCountResting.textContent = String(resting);
+      if (poolCountTotal) poolCountTotal.textContent = String(total);
 
       if (poolLabelLearned) {
         poolLabelLearned.textContent = `${directionMastered || learned} усвоено`;
