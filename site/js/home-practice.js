@@ -5,7 +5,10 @@
   const db = window.GreekDB;
   const srs = window.GreekSRS;
   const flash = window.GreekFlashcard;
-  if (!db || !srs || !flash) return;
+  const ladder = window.GreekLearningLadder;
+  const quizStep = window.GreekQuizStep;
+  const matchStep = window.GreekMatchStep;
+  if (!db || !srs || !flash || !ladder) return;
 
   const catalogEl = document.getElementById('global-catalog');
   if (!catalogEl) return;
@@ -60,7 +63,201 @@
   const btnExamples = practiceControls?.querySelector('.btn-examples');
   const examples = window.GreekExamples;
 
+  const learnViewFlashcard = document.getElementById('learn-view-flashcard');
+  const learnViewQuiz = document.getElementById('learn-view-quiz');
+  const learnViewMatch = document.getElementById('learn-view-match');
+  const stepIndicator = document.getElementById('learn-step-indicator');
+
+  let currentLearningStep = ladder.STEPS.SUMMARY;
+  let quizUi = null;
+  let matchUi = null;
+
   const RESUME_KEY = 'greek3:home-practice-resume';
+
+  function updateStepIndicator(step) {
+    if (!stepIndicator) return;
+    const idx = ladder.stepIndex(step);
+    stepIndicator.querySelectorAll('.learn-step-pill').forEach((pill) => {
+      const pillStep = pill.getAttribute('data-step');
+      const pillIdx = ladder.stepIndex(pillStep);
+      pill.classList.toggle('is-active', pillStep === step);
+      pill.classList.toggle('is-done', pillIdx < idx);
+    });
+  }
+
+  function showLearningView(step) {
+    currentLearningStep = step;
+    updateStepIndicator(step);
+
+    const isSummary = step === ladder.STEPS.SUMMARY;
+    const isQuiz = step === ladder.STEPS.QUIZ;
+    const isMatch = step === ladder.STEPS.MATCH;
+
+    learnViewFlashcard?.classList.toggle('hidden', !isSummary);
+    learnViewFlashcard?.toggleAttribute('hidden', !isSummary);
+    learnViewQuiz?.classList.toggle('hidden', !isQuiz);
+    learnViewQuiz?.toggleAttribute('hidden', !isQuiz);
+    learnViewMatch?.classList.toggle('hidden', !isMatch);
+    learnViewMatch?.toggleAttribute('hidden', !isMatch);
+
+    practiceControls?.classList.toggle('hidden', !isSummary);
+    practiceControls?.toggleAttribute('hidden', !isSummary);
+
+    if (isQuiz) {
+      learnViewQuiz?.classList.remove('learn-step--visible');
+      requestAnimationFrame(() => learnViewQuiz?.classList.add('learn-step--enter'));
+    }
+    if (isMatch) {
+      learnViewMatch?.classList.remove('learn-step--visible');
+      requestAnimationFrame(() => learnViewMatch?.classList.add('learn-step--enter'));
+    }
+  }
+
+  async function usesLearningLadder(pick) {
+    if (!pick?.word) return false;
+    const card = await ensurePickCard(pick);
+    return ladder.shouldUseLadder(card, srs);
+  }
+
+  async function setLearningStep(pick, stepIndex) {
+    const card = await ensurePickCard(pick);
+    await db.putCard({ ...card, learningStep: stepIndex });
+  }
+
+  async function showQuizForPick(pick) {
+    const word = pick.word;
+    const direction = pick.direction ?? 'el-ru';
+    const pairs = ladder.getBaseFormPairs(word);
+    const pair = ladder.pickRandomPair(pairs);
+    if (!pair) {
+      await completeLearningLadder(true);
+      return;
+    }
+
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+    const pool = srs.getActivePoolWords(catalog, cards, db, settings);
+    const optionPool = pool.length >= 4 ? pool : catalog.words;
+    const options = ladder.buildQuizOptions(optionPool, word, pair, direction);
+
+    if (!quizUi && learnViewQuiz && quizStep) {
+      quizUi = quizStep.init({
+        root: learnViewQuiz,
+        onResult: (correct) => {
+          if (correct) onQuizPassed();
+          else failLearningLadder();
+        },
+      });
+    }
+
+    showLearningView(ladder.STEPS.QUIZ);
+
+    const elRu = direction === 'el-ru';
+    quizUi?.show({
+      prompt: elRu ? pair.greek : pair.translation,
+      promptIsGreek: elRu,
+      options,
+      correct: elRu ? pair.translation : pair.greek,
+      promptLabel: elRu ? 'Выберите перевод' : 'Выберите греческую форму',
+    });
+  }
+
+  async function showMatchForPick(pick) {
+    const word = pick.word;
+    const matchPairs = ladder.getMatchPairs(word);
+
+    if (!matchUi && learnViewMatch && matchStep) {
+      matchUi = matchStep.init({
+        root: learnViewMatch,
+        onResult: (correct) => {
+          if (correct) completeLearningLadder(true);
+          else failLearningLadder();
+        },
+      });
+    }
+
+    showLearningView(ladder.STEPS.MATCH);
+    matchUi?.show({ matchPairs });
+  }
+
+  async function onQuizPassed() {
+    if (!currentPick) return;
+    const matchPairs = ladder.getMatchPairs(currentPick.word);
+    if (matchPairs.length < 2) {
+      await completeLearningLadder(true);
+      return;
+    }
+    await setLearningStep(currentPick, ladder.nameToLearningStep(ladder.STEPS.MATCH));
+    await showMatchForPick(currentPick);
+  }
+
+  async function completeLearningLadder(remembered) {
+    if (currentPick) await setLearningStep(currentPick, 0);
+    showLearningView(ladder.STEPS.SUMMARY);
+    await gradeCurrent(remembered);
+    await updateContinueHint();
+    await pickAndShowNext();
+  }
+
+  async function failLearningLadder() {
+    if (currentPick) await setLearningStep(currentPick, 0);
+    showLearningView(ladder.STEPS.SUMMARY);
+    await gradeCurrent(false);
+    await updateContinueHint();
+    await pickAndShowNext();
+  }
+
+  async function resumeLearningStep(pick) {
+    const useLadder = await usesLearningLadder(pick);
+    stepIndicator?.classList.toggle('hidden', !useLadder);
+    stepIndicator?.toggleAttribute('hidden', !useLadder);
+
+    const card = await ensurePickCard(pick);
+    const step = ladder.learningStepToName(card.learningStep ?? 0);
+
+    if (step === ladder.STEPS.QUIZ) {
+      await showQuizForPick(pick);
+      return;
+    }
+    if (step === ladder.STEPS.MATCH) {
+      const matchPairs = ladder.getMatchPairs(pick.word);
+      if (matchPairs.length < 2) {
+        await setLearningStep(pick, 0);
+        showCardContent(pick);
+        showLearningView(ladder.STEPS.SUMMARY);
+        return;
+      }
+      await showMatchForPick(pick);
+      return;
+    }
+
+    showCardContent(pick);
+    showLearningView(ladder.STEPS.SUMMARY);
+  }
+
+  async function onFlashcardGrade(remembered) {
+    if (!currentPick) return;
+
+    const useLadder = await usesLearningLadder(currentPick);
+    if (!useLadder) {
+      await gradeAndNext(remembered);
+      return;
+    }
+
+    if (!remembered) {
+      await failLearningLadder();
+      return;
+    }
+
+    const pairs = ladder.getBaseFormPairs(currentPick.word);
+    if (!pairs.length) {
+      await completeLearningLadder(true);
+      return;
+    }
+
+    await setLearningStep(currentPick, ladder.nameToLearningStep(ladder.STEPS.QUIZ));
+    await showQuizForPick(currentPick);
+  }
 
   function siteBasePrefix() {
     const logoHref = document.querySelector('.logo')?.getAttribute('href') ?? '/';
@@ -317,6 +514,9 @@
     catalogComplete?.removeAttribute('hidden');
     practiceControls?.classList.add('hidden');
     practiceControls?.setAttribute('hidden', '');
+    stepIndicator?.classList.add('hidden');
+    stepIndicator?.setAttribute('hidden', '');
+    showLearningView(ladder.STEPS.SUMMARY);
     hideWordSource();
     hideWordLink();
     sessionBar?.classList.add('hidden');
@@ -337,7 +537,7 @@
     fc = flash.init({
       root,
       onGrade: (remembered) => {
-        gradeAndNext(remembered);
+        onFlashcardGrade(remembered);
       },
     });
     return fc;
@@ -507,6 +707,7 @@
     }
 
     showCardContent(currentPick);
+    await resumeLearningStep(currentPick);
     await syncSessionInfo(settings, cards);
   }
 
@@ -532,6 +733,8 @@
 
     await srs.loadRecentPicks(db);
     srs.beginSession();
+    practiceSection?.classList.add('home-practice--immersive');
+    document.body.classList.add('practice-immersive-open');
     hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
@@ -541,9 +744,9 @@
 
     if (resumePick) {
       currentPick = resumePick;
-      showCardContent(currentPick);
       const settings = await srs.loadDeckSettings(deckId, db);
       const cards = await db.getCardsForSlugs(catalogSlugs);
+      await resumeLearningStep(currentPick);
       await syncSessionInfo(settings, cards);
       return;
     }
@@ -553,6 +756,8 @@
 
   function closePractice() {
     srs.endSession(db);
+    practiceSection?.classList.remove('home-practice--immersive');
+    document.body.classList.remove('practice-immersive-open');
     clearResumeState();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
