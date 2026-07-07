@@ -163,9 +163,21 @@
     wordSourceEl?.setAttribute('hidden', '');
   }
 
+  function applyPoolDotsLayout(count) {
+    if (!poolDotsEl) return;
+    const rows = count > 12 ? 2 : 1;
+    const perRow = Math.ceil(count / rows);
+    const gapPx = count > 24 ? 3 : count > 15 ? 4 : 5;
+    const dotPx = Math.min(11, Math.max(6, Math.floor((300 - gapPx * Math.max(0, perRow - 1)) / perRow)));
+    poolDotsEl.style.setProperty('--pool-dot-size', `${dotPx}px`);
+    poolDotsEl.style.setProperty('--pool-dot-gap', `${gapPx}px`);
+    poolDotsEl.classList.toggle('pool-dots--compact', count > 12);
+  }
+
   function syncPoolDots(pool, cards, currentSlug) {
     if (!poolDotsEl) return;
     const dots = srs.getPoolDots(pool, cards, db, currentSlug);
+    applyPoolDotsLayout(dots.length);
     poolDotsEl.replaceChildren();
     for (const dot of dots) {
       const el = document.createElement('span');
