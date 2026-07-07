@@ -108,7 +108,43 @@ function homePracticePanelMarkup(): string {
             </span>
           </button>
         </div>
-        ${flashcardMarkup('home-flashcard-root', 'word-link')}
+        <div class="learn-stage" id="learn-stage">
+          <div class="learn-step-indicator" id="learn-step-indicator" aria-hidden="true">
+            <span class="learn-step-pill" data-step="summary">Карточка</span>
+            <span class="learn-step-pill" data-step="quiz">Выбор</span>
+            <span class="learn-step-pill" data-step="match">Пары</span>
+          </div>
+          <div class="learn-stage-body">
+            <div class="learn-stage-view learn-stage-view--flashcard" id="learn-view-flashcard">
+              ${flashcardMarkup('home-flashcard-root', 'word-link')}
+            </div>
+            <div class="learn-step learn-step--quiz hidden" id="learn-view-quiz" hidden>
+              <div class="learn-step-card">
+                <span class="learn-step-label" data-quiz-label>Выберите перевод</span>
+                <p class="learn-step-prompt greek" data-quiz-prompt>—</p>
+                <div class="learn-quiz-options" data-quiz-options></div>
+                <p class="learn-quiz-feedback" data-quiz-feedback hidden></p>
+              </div>
+            </div>
+            <div class="learn-step learn-step--match hidden" id="learn-view-match" hidden>
+              <div class="learn-step-card learn-step-card--match">
+                <span class="learn-step-label">Сопоставьте формы и переводы</span>
+                <div class="learn-match-board">
+                  <div class="learn-match-column">
+                    <span class="learn-match-column-title">Ελληνικά</span>
+                    <div class="learn-match-chips" data-match-greek></div>
+                  </div>
+                  <div class="learn-match-column">
+                    <span class="learn-match-column-title">Русский</span>
+                    <div class="learn-match-chips" data-match-ru></div>
+                  </div>
+                </div>
+                <div class="learn-match-pairs" data-match-pairs aria-live="polite"></div>
+                <p class="learn-match-feedback" data-match-feedback hidden></p>
+              </div>
+            </div>
+          </div>
+        </div>
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>
         <div class="practice-block-complete hidden" id="practice-block-complete" hidden>
           <p class="practice-block-complete-text" id="practice-block-complete-text"></p>
@@ -428,7 +464,14 @@ export function renderHome(
     </section>`;
 
   const hasHomePractice = Boolean(globalCatalog && globalCatalog.words.length > 0);
-  const scripts = hasHomePractice ? ['assets/js/home-practice.js'] : [];
+  const scripts = hasHomePractice
+    ? [
+        'assets/js/learning-ladder.js',
+        'assets/js/quiz-step.js',
+        'assets/js/match-step.js',
+        'assets/js/home-practice.js',
+      ]
+    : [];
   const layoutOptions = hasHomePractice
     ? {
         showSettings: true,
