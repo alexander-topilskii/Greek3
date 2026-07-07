@@ -46,6 +46,35 @@ const options = ladder.buildQuizOptions(
 if (options.length !== 4) throw new Error(`Expected 4 quiz options, got ${options.length}`);
 if (!options.includes('я спал')) throw new Error('Correct answer missing from options');
 
+const learningPath = ladder.buildLearningPath(verb);
+if (!learningPath.length) throw new Error('Expected learning path for verb');
+if (!learningPath.every((s) => s === 'quiz' || s === 'match')) {
+  throw new Error(`Unexpected learning path steps: ${learningPath.join(',')}`);
+}
+
+const sleepVerb = {
+  ...verb,
+  forms: [
+    { greek: 'κοιμήθηκα', translation: 'я спал' },
+    { greek: 'κοιμήθηκα', translation: 'я спала' },
+    { greek: 'κοιμήθηκες', translation: 'ты спал' },
+    { greek: 'κοιμάμαι', translation: 'я сплю' },
+    { greek: 'κοιμάσαι', translation: 'ты спишь' },
+    { greek: 'θα κοιμηθώ', translation: 'я буду спать' },
+    { greek: 'θα κοιμηθείς', translation: 'ты будешь спать' },
+  ],
+};
+const sleepMatch = ladder.getMatchPairs(sleepVerb, 4);
+const dupGreek = sleepMatch.filter((p) => p.greek === 'κοιμήθηκα');
+if (dupGreek.length < 2) {
+  throw new Error('Expected duplicate κοιμήθηκα pairs for gendered translations');
+}
+if (new Set(dupGreek.map((p) => p.translation)).size < 2) {
+  throw new Error('Duplicate greek pairs should keep distinct translations');
+}
+
 console.log('✓ learning ladder base pairs');
 console.log('✓ learning ladder match pairs');
 console.log('✓ learning ladder quiz options');
+console.log('✓ learning ladder random path');
+console.log('✓ learning ladder duplicate greek pairs');

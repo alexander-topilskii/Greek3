@@ -192,6 +192,25 @@
     return stepIndex(name ?? STEPS.SUMMARY);
   }
 
+  /**
+   * Random order of mini-games after summary (quiz / match).
+   * @param {import('./types').CatalogWord} word
+   */
+  function buildLearningPath(word) {
+    const steps = [];
+    if (getBaseFormPairs(word).length) steps.push(STEPS.QUIZ);
+    if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
+    return shuffle(steps);
+  }
+
+  function learningPathStepName(path, pathIndex) {
+    return path?.[pathIndex] ?? null;
+  }
+
+  function isSummaryLearningStep(stepIndex) {
+    return (stepIndex ?? 0) === 0;
+  }
+
   global.GreekLearningLadder = {
     STEPS,
     STEP_ORDER,
@@ -207,5 +226,8 @@
     stepFromIndex,
     learningStepToName,
     nameToLearningStep,
+    buildLearningPath,
+    learningPathStepName,
+    isSummaryLearningStep,
   };
 })(window);
