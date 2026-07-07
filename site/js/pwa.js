@@ -101,9 +101,46 @@
 
   const swUrl = meta?.dataset.sw;
   const swScope = meta?.dataset.scope;
+  let swRefreshing = false;
+
+  function reloadForSwUpdate() {
+    if (swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  }
+
+  function watchServiceWorkerUpdates(registration) {
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'activated' && navigator.serviceWorker.controller) {
+          reloadForSwUpdate();
+        }
+      });
+    });
+  }
+
+  function registerServiceWorker() {
+    if (!swUrl || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker
+      .register(swUrl, swScope ? { scope: swScope } : undefined)
+      .then((registration) => {
+        watchServiceWorkerUpdates(registration);
+        registration.update().catch(() => {});
+      })
+      .catch(() => {});
+  }
+
   if (swUrl && 'serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl, swScope ? { scope: swScope } : undefined).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', reloadForSwUpdate);
+    window.addEventListener('load', registerServiceWorker);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        navigator.serviceWorker.getRegistration(swScope).then((registration) => {
+          registration?.update().catch(() => {});
+        });
+      }
     });
   }
 
