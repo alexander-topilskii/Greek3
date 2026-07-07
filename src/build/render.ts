@@ -28,6 +28,7 @@ const ASSET_VERSION = process.env.BUILD_ID ?? '2';
 const SHARED_SCRIPTS = [
   'assets/js/db.js',
   'assets/js/srs.js',
+  'assets/js/progress-ui.js',
   'assets/js/speak.js',
   'assets/js/flashcard.js',
   'assets/js/examples-dialog.js',
@@ -61,13 +62,23 @@ function embedJson(data: unknown): string {
 
 function progressBarMarkup(slug: string): string {
   return `
-        <div class="word-progress" data-progress-slug="${escapeHtml(slug)}" title="Прогресс: Ελ→Ру · Ру→Ελ">
-          <div class="word-progress-track">
-            <div class="word-progress-half word-progress-half--left" title="Ελ → Ру">
-              <div class="word-progress-fill progress-word" aria-label="Ελ → Ру"></div>
+        <div class="word-progress progress-toggle" data-progress-slug="${escapeHtml(slug)}" role="button" tabindex="0" aria-label="Прогресс по направлениям" aria-expanded="false">
+          <div class="word-progress-row">
+            <span class="word-progress-meta">
+              <span class="word-progress-label">Ελ → Ру</span>
+              <span class="word-progress-fraction progress-el-ru-fraction">0/5</span>
+            </span>
+            <div class="word-progress-track word-progress-track--single" aria-hidden="true">
+              <div class="word-progress-fill progress-word"></div>
             </div>
-            <div class="word-progress-half word-progress-half--right" title="Ру → Ελ">
-              <div class="word-progress-fill progress-ru-el" aria-label="Ру → Ελ"></div>
+          </div>
+          <div class="word-progress-row">
+            <span class="word-progress-meta">
+              <span class="word-progress-label">Ру → Ελ</span>
+              <span class="word-progress-fraction progress-ru-el-fraction">0/5</span>
+            </span>
+            <div class="word-progress-track word-progress-track--single" aria-hidden="true">
+              <div class="word-progress-fill progress-ru-el"></div>
             </div>
           </div>
         </div>`;
@@ -77,12 +88,18 @@ function homePracticePanelMarkup(): string {
   return `
         <div class="practice-session-bar" id="practice-session-bar">
           <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
-          <span class="practice-pool-progress" id="practice-pool-progress">
-            <span class="practice-pool-hint" id="practice-pool-hint"></span>
+          <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс набора" aria-expanded="false">
             <span class="practice-pool-progress-bar" aria-hidden="true">
-              <span class="practice-pool-progress-fill" id="practice-pool-progress-fill"></span>
+              <span class="practice-pool-segment practice-pool-segment--learned" id="practice-pool-segment-learned"></span>
+              <span class="practice-pool-segment practice-pool-segment--active" id="practice-pool-segment-active"></span>
+              <span class="practice-pool-segment practice-pool-segment--new" id="practice-pool-segment-new"></span>
             </span>
-          </span>
+            <span class="practice-pool-labels">
+              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-label-learned">0 усвоено</span></span>
+              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-label-active">0 в работе</span></span>
+              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="practice-pool-label-new">0 новых</span></span>
+            </span>
+          </button>
         </div>
         ${flashcardMarkup('home-flashcard-root', 'word-link')}
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>

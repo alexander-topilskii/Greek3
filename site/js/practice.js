@@ -131,7 +131,7 @@
     const cards = await db.getWordCards(wordSlug);
     const st = srs.statsForWord(cards, wordSlug, forms.length, db);
     const bar = document.querySelector('.word-header [data-progress-slug]');
-    srs.applyProgressBar(bar, st.wordPct, st.formsPct);
+    srs.applyProgressBar(bar, st);
   }
 
   btnRandom?.addEventListener('click', randomMixed);

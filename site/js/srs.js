@@ -336,20 +336,39 @@
   function statsForWord(cards, slug, formCount, db) {
     const elRuPct = directionPct(cards, slug, formCount, 'el-ru', db);
     const ruElPct = directionPct(cards, slug, formCount, 'ru-el', db);
+    const elRuCard = getSummaryCard(cards, slug, 'el-ru', db);
+    const ruElCard = getSummaryCard(cards, slug, 'ru-el', db);
+    const elRuMax = masteryThreshold('el-ru');
+    const ruElMax = masteryThreshold('ru-el');
     return {
       wordPct: elRuPct,
       formsPct: ruElPct,
       elRuPct,
       ruElPct,
+      elRuReps: elRuCard?.repetitions ?? 0,
+      ruElReps: ruElCard?.repetitions ?? 0,
+      elRuMax,
+      ruElMax,
     };
   }
 
-  function applyProgressBar(el, wordPct, formsPct) {
+  function applyProgressBar(el, stats) {
     if (!el) return;
+    const wordPct = stats?.wordPct ?? stats?.elRuPct ?? 0;
+    const formsPct = stats?.formsPct ?? stats?.ruElPct ?? 0;
     const wordFill = el.querySelector('.progress-word');
     const ruElFill = el.querySelector('.progress-ru-el') ?? el.querySelector('.progress-forms');
     if (wordFill) wordFill.style.width = `${wordPct}%`;
     if (ruElFill) ruElFill.style.width = `${formsPct}%`;
+
+    const elRuFraction = el.querySelector('.progress-el-ru-fraction');
+    const ruElFraction = el.querySelector('.progress-ru-el-fraction');
+    if (elRuFraction && stats?.elRuMax != null) {
+      elRuFraction.textContent = `${stats.elRuReps ?? 0}/${stats.elRuMax}`;
+    }
+    if (ruElFraction && stats?.ruElMax != null) {
+      ruElFraction.textContent = `${stats.ruElReps ?? 0}/${stats.ruElMax}`;
+    }
   }
 
   function getProgressStats(cards, totalFormsByWord, db) {
@@ -858,7 +877,8 @@
     const total = poolWords.length;
     const learned = countPoolLearned(poolWords, cards, db);
     const inProgress = countPoolInProgress(poolWords, cards, db);
-    return { learned, inProgress, total, remaining: total - learned };
+    const fresh = Math.max(0, total - learned - inProgress);
+    return { learned, inProgress, total, remaining: total - learned, fresh };
   }
 
   async function pickNextCard(deckId, catalog, db, options = {}) {

@@ -123,8 +123,8 @@
     document.querySelectorAll('[data-progress-slug]').forEach((el) => {
       const slug = el.getAttribute('data-progress-slug');
       if (!slug || !catalogSlugs.includes(slug)) return;
-      const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
-      srs.applyProgressBar(el, st.wordPct, st.formsPct);
+      const st = stats[slug] ?? { wordPct: 0, formsPct: 0, elRuReps: 0, ruElReps: 0, elRuMax: 5, ruElMax: 5 };
+      srs.applyProgressBar(el, st);
     });
 
     sortWordLinks(stats, cards);
