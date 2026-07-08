@@ -36,7 +36,6 @@
   const sectionsGrid = document.getElementById('sections-grid');
   const heroContinue = document.getElementById('hero-continue');
   const continueHint = document.getElementById('continue-hint');
-  const directionBadge = document.getElementById('practice-direction-badge');
   const poolProgress = document.getElementById('practice-pool-progress');
   const poolDotsEl = document.getElementById('practice-pool-dots');
   const poolCountResting = document.getElementById('practice-pool-count-resting');
@@ -67,28 +66,14 @@
   const learnViewFlashcard = document.getElementById('learn-view-flashcard');
   const learnViewQuiz = document.getElementById('learn-view-quiz');
   const learnViewMatch = document.getElementById('learn-view-match');
-  const stepIndicator = document.getElementById('learn-step-indicator');
-
   let currentLearningStep = ladder.STEPS.SUMMARY;
   let quizUi = null;
   let matchUi = null;
 
   const SESSION_KEY = 'greek3:home-practice-session';
 
-  function updateStepIndicator(step) {
-    if (!stepIndicator) return;
-    const idx = ladder.stepIndex(step);
-    stepIndicator.querySelectorAll('.learn-step-pill').forEach((pill) => {
-      const pillStep = pill.getAttribute('data-step');
-      const pillIdx = ladder.stepIndex(pillStep);
-      pill.classList.toggle('is-active', pillStep === step);
-      pill.classList.toggle('is-done', pillIdx < idx);
-    });
-  }
-
   function showLearningView(step) {
     currentLearningStep = step;
-    updateStepIndicator(step);
 
     const isSummary = step === ladder.STEPS.SUMMARY;
     const isQuiz = step === ladder.STEPS.QUIZ;
@@ -235,10 +220,6 @@
   }
 
   async function resumeLearningStep(pick) {
-    const useLadder = await usesLearningLadder(pick);
-    stepIndicator?.classList.toggle('hidden', !useLadder);
-    stepIndicator?.toggleAttribute('hidden', !useLadder);
-
     const card = await ensurePickCard(pick);
     const stepIdx = card.learningStep ?? 0;
 
@@ -514,11 +495,6 @@
   }
 
   async function syncSessionInfo(settings, cards) {
-    if (directionBadge && currentPick?.direction) {
-      directionBadge.textContent = directionLabel(currentPick.direction);
-    } else if (directionBadge) {
-      directionBadge.textContent = 'По словам';
-    }
     if (poolProgress) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
       const direction = currentPick?.direction ?? srs.resolveAutoDirection(catalog, cards, db, settings);
@@ -567,8 +543,6 @@
     catalogComplete?.removeAttribute('hidden');
     practiceControls?.classList.add('hidden');
     practiceControls?.setAttribute('hidden', '');
-    stepIndicator?.classList.add('hidden');
-    stepIndicator?.setAttribute('hidden', '');
     showLearningView(ladder.STEPS.SUMMARY);
     hideWordSource();
     hideWordLink();

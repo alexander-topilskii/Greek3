@@ -28,7 +28,6 @@ export function progressBarMarkup(slug: string): string {
 export function homePracticePanelMarkup(): string {
   return `
         <div class="practice-session-bar" id="practice-session-bar">
-          <span class="practice-direction-badge" id="practice-direction-badge">Ελ → Ру</span>
           <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс набора" aria-expanded="false">
             <span class="pool-side-stat pool-side-stat--resting">
               <span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span>
@@ -50,11 +49,6 @@ export function homePracticePanelMarkup(): string {
           </button>
         </div>
         <div class="learn-stage" id="learn-stage">
-          <div class="learn-step-indicator" id="learn-step-indicator" aria-hidden="true">
-            <span class="learn-step-pill" data-step="summary">Карточка</span>
-            <span class="learn-step-pill" data-step="quiz">Выбор</span>
-            <span class="learn-step-pill" data-step="match">Пары</span>
-          </div>
           <div class="learn-stage-body">
             <div class="learn-stage-view learn-stage-view--flashcard" id="learn-view-flashcard">
               ${flashcardMarkup('home-flashcard-root', 'word-link')}
