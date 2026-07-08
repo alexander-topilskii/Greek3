@@ -16,7 +16,7 @@
 
   const DIRECTION_REP_FACTOR = {
     'el-ru': 1,
-    'ru-el': 2,
+    'ru-el': 1,
   };
 
   const WEIGHT = {

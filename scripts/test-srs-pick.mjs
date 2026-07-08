@@ -72,7 +72,7 @@ function makeCatalog(n, withBlocks = true) {
 }
 
 function masteredCard(slug, direction, reps = null) {
-  const defaultReps = direction === 'ru-el' ? 4 : 2;
+  const defaultReps = 2;
   const id = `${slug}#summary#${direction}`;
   return {
     id,
@@ -402,6 +402,16 @@ async function testPoolDots() {
   console.log('✓ pool dots state');
 }
 
+async function testRuElMasteryThreshold() {
+  if (srs.masteryThreshold('ru-el') !== 2) {
+    throw new Error(`Expected ru-el mastery 2, got ${srs.masteryThreshold('ru-el')}`);
+  }
+  if (srs.masteryThreshold('el-ru') !== 2) {
+    throw new Error(`Expected el-ru mastery 2, got ${srs.masteryThreshold('el-ru')}`);
+  }
+  console.log('✓ ru-el mastery threshold is 2');
+}
+
 async function testIsWordDoneForPoolExported() {
   if (typeof srs.isWordDoneForPool !== 'function') {
     throw new Error('isWordDoneForPool must be exported for gradeCurrent');
@@ -423,6 +433,7 @@ async function main() {
   await testExpandPoolOnWordLearned();
   await testRecentPicksPersist();
   await testPoolDots();
+  await testRuElMasteryThreshold();
   await testIsWordDoneForPoolExported();
   await testLessonOrderReversed();
   await testWordSourceLabel();

@@ -47,9 +47,23 @@ if (options.length !== 4) throw new Error(`Expected 4 quiz options, got ${option
 if (!options.includes('я спал')) throw new Error('Correct answer missing from options');
 
 const learningPath = ladder.buildLearningPath(verb);
-if (!learningPath.length) throw new Error('Expected learning path for verb');
-if (!learningPath.every((s) => s === 'quiz' || s === 'match')) {
-  throw new Error(`Unexpected learning path steps: ${learningPath.join(',')}`);
+if (learningPath.length < 2) throw new Error('Expected quiz and match in learning path');
+if (learningPath[0] !== 'quiz' || learningPath[1] !== 'match') {
+  throw new Error(`Expected quiz then match, got ${learningPath.join(',')}`);
+}
+
+if (!ladder.isLastLadderGame(2, learningPath)) {
+  throw new Error('Step 2 should be last game for quiz+match path');
+}
+if (ladder.isLastLadderGame(1, learningPath)) {
+  throw new Error('Step 1 should not be last game for quiz+match path');
+}
+
+if (ladder.shouldUseLadder({ direction: 'ru-el', repetitions: 0 }, { isMastered: () => false })) {
+  throw new Error('ru-el should not use learning ladder');
+}
+if (!ladder.shouldUseLadder({ direction: 'el-ru', repetitions: 0 }, { isMastered: () => false })) {
+  throw new Error('el-ru should use learning ladder while learning');
 }
 
 const pendingCard = { learningStep: 1, learningPath };
@@ -88,6 +102,8 @@ if (new Set(dupGreek.map((p) => p.translation)).size < 2) {
 console.log('✓ learning ladder base pairs');
 console.log('✓ learning ladder match pairs');
 console.log('✓ learning ladder quiz options');
-console.log('✓ learning ladder random path');
+console.log('✓ learning ladder fixed path order');
+console.log('✓ learning ladder last game detection');
+console.log('✓ learning ladder direction gate');
 console.log('✓ learning ladder pending game detection');
 console.log('✓ learning ladder duplicate greek pairs');

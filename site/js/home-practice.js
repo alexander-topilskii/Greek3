@@ -125,19 +125,49 @@
     return path;
   }
 
-  async function onLearningGamePassed() {
+  async function finishLadderCycle() {
     if (!currentPick) return;
-    const card = await ensurePickCard(currentPick);
-    const path = card.learningPath ?? (await ensureLearningPath(currentPick));
-    const nextPathIndex = (card.learningStep ?? 1);
+    await clearLearningLadderState(currentPick);
+    showLearningView(ladder.STEPS.SUMMARY);
+    await updateContinueHint();
+    await pickAndShowNext();
+  }
 
-    if (nextPathIndex >= path.length) {
-      await completeLearningLadder(true);
+  async function advanceLadderOrFinish(pick) {
+    const card = await ensurePickCard(pick);
+    const path = card.learningPath ?? (await ensureLearningPath(pick));
+    const stepIdx = card.learningStep ?? 1;
+
+    if (ladder.isLastLadderGame(stepIdx, path)) {
+      await gradeCurrent(true);
+      await finishLadderCycle();
       return;
     }
 
-    await setLearningStep(currentPick, nextPathIndex + 1);
+    await setLearningStep(pick, stepIdx + 1);
     await pickAndShowNext();
+  }
+
+  async function onLearningGamePassed() {
+    if (!currentPick) return;
+    await advanceLadderOrFinish(currentPick);
+  }
+
+  async function skipUnavailableLadderGame(pick) {
+    const card = await ensurePickCard(pick);
+    const path = card.learningPath ?? [];
+    const stepIdx = card.learningStep ?? 1;
+    const pathIndex = stepIdx - 1;
+    const stepName = ladder.learningPathStepName(path, pathIndex);
+
+    if (stepName === ladder.STEPS.MATCH) {
+      const matchPairs = ladder.getMatchPairs(pick.word);
+      if (matchPairs.length < 2) {
+        await advanceLadderOrFinish(pick);
+        return true;
+      }
+    }
+    return false;
   }
 
   async function showQuizForPick(pick) {
@@ -146,7 +176,8 @@
     const pairs = ladder.getBaseFormPairs(word);
     const pair = ladder.pickRandomPair(pairs);
     if (!pair) {
-      await completeLearningLadder(true);
+      if (await skipUnavailableLadderGame(pick)) return;
+      await advanceLadderOrFinish(pick);
       return;
     }
 
@@ -203,14 +234,6 @@
     matchUi?.show({ matchPairs });
   }
 
-  async function completeLearningLadder(remembered) {
-    if (currentPick) await clearLearningLadderState(currentPick);
-    showLearningView(ladder.STEPS.SUMMARY);
-    await gradeCurrent(remembered);
-    await updateContinueHint();
-    await pickAndShowNext();
-  }
-
   async function failLearningLadder() {
     if (currentPick) await clearLearningLadderState(currentPick);
     showLearningView(ladder.STEPS.SUMMARY);
@@ -242,9 +265,7 @@
     if (stepName === ladder.STEPS.MATCH) {
       const matchPairs = ladder.getMatchPairs(pick.word);
       if (matchPairs.length < 2) {
-        await clearLearningLadderState(pick);
-        showCardContent(pick);
-        showLearningView(ladder.STEPS.SUMMARY);
+        await advanceLadderOrFinish(pick);
         return;
       }
       await showMatchForPick(pick);
@@ -270,9 +291,12 @@
       return;
     }
 
+    await gradeCurrent(true);
+
     const path = await ensureLearningPath(currentPick);
     if (!path.length) {
-      await completeLearningLadder(true);
+      await gradeCurrent(true);
+      await finishLadderCycle();
       return;
     }
 
