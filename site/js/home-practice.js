@@ -73,7 +73,7 @@
   let quizUi = null;
   let matchUi = null;
 
-  const RESUME_KEY = 'greek3:home-practice-resume';
+  const SESSION_KEY = 'greek3:home-practice-session';
 
   function updateStepIndicator(step) {
     if (!stepIndicator) return;
@@ -313,35 +313,44 @@
     return `${base}/words/${encoded}`;
   }
 
-  function saveResumeState() {
-    if (!currentPick?.word?.slug) return;
+  function isPracticeOpen() {
+    return Boolean(
+      practiceSection && !practiceSection.classList.contains('hidden'),
+    );
+  }
+
+  function saveSessionState() {
+    if (!isPracticeOpen()) return;
     try {
-      sessionStorage.setItem(
-        RESUME_KEY,
-        JSON.stringify({
-          slug: currentPick.word.slug,
-          direction: currentPick.direction ?? 'el-ru',
-        }),
-      );
+      const payload = { active: true };
+      if (currentPick?.word?.slug) {
+        payload.slug = currentPick.word.slug;
+        payload.direction = currentPick.direction ?? 'el-ru';
+      }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     } catch (err) {
-      console.warn('Could not save practice resume state', err);
+      console.warn('Could not save practice session state', err);
     }
   }
 
-  function clearResumeState() {
+  function clearSessionState() {
     try {
-      sessionStorage.removeItem(RESUME_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem('greek3:home-practice-resume');
     } catch (err) {
-      console.warn('Could not clear practice resume state', err);
+      console.warn('Could not clear practice session state', err);
     }
   }
 
-  function readResumeState() {
+  function readSessionState() {
     try {
-      const raw = sessionStorage.getItem(RESUME_KEY);
+      let raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) {
+        raw = sessionStorage.getItem('greek3:home-practice-resume');
+      }
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (!parsed?.slug) return null;
+      if (!parsed?.active && !parsed?.slug) return null;
       return parsed;
     } catch {
       return null;
@@ -749,6 +758,7 @@
 
     await resumeLearningStep(currentPick);
     await syncSessionInfo(settings, cards);
+    saveSessionState();
   }
 
   async function gradeAndNext(remembered) {
@@ -788,17 +798,19 @@
       const cards = await db.getCardsForSlugs(catalogSlugs);
       await resumeLearningStep(currentPick);
       await syncSessionInfo(settings, cards);
+      saveSessionState();
       return;
     }
 
     await pickAndShowNext();
+    saveSessionState();
   }
 
   function closePractice() {
     srs.endSession(db);
     practiceSection?.classList.remove('home-practice--immersive');
     document.body.classList.remove('practice-immersive-open');
-    clearResumeState();
+    clearSessionState();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     sectionsGrid?.classList.remove('hidden');
@@ -806,6 +818,7 @@
     heroContinue?.removeAttribute('hidden');
     hideCompletionPanels();
     updateContinueHint();
+    window.GreekPWA?.consumePendingReload?.();
   }
 
   async function repeatCatalog() {
@@ -833,7 +846,7 @@
       event.preventDefault();
       return;
     }
-    saveResumeState();
+    saveSessionState();
   });
 
   btnExamples?.addEventListener('click', () => {
@@ -858,23 +871,37 @@
     }
   });
 
-  async function tryResumePractice() {
-    const state = readResumeState();
+  async function tryRestorePractice() {
+    const state = readSessionState();
     if (!state) return;
 
-    clearResumeState();
+    clearSessionState();
 
-    const word = catalog.words.find((w) => w.slug === state.slug);
-    if (!word) return;
+    if (state.slug) {
+      const word = catalog.words.find((w) => w.slug === state.slug);
+      if (!word) return;
 
-    scrollToHeroContinue();
+      scrollToHeroContinue();
 
-    await openPractice({
-      word,
-      direction: state.direction ?? srs.getWordPracticeDirection(word.slug, await db.getCardsForSlugs(catalogSlugs), db) ?? 'el-ru',
-      type: 'summary',
-      isNew: false,
-    });
+      await openPractice({
+        word,
+        direction:
+          state.direction ??
+          srs.getWordPracticeDirection(
+            word.slug,
+            await db.getCardsForSlugs(catalogSlugs),
+            db,
+          ) ??
+          'el-ru',
+        type: 'summary',
+        isNew: false,
+      });
+      return;
+    }
+
+    if (state.active) {
+      await openPractice();
+    }
   }
 
   async function initHomePractice() {
@@ -882,7 +909,7 @@
       await db.init();
       await loadHomeSettingsUI();
       await updateContinueHint();
-      await tryResumePractice();
+      await tryRestorePractice();
     } catch (err) {
       console.error('Home practice init error', err);
       if (continueHint) {
@@ -890,6 +917,12 @@
       }
     }
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveSessionState();
+    }
+  });
 
   initHomePractice();
 })();

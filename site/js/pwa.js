@@ -102,11 +102,31 @@
   const swUrl = meta?.dataset.sw;
   const swScope = meta?.dataset.scope;
   let swRefreshing = false;
+  let pendingSwReload = false;
 
-  function reloadForSwUpdate() {
+  function isPracticeActive() {
+    return document.body.classList.contains('practice-immersive-open');
+  }
+
+  function performReload() {
     if (swRefreshing) return;
     swRefreshing = true;
     window.location.reload();
+  }
+
+  function reloadForSwUpdate() {
+    if (swRefreshing) return;
+    if (isPracticeActive()) {
+      pendingSwReload = true;
+      return;
+    }
+    performReload();
+  }
+
+  function consumePendingReload() {
+    if (!pendingSwReload) return;
+    pendingSwReload = false;
+    performReload();
   }
 
   function watchServiceWorkerUpdates(registration) {
@@ -145,4 +165,6 @@
   }
 
   updateInstallUi();
+
+  window.GreekPWA = { consumePendingReload };
 })();
