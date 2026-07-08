@@ -164,6 +164,7 @@
   function shouldUseLadder(card, srs) {
     if (!card) return true;
     if (srs.isMastered(card)) return false;
+    if ((card.direction ?? 'el-ru') === 'ru-el') return false;
     return true;
   }
 
@@ -192,7 +193,13 @@
     const steps = [];
     if (getBaseFormPairs(word).length) steps.push(STEPS.QUIZ);
     if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
-    return shuffle(steps);
+    return steps;
+  }
+
+  function isLastLadderGame(learningStep, path) {
+    if (!Array.isArray(path) || !path.length) return false;
+    const stepIdx = learningStep ?? 1;
+    return stepIdx >= path.length;
   }
 
   function learningPathStepName(path, pathIndex) {
@@ -229,6 +236,7 @@
     learningStepToName,
     nameToLearningStep,
     buildLearningPath,
+    isLastLadderGame,
     learningPathStepName,
     isSummaryLearningStep,
     hasPendingLearningGame,
