@@ -1,0 +1,72 @@
+/* Greek3 — mobile-first, light theme */
+
+:root {
+  --bg: #f8f7f4;
+  --bg-card: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --accent-hover: #1d4ed8;
+  --border: #e2e8f0;
+  --success: #059669;
+  --warning: #d97706;
+  --progress-active: #ea580c;
+  --progress-active-soft: #ffedd5;
+  --pool-learning: #059669;
+  --pool-learning-soft: #d1fae5;
+  --pool-mastered: #2563eb;
+  --pool-resting: #eab308;
+  --progress-new: #cbd5e1;
+  --error: #dc2626;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 24px rgba(26, 26, 46, 0.06);
+  --shadow-hover: 0 8px 32px rgba(37, 99, 235, 0.12);
+  --font: 'DM Sans', system-ui, sans-serif;
+  --font-greek: 'Noto Sans', 'DM Sans', sans-serif;
+  --header-h: 56px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.greek {
+  font-family: var(--font-greek);
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.08), transparent),
+    var(--bg);
+}
+
+.container {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+

@@ -1,0 +1,17 @@
+/** Shared client scripts in load order. */
+export const SHARED_SCRIPTS = [
+  'assets/js/utils.js',
+  'assets/js/normalize-search.js',
+  'assets/js/db.js',
+  'assets/js/srs-schedule.js',
+  'assets/js/srs-session.js',
+  'assets/js/srs-progress.js',
+  'assets/js/srs-pick.js',
+  'assets/js/srs.js',
+  'assets/js/practice-common.js',
+  'assets/js/progress-ui.js',
+  'assets/js/speak.js',
+  'assets/js/flashcard.js',
+  'assets/js/examples-dialog.js',
+  'assets/js/pwa.js',
+];

@@ -1,4 +1,5 @@
 (function () {
+  const utils = window.GreekUtils;
   let dialog = null;
   let titleEl = null;
   let bodyEl = null;
@@ -23,15 +24,8 @@
     return true;
   }
 
-  function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
   function renderBubbles(examples) {
+    const escapeHtml = utils.escapeHtml.bind(utils);
     return examples
       .map(
         (example) => `

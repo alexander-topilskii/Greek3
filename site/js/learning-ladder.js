@@ -1,4 +1,5 @@
 (function (global) {
+  const utils = global.GreekUtils;
   const STEPS = {
     SUMMARY: 'summary',
     QUIZ: 'quiz',
@@ -8,20 +9,11 @@
   const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.MATCH];
 
   function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+    return utils ? utils.shuffle(arr) : arr.slice();
   }
 
   function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return utils ? utils.escapeHtml(text) : String(text);
   }
 
   /** @param {import('./types').CatalogWord} word */

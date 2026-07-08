@@ -6,7 +6,9 @@
   const input = document.getElementById('search-input');
   const resultsEl = document.getElementById('search-results');
   const statusEl = document.getElementById('search-status');
-  if (!indexEl || !input || !resultsEl || !statusEl) return;
+  const utils = window.GreekUtils;
+  const normalize = window.GreekNormalizeSearch;
+  if (!utils || !normalize) return;
 
   let index;
   try {
@@ -17,12 +19,7 @@
   }
 
   function normalizeQuery(text) {
-    return text
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{M}+/gu, '')
-      .replace(/ё/g, 'е');
+    return normalize.normalizeSearchText(text.trim());
   }
 
   function renderResults(items) {
@@ -45,13 +42,7 @@
       .join('');
   }
 
-  function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+  const { escapeHtml } = utils;
 
   function runSearch() {
     const query = normalizeQuery(input.value);
