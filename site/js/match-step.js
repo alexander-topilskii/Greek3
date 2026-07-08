@@ -9,10 +9,12 @@
     const root = opts.root;
     if (!root) return null;
 
+    const cardEl = root.querySelector('.learn-step-card');
     const greekCol = root.querySelector('[data-match-greek]');
     const ruCol = root.querySelector('[data-match-ru]');
     const pairsZone = root.querySelector('[data-match-pairs]');
     const feedbackEl = root.querySelector('[data-match-feedback]');
+    const speak = global.GreekSpeak;
 
     let locked = false;
     let pairs = [];
@@ -20,6 +22,10 @@
     let matchedPairIds = new Set();
     let selectedGreek = null;
     let selectedRu = null;
+
+    function clearCardState() {
+      cardEl?.classList.remove('learn-step-card--success', 'learn-step-card--error');
+    }
 
     function hideFeedback() {
       if (!feedbackEl) return;
@@ -109,11 +115,7 @@
 
         if (matchedCount >= pairs.length) {
           locked = true;
-          if (feedbackEl) {
-            feedbackEl.hidden = false;
-            feedbackEl.className = 'learn-match-feedback learn-match-feedback--ok';
-            feedbackEl.textContent = 'Все пары верны!';
-          }
+          cardEl?.classList.add('learn-step-card--success');
           global.setTimeout(() => opts.onResult?.(true), 700);
         }
         return;
@@ -139,6 +141,9 @@
       const id = Number(btn.dataset.matchId);
 
       if (side === 'greek') {
+        const greekText = btn.textContent?.trim();
+        if (greekText && speak?.isSupported?.()) speak.speakGreek(greekText);
+
         if (selectedGreek === id) {
           btn.classList.remove('learn-match-chip--selected');
           selectedGreek = null;
@@ -175,6 +180,7 @@
       pairs = matchPairs ?? [];
       selectedGreek = null;
       selectedRu = null;
+      clearCardState();
       hideFeedback();
 
       if (pairsZone) pairsZone.innerHTML = '';

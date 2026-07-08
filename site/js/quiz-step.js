@@ -7,13 +7,19 @@
     const root = opts.root;
     if (!root) return null;
 
+    const cardEl = root.querySelector('.learn-step-card');
     const labelEl = root.querySelector('[data-quiz-label]');
     const promptEl = root.querySelector('[data-quiz-prompt]');
     const optionsEl = root.querySelector('[data-quiz-options]');
     const feedbackEl = root.querySelector('[data-quiz-feedback]');
+    const speak = global.GreekSpeak;
 
     let locked = false;
     let correctAnswer = '';
+
+    function clearCardState() {
+      cardEl?.classList.remove('learn-step-card--success', 'learn-step-card--error');
+    }
 
     function hideFeedback() {
       if (!feedbackEl) return;
@@ -25,6 +31,7 @@
     function show({ prompt, promptIsGreek, options, correct, promptLabel }) {
       locked = false;
       correctAnswer = correct;
+      clearCardState();
       hideFeedback();
 
       if (labelEl) labelEl.textContent = promptLabel ?? 'Выберите перевод';
@@ -44,6 +51,10 @@
       root.classList.remove('learn-step--enter');
       requestAnimationFrame(() => {
         root.classList.add('learn-step--visible');
+        if (speak?.isSupported?.() && prompt) {
+          if (promptIsGreek) speak.speakGreek(prompt);
+          else speak.speakRussian?.(prompt);
+        }
       });
     }
 
@@ -56,10 +67,15 @@
         else if (val === pick) btn.classList.add('learn-quiz-option--wrong');
       });
 
-      if (feedbackEl) {
-        feedbackEl.hidden = false;
-        feedbackEl.className = `learn-quiz-feedback learn-quiz-feedback--${correct ? 'ok' : 'bad'}`;
-        feedbackEl.textContent = correct ? 'Верно!' : 'Не совсем — попробуем ещё раз позже';
+      if (correct) {
+        cardEl?.classList.add('learn-step-card--success');
+      } else {
+        cardEl?.classList.add('learn-step-card--error');
+        if (feedbackEl) {
+          feedbackEl.hidden = false;
+          feedbackEl.className = 'learn-quiz-feedback learn-quiz-feedback--bad';
+          feedbackEl.textContent = 'Не совсем — попробуем ещё раз позже';
+        }
       }
     }
 

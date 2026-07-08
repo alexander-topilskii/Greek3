@@ -1,7 +1,9 @@
 (function (global) {
-  const LANG = 'el-GR';
+  const LANG_EL = 'el-GR';
+  const LANG_RU = 'ru-RU';
 
   let greekVoice = null;
+  let russianVoice = null;
   let speakSession = 0;
 
   function getSynth() {
@@ -12,9 +14,17 @@
     return typeof global.SpeechSynthesisUtterance !== 'undefined' && !!getSynth();
   }
 
-  function pickGreekVoice(voices) {
+  function pickVoice(voices, lang) {
+    if (lang === LANG_RU) {
+      return (
+        voices.find((v) => v.lang === LANG_RU) ||
+        voices.find((v) => v.lang.startsWith('ru-')) ||
+        voices.find((v) => v.lang.startsWith('ru')) ||
+        null
+      );
+    }
     return (
-      voices.find((v) => v.lang === 'el-GR') ||
+      voices.find((v) => v.lang === LANG_EL) ||
       voices.find((v) => v.lang.startsWith('el-')) ||
       voices.find((v) => v.lang.startsWith('el')) ||
       null
@@ -25,7 +35,10 @@
     const synth = getSynth();
     if (!synth) return;
     const voices = synth.getVoices();
-    if (voices.length) greekVoice = pickGreekVoice(voices);
+    if (voices.length) {
+      greekVoice = pickVoice(voices, LANG_EL);
+      russianVoice = pickVoice(voices, LANG_RU);
+    }
   }
 
   /** Chrome/Safari: голоса часто появляются только после жеста пользователя. */
@@ -51,10 +64,10 @@
   }
 
   /**
-   * Озвучить греческий текст. Несколько строк — по очереди.
+   * Озвучить текст. Несколько строк — по очереди.
    * @returns {Promise<{ ok: boolean, reason?: string }>}
    */
-  function speakGreek(text) {
+  function speakText(text, lang, voice) {
     const lines = normalizeLines(text);
     if (!lines.length || !isSupported()) {
       return Promise.resolve({ ok: false, reason: 'unsupported' });
@@ -103,8 +116,8 @@
 
         const line = lines[index];
         const utterance = new SpeechSynthesisUtterance(line);
-        utterance.lang = LANG;
-        if (greekVoice) utterance.voice = greekVoice;
+        utterance.lang = lang;
+        if (voice) utterance.voice = voice;
 
         let started = false;
         armWatchdog();
@@ -143,6 +156,14 @@
     });
   }
 
+  function speakGreek(text) {
+    return speakText(text, LANG_EL, greekVoice);
+  }
+
+  function speakRussian(text) {
+    return speakText(text, LANG_RU, russianVoice);
+  }
+
   function stop() {
     speakSession += 1;
     getSynth()?.cancel();
@@ -159,6 +180,7 @@
       return !!greekVoice;
     },
     speakGreek,
+    speakRussian,
     stop,
     isSpeaking,
   };
