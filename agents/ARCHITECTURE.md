@@ -12,10 +12,27 @@ site/css,js    ──►  (копирование) ──►  dist/assets/
 | Модуль | Роль |
 |--------|------|
 | `index.ts` | Точка входа: сканирует `words/`, рендерит страницы, копирует ассеты |
+| `constants.ts` | `CATEGORY_LABELS`, `HOME_SECTIONS`, `RECORD_TYPE_LABELS` |
+| `fs.ts` | `walkMdFiles`, `copyDir`, `buildMainCss`, запись HTML/JSON |
+| `catalog-build.ts` | Сборка глобального каталога, topic/level страницы |
+| `breadcrumbs.ts` | Хлебные крошки |
+| `render/` | Шаблоны: `layout.ts`, `fragments.ts`, `pages/*` |
 | `parse-word.ts` | Парсит MD-файлы слов (секции «База», «Формы») |
 | `parse-index.ts` | Парсит `readme.md` — оглавления разделов |
-| `render.ts` | HTML-шаблоны: layout, главная, каталог, карточка слова |
 | `types.ts` | TypeScript-типы для контента |
+
+## Клиентский JS (`site/js/`)
+
+| Модуль | Роль |
+|--------|------|
+| `utils.js` | `escapeHtml`, `shuffle` |
+| `practice-common.js` | Общая логика grading/display для home/list practice |
+| `srs-schedule.js` / `srs-session.js` / `srs-pick.js` / `srs-progress.js` | Части SRS; фасад — `srs.js` |
+| `normalize-search.js` | Нормализация запроса поиска (синхронно с `normalize-search.ts`) |
+
+## CSS
+
+Части в `site/css/parts/`; при сборке конкатенируются в `main.css` (`buildMainCss` в `fs.ts`).
 
 ## Интерактив на страницах слов
 

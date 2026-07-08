@@ -1,0 +1,507 @@
+/* Practice panel */
+.practice-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.practice-panel--wide {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  padding: 1rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .practice-panel--wide {
+    width: auto;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: var(--radius);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 1.25rem;
+  }
+}
+
+/* Flashcard root */
+.flashcard-root {
+  position: relative;
+  touch-action: pan-y;
+}
+
+.flashcard-hints {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.flashcard-hint {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  background: transparent;
+}
+
+.flashcard-hint--left {
+  color: var(--error);
+}
+
+.flashcard-hint--right {
+  color: var(--success);
+}
+
+.flashcard-root.is-swipe-left .flashcard-hint--left,
+.flashcard-root.is-swipe-right .flashcard-hint--right {
+  opacity: 1;
+}
+
+/* Flashcard */
+.flashcard {
+  perspective: 1000px;
+  cursor: grab;
+  margin-bottom: 0;
+  outline: none;
+  position: relative;
+  z-index: 1;
+  user-select: none;
+}
+
+.flashcard:active {
+  cursor: grabbing;
+}
+
+.flashcard-drag {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flashcard-root.is-dragging .flashcard-drag {
+  transition: none;
+}
+
+.flashcard-inner {
+  position: relative;
+  min-height: min(52vh, 320px);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard.is-flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  background: linear-gradient(135deg, var(--accent-soft), #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.flashcard-root.is-swipe-right .flashcard-front,
+.flashcard-root.is-swipe-right .flashcard-back {
+  box-shadow: inset 0 0 0 999px rgba(5, 150, 105, calc(var(--swipe-tint, 0) * 0.28));
+  border-color: rgba(5, 150, 105, calc(0.25 + var(--swipe-tint, 0) * 0.45));
+}
+
+.flashcard-root.is-swipe-left .flashcard-front,
+.flashcard-root.is-swipe-left .flashcard-back {
+  box-shadow: inset 0 0 0 999px rgba(220, 38, 38, calc(var(--swipe-tint, 0) * 0.28));
+  border-color: rgba(220, 38, 38, calc(0.25 + var(--swipe-tint, 0) * 0.45));
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+.flashcard-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.flashcard-text {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+  line-height: 1.35;
+  max-width: 100%;
+  padding: 0 0.5rem;
+}
+
+/* Controls */
+.practice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+  padding: 0 0.5rem;
+}
+
+.practice-controls .btn {
+  min-width: 2.75rem;
+}
+
+.practice-controls .speak-switch {
+  flex: 0 0 auto;
+}
+
+.practice-controls .btn-random,
+.practice-controls .btn-word-link,
+.practice-controls .btn-examples {
+  flex: 1 1 auto;
+  max-width: 14rem;
+}
+
+.practice-controls .btn-examples.hidden {
+  display: none;
+}
+
+.practice-controls .btn-word-link {
+  text-decoration: none;
+  text-align: center;
+}
+
+.practice-controls .btn-word-link.hidden {
+  display: none;
+}
+
+.speak-switch {
+  --speak-track-w: 2.75rem;
+  --speak-track-h: 1.5rem;
+  --speak-thumb: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+.speak-switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.speak-switch-track {
+  position: relative;
+  display: block;
+  width: var(--speak-track-w);
+  height: var(--speak-track-h);
+  border-radius: 999px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+.speak-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.125rem;
+  width: var(--speak-thumb);
+  height: var(--speak-thumb);
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 1px 4px rgba(26, 26, 46, 0.15);
+  font-size: 0.75rem;
+  line-height: var(--speak-thumb);
+  text-align: center;
+  transform: translateY(-50%);
+  transition:
+    left var(--transition),
+    background var(--transition),
+    box-shadow var(--transition);
+}
+
+.speak-switch.is-on .speak-switch-track {
+  background: var(--accent);
+}
+
+.speak-switch.is-on .speak-switch-thumb {
+  left: calc(var(--speak-track-w) - var(--speak-thumb) - 0.125rem);
+  box-shadow: 0 1px 6px rgba(37, 99, 235, 0.35);
+}
+
+.speak-switch.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.speak-switch.is-speaking .speak-switch-thumb {
+  animation: speak-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes speak-pulse {
+  0%,
+  100% {
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.08);
+  }
+}
+
+.speak-switch.is-speak-error {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--error) 20%, transparent);
+}
+
+.speak-switch.is-speak-error .speak-switch-track {
+  background: color-mix(in srgb, var(--error) 35%, var(--border));
+}
+
+.speak-switch:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn {
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 1.125rem;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  min-width: 44px;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Forms table */
+.forms-table-section h2 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.forms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.forms-table th,
+.forms-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.forms-table th {
+  background: var(--bg);
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.form-row {
+  transition: background var(--transition);
+}
+
+.form-row:hover {
+  background: var(--accent-soft);
+}
+
+.form-row.is-active {
+  background: var(--accent-soft);
+}
+
+.form-row.is-active td:first-child {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Extra sections */
+.extra-section {
+  margin-top: 1.5rem;
+}
+
+.extra-section h2 {
+  font-size: 1rem;
+}
+
+.extra-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.125rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.extra-content :first-child {
+  margin-top: 0;
+}
+
+.extra-content :last-child {
+  margin-bottom: 0;
+}
+
+.extra-content p {
+  margin: 0.75rem 0;
+}
+
+.extra-content strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.extra-content ul,
+.extra-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.extra-content li {
+  margin: 0.35rem 0;
+}
+
+.extra-content li::marker {
+  color: var(--text-muted);
+}
+
+.extra-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+
+.extra-content th,
+.extra-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.extra-content th {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.extra-content .greek,
+.extra-content td,
+.extra-content li {
+  font-family: var(--font-greek);
+}
+
+.page-intro {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  max-width: 36rem;
+}
+
+/* Home practice — immersive fullscreen learning */
+.home-practice.home-practice--immersive {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-practice.home-practice--immersive .practice-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem;
+}
+
+.home-practice.home-practice--immersive .btn-close-practice {
+  flex-shrink: 0;
+  margin: 0 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.home-practice.home-practice--immersive .practice-panel--wide {
+  margin-left: 0;
+  margin-right: 0;
+  border-left: none;
+  border-right: none;
+}
+
+body.practice-immersive-open {
+  overflow: hidden;
+}
+

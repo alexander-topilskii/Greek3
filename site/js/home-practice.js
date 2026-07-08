@@ -8,7 +8,8 @@
   const ladder = window.GreekLearningLadder;
   const quizStep = window.GreekQuizStep;
   const matchStep = window.GreekMatchStep;
-  if (!db || !srs || !flash || !ladder) return;
+  const common = window.GreekPracticeCommon;
+  if (!db || !srs || !flash || !ladder || !common) return;
 
   const catalogEl = document.getElementById('global-catalog');
   if (!catalogEl) return;
@@ -586,74 +587,34 @@
     return fc;
   }
 
-  function greekSummaryLines(word) {
-    if (word.baseForms?.length) return word.baseForms;
-    if (word.forms?.length) return word.forms.slice(0, 3).map((f) => f.greek);
-    return [];
-  }
-
   function showCardContent(pick) {
-    if (!fc || !pick) return;
+    common.showCardContent(fc, pick, {
+      practiceDirection: pick.direction ?? 'el-ru',
+    });
     const word = pick.word;
-    const greekLines = greekSummaryLines(word);
-    syncCardDisplay(pick);
-    if (pick.direction === 'ru-el') {
-      fc.showMultiLine([word.translation], greekLines, false, true);
-    } else {
-      fc.showMultiLine(greekLines, [word.translation], true, false);
-    }
     setWordSource(word, pick.direction);
     syncWordLink(pick);
     syncExamplesButton(word);
   }
 
   async function ensurePickCard(pick) {
-    const direction = pick.direction ?? 'el-ru';
-    return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
-      deckId: globalDeckId,
-      wordSlug: pick.word.slug,
-      type: 'summary',
-      direction,
+    return common.ensurePickCard(pick, db, {
+      globalDeckId,
+      practiceDirection: pick.direction ?? 'el-ru',
     });
   }
 
   async function gradeCurrent(remembered) {
-    if (!currentPick) return;
-    const slug = currentPick.word.slug;
-    const cardsBefore = await db.getCardsForSlugs(catalogSlugs);
-    const wasDone = srs.isWordDoneForPool(slug, cardsBefore, db);
-
-    const card = await ensurePickCard(currentPick);
-    const graded = srs.gradeCard(card, remembered);
-    await db.putCard(graded);
-    await db.flushBackup();
-    if (remembered && currentPick.direction) {
-      srs.recordSessionCorrect(slug, currentPick.direction);
-    }
-
-    if (remembered && !wasDone) {
-      const cardsAfter = await db.getCardsForSlugs(catalogSlugs);
-      const settings = await srs.loadDeckSettings(deckId, db);
-      const hadProgress = cardsBefore.some(
-        (c) =>
-          c.wordSlug === slug &&
-          c.type === 'summary' &&
-          ((c.repetitions ?? 0) > 0 || (c.remembered ?? 0) > 0),
-      );
-      if (!hadProgress) {
-        await srs.expandPoolOnFirstTouch(
-          deckId,
-          catalog,
-          db,
-          settings,
-          slug,
-          cardsBefore,
-        );
-      }
-      if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
-        await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
-      }
-    }
+    await common.gradeCurrentWithPoolExpand({
+      currentPick,
+      db,
+      srs,
+      deckId,
+      catalog,
+      getCards: () => db.getCardsForSlugs(catalogSlugs),
+      remembered,
+      practiceDirection: currentPick?.direction ?? 'el-ru',
+    });
   }
 
   async function updateContinueHint() {

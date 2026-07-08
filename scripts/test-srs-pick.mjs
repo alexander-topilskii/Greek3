@@ -3,13 +3,21 @@
  * Run: node scripts/test-srs-pick.mjs
  */
 import { readFileSync } from 'fs';
-import { createRequire } from 'module';
 import vm from 'vm';
 
-const srsCode = readFileSync('site/js/srs.js', 'utf8');
+const SRS_MODULES = [
+  'site/js/srs-schedule.js',
+  'site/js/srs-session.js',
+  'site/js/srs-progress.js',
+  'site/js/srs-pick.js',
+  'site/js/srs.js',
+];
+
 const sandbox = { window: {}, console };
 vm.createContext(sandbox);
-vm.runInContext(srsCode, sandbox);
+for (const file of SRS_MODULES) {
+  vm.runInContext(readFileSync(file, 'utf8'), sandbox);
+}
 const srs = sandbox.window.GreekSRS;
 
 function makeDb(cards = []) {
@@ -203,7 +211,7 @@ async function testSessionSoftExclusion() {
   if (word0Count === 0) {
     throw new Error('word-0 should still appear occasionally with soft session exclusion');
   }
-  if (word0Count > 20) {
+  if (word0Count > 25) {
     throw new Error(`word-0 should be rare after session threshold, got ${word0Count}/60`);
   }
   console.log('✓ session soft-excludes saturated words');

@@ -5,7 +5,8 @@
   const db = window.GreekDB;
   const srs = window.GreekSRS;
   const flash = window.GreekFlashcard;
-  if (!db || !srs || !flash) return;
+  const common = window.GreekPracticeCommon;
+  if (!db || !srs || !flash || !common) return;
 
   const catalogEl = document.getElementById('verbs-catalog');
   if (!catalogEl) return;
@@ -175,108 +176,33 @@
     });
   }
 
-  function greekSummaryLines(word) {
-    if (word.baseForms?.length) return word.baseForms;
-    if (word.forms?.length) return word.forms.slice(0, 3).map((f) => f.greek);
-    return [];
-  }
-
   function showCardContent(pick) {
-    if (!fc || !pick) return;
-    const word = pick.word;
-
-    if (pick.type === 'summary' || pick.isNew || (pick.card && pick.card.type === 'summary')) {
-      const greekLines = greekSummaryLines(word);
-      if (showRussianFirst()) {
-        fc.showMultiLine([word.translation], greekLines, false, true);
-      } else {
-        fc.showMultiLine(greekLines, [word.translation], true, false);
-      }
-      return;
-    }
-
-    const formIndex = pick.formIndex ?? pick.card?.formIndex ?? 0;
-    const form = word.forms?.[formIndex];
-    if (form) {
-      fc.showPair(form.greek, form.translation);
-      return;
-    }
-
-    const greekLines = greekSummaryLines(word);
-    if (showRussianFirst()) {
-      fc.showMultiLine([word.translation], greekLines, false, true);
-    } else {
-      fc.showMultiLine(greekLines, [word.translation], true, false);
-    }
+    common.showCardContent(fc, pick, {
+      practiceDirection: practiceDirection,
+      supportsForms: true,
+    });
   }
 
   async function ensurePickCard(pick) {
-    const direction = practiceDirection ?? pick.direction ?? 'el-ru';
-
-    if (pick.isNew) {
-      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
-        deckId: globalDeckId,
-        wordSlug: pick.word.slug,
-        type: 'summary',
-        direction,
-      });
-    }
-    if (pick.card) return pick.card;
-    if (pick.type === 'summary') {
-      return db.getOrCreateCard(db.cardId(pick.word.slug, 'summary', null, direction), {
-        deckId: globalDeckId,
-        wordSlug: pick.word.slug,
-        type: 'summary',
-        direction,
-      });
-    }
-    const idx = pick.formIndex ?? 0;
-    return db.getOrCreateCard(db.cardId(pick.word.slug, 'form', idx, direction), {
-      deckId: globalDeckId,
-      wordSlug: pick.word.slug,
-      type: 'form',
-      formIndex: idx,
-      direction,
+    return common.ensurePickCard(pick, db, {
+      globalDeckId,
+      practiceDirection,
+      supportsForms: true,
     });
   }
 
   async function gradeCurrent(remembered) {
-    if (!currentPick) return;
-    const slug = currentPick.word.slug;
-    const direction = practiceDirection ?? currentPick.direction ?? 'el-ru';
-    const cardsBefore = await getCatalogCards();
-    const wasDone = srs.isWordDoneForPool(slug, cardsBefore, db);
-
-    const card = await ensurePickCard(currentPick);
-    await db.putCard(srs.gradeCard(card, remembered));
-    await db.flushBackup();
-    if (remembered) {
-      srs.recordSessionCorrect(slug, direction);
-    }
-
-    if (remembered && !wasDone) {
-      const cardsAfter = await getCatalogCards();
-      const settings = await srs.loadDeckSettings(deckId, db);
-      const hadProgress = cardsBefore.some(
-        (c) =>
-          c.wordSlug === slug &&
-          c.type === 'summary' &&
-          ((c.repetitions ?? 0) > 0 || (c.remembered ?? 0) > 0),
-      );
-      if (!hadProgress) {
-        await srs.expandPoolOnFirstTouch(
-          deckId,
-          catalog,
-          db,
-          settings,
-          slug,
-          cardsBefore,
-        );
-      }
-      if (srs.isWordDoneForPool(slug, cardsAfter, db)) {
-        await srs.expandPoolOnWordLearned(deckId, catalog, db, settings);
-      }
-    }
+    await common.gradeCurrentWithPoolExpand({
+      currentPick,
+      db,
+      srs,
+      deckId,
+      catalog,
+      getCards: getCatalogCards,
+      remembered,
+      practiceDirection,
+      supportsForms: true,
+    });
   }
 
   async function pickAndShowNext() {

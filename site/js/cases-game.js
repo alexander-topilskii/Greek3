@@ -1,4 +1,5 @@
 (function () {
+  const utils = window.GreekUtils;
   const root = document.getElementById('cases-game');
   const dataEl = document.getElementById('cases-game-data');
   if (!root || !dataEl) return;
@@ -31,12 +32,7 @@
   let locked = false;
 
   function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+    return utils ? utils.shuffle(arr) : arr.slice();
   }
 
   function newRound() {
@@ -84,6 +80,7 @@
     const q = current();
     ruEl.textContent = q.ru;
 
+    const escapeHtml = utils.escapeHtml.bind(utils);
     const options = shuffle([q.correct, ...q.wrong.slice(0, 3)]);
     optionsEl.innerHTML = options
       .map(
@@ -93,15 +90,8 @@
       .join('');
   }
 
-  function escapeHtml(text) {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
   function showFeedback(correct, q) {
+    const escapeHtml = utils.escapeHtml.bind(utils);
     locked = true;
     revealCaseMeta(q);
     feedbackEl.hidden = false;

@@ -1,15 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { encodeSitePath } from './urls';
 
 /** Root-absolute URL with per-segment encoding (matches sitePath). */
 export function siteUrl(baseUrl: string, relativePath: string): string {
-  const base = baseUrl.replace(/\/$/, '');
-  const normalized = relativePath.replace(/^\//, '');
-  const encoded = normalized
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
-  return base ? `${base}/${encoded}` : `/${encoded}`;
+  return encodeSitePath(baseUrl, relativePath);
 }
 
 export function pwaScope(baseUrl: string): string {
