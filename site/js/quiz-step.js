@@ -51,9 +51,8 @@
       root.classList.remove('learn-step--enter');
       requestAnimationFrame(() => {
         root.classList.add('learn-step--visible');
-        if (speak?.isSupported?.() && prompt) {
-          if (promptIsGreek) speak.speakGreek(prompt);
-          else speak.speakRussian?.(prompt);
+        if (speak?.isSupported?.() && prompt && promptIsGreek) {
+          speak.speakGreek(prompt);
         }
       });
     }
