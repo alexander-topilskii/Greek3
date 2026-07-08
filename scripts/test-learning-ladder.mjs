@@ -52,6 +52,18 @@ if (!learningPath.every((s) => s === 'quiz' || s === 'match')) {
   throw new Error(`Unexpected learning path steps: ${learningPath.join(',')}`);
 }
 
+const pendingCard = { learningStep: 1, learningPath };
+if (!ladder.hasPendingLearningGame(pendingCard)) {
+  throw new Error('Expected pending learning game at step 1');
+}
+const doneCard = { learningStep: learningPath.length + 1, learningPath };
+if (ladder.hasPendingLearningGame(doneCard)) {
+  throw new Error('Should not have pending game after path complete');
+}
+if (ladder.hasPendingLearningGame({ learningStep: 0, learningPath })) {
+  throw new Error('Summary step should not be pending');
+}
+
 const sleepVerb = {
   ...verb,
   forms: [
@@ -77,4 +89,5 @@ console.log('✓ learning ladder base pairs');
 console.log('✓ learning ladder match pairs');
 console.log('✓ learning ladder quiz options');
 console.log('✓ learning ladder random path');
+console.log('✓ learning ladder pending game detection');
 console.log('✓ learning ladder duplicate greek pairs');

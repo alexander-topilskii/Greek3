@@ -211,6 +211,16 @@
     return (stepIndex ?? 0) === 0;
   }
 
+  /** Summary done; quiz or match still pending on this card. */
+  function hasPendingLearningGame(card) {
+    if (!card) return false;
+    const stepIdx = card.learningStep ?? 0;
+    if (stepIdx === 0) return false;
+    const path = card.learningPath;
+    if (!Array.isArray(path) || !path.length) return false;
+    return stepIdx >= 1 && stepIdx <= path.length;
+  }
+
   global.GreekLearningLadder = {
     STEPS,
     STEP_ORDER,
@@ -229,5 +239,6 @@
     buildLearningPath,
     learningPathStepName,
     isSummaryLearningStep,
+    hasPendingLearningGame,
   };
 })(window);

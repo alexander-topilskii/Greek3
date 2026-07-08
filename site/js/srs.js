@@ -644,6 +644,10 @@
         const summaryCard = getSummaryCard(cards, word.slug, direction, db);
         const inActiveLesson = activeLesson != null && word.lesson === activeLesson;
 
+        if (summaryCard && global.GreekLearningLadder?.hasPendingLearningGame(summaryCard)) {
+          continue;
+        }
+
         if (!summaryCard) {
           candidates.push({
             card: null,

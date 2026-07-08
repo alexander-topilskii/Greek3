@@ -139,19 +139,6 @@
     return path;
   }
 
-  async function showLearningPathStep(pick, path, pathIndex) {
-    const step = ladder.learningPathStepName(path, pathIndex);
-    if (step === ladder.STEPS.QUIZ) {
-      await showQuizForPick(pick);
-      return;
-    }
-    if (step === ladder.STEPS.MATCH) {
-      await showMatchForPick(pick);
-      return;
-    }
-    await completeLearningLadder(true);
-  }
-
   async function onLearningGamePassed() {
     if (!currentPick) return;
     const card = await ensurePickCard(currentPick);
@@ -164,7 +151,7 @@
     }
 
     await setLearningStep(currentPick, nextPathIndex + 1);
-    await showLearningPathStep(currentPick, path, nextPathIndex);
+    await pickAndShowNext();
   }
 
   async function showQuizForPick(pick) {
@@ -195,6 +182,10 @@
 
     showLearningView(ladder.STEPS.QUIZ);
 
+    setWordSource(word, direction);
+    syncWordLink(pick);
+    syncExamplesButton(word);
+
     const elRu = direction === 'el-ru';
     quizUi?.show({
       prompt: elRu ? pair.greek : pair.translation,
@@ -220,6 +211,9 @@
     }
 
     showLearningView(ladder.STEPS.MATCH);
+    setWordSource(word, pick.direction ?? 'el-ru');
+    syncWordLink(pick);
+    syncExamplesButton(word);
     matchUi?.show({ matchPairs });
   }
 
@@ -301,7 +295,7 @@
     }
 
     await setLearningStep(currentPick, 1);
-    await showLearningPathStep(currentPick, path, 0);
+    await pickAndShowNext();
   }
 
   function siteBasePrefix() {
@@ -714,6 +708,34 @@
     }
   }
 
+  function pickPendingLearningPick(settings, cards) {
+    const pool = srs.getActivePoolWords(catalog, cards, db, settings);
+    const candidates = [];
+
+    for (const word of pool) {
+      const direction = srs.getWordPracticeDirection(word.slug, cards, db) ?? 'el-ru';
+      const card = cards.find(
+        (c) =>
+          c.wordSlug === word.slug &&
+          c.type === 'summary' &&
+          (c.direction ?? 'el-ru') === direction,
+      );
+      if (!card || !ladder.hasPendingLearningGame(card)) continue;
+      if (!ladder.shouldUseLadder(card, srs)) continue;
+      if (srs.isPickTooSoon(word.slug, direction)) continue;
+      candidates.push({
+        word,
+        direction,
+        type: 'summary',
+        card,
+        isNew: false,
+      });
+    }
+
+    if (!candidates.length) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
   async function pickAndShowNext() {
     const card = initFlashcard();
     if (!card) return;
@@ -726,6 +748,15 @@
 
     if (srs.isCatalogFullyMastered(catalog, cards, db)) {
       showCatalogCompleteUI();
+      return;
+    }
+
+    const pendingPick = pickPendingLearningPick(settings, cards);
+    if (pendingPick) {
+      currentPick = pendingPick;
+      srs.recordRecentPick(pendingPick.word.slug, pendingPick.direction, db);
+      await resumeLearningStep(currentPick);
+      await syncSessionInfo(settings, cards);
       return;
     }
 
@@ -755,7 +786,6 @@
       return;
     }
 
-    showCardContent(currentPick);
     await resumeLearningStep(currentPick);
     await syncSessionInfo(settings, cards);
   }
