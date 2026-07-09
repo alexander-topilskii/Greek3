@@ -2,6 +2,7 @@ import type { IndexPage, VerbCatalog } from '../../types';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
+  copyWordsToolbarMarkup,
   deckSettingsDialogMarkup,
   examplesDialogMarkup,
   flashcardMarkup,
@@ -24,8 +25,11 @@ export function renderIndex(
     ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
     : '';
 
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+
   const content = `
     <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
+      ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
         ${intro}
@@ -134,8 +138,11 @@ export function renderCasesIndex(
 
   const gameJson = `<script type="application/json" id="cases-game-data">${embedJson(gameData)}</script>`;
 
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+
   const content = `
     <section class="verbs-list-page cases-page" data-deck-id="cases">
+      ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
         ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите падежи и управление глаголов — затем потренируйтесь в мини-игре.</p>'}
