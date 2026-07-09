@@ -8,6 +8,7 @@ export const SHARED_SCRIPTS = [
   'assets/js/srs-progress.js',
   'assets/js/srs-pick.js',
   'assets/js/srs.js',
+  'assets/js/copy-words.js',
   'assets/js/practice-common.js',
   'assets/js/progress-ui.js',
   'assets/js/speak.js',
