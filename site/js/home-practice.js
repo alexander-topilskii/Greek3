@@ -24,6 +24,8 @@
 
   const favorites = window.GreekFavorites;
   const fullCatalog = catalog;
+  const PRACTICE_NAV_ID = 'home-practice-immersive';
+  const navBack = () => window.GreekNavBack;
 
   function getPracticeCatalog() {
     if (!favorites?.hasAnyFavorites()) return fullCatalog;
@@ -920,6 +922,7 @@
     srs.beginSession();
     practiceSection?.classList.add('home-practice--immersive');
     document.body.classList.add('practice-immersive-open');
+    navBack()?.push(PRACTICE_NAV_ID, () => closePractice(true));
     hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
@@ -941,7 +944,7 @@
     saveSessionState();
   }
 
-  function closePractice() {
+  function closePractice(fromNav = false) {
     srs.endSession(db);
     practiceSection?.classList.remove('home-practice--immersive');
     document.body.classList.remove('practice-immersive-open');
@@ -954,6 +957,7 @@
     hideCompletionPanels();
     updateContinueHint();
     window.GreekPWA?.consumePendingReload?.();
+    if (!fromNav) navBack()?.dismiss(PRACTICE_NAV_ID);
   }
 
   async function repeatCatalog() {
