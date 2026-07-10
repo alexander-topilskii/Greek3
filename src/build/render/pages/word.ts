@@ -5,7 +5,7 @@ import { escapeHtml } from '../html';
 import { layout } from '../layout';
 import { renderMetaBadges } from '../badges';
 import { renderContextSection } from '../context';
-import { flashcardMarkup, progressBarMarkup, wordSettingsDialogMarkup } from '../fragments';
+import { flashcardMarkup, progressBarMarkup, wordSettingsDialogMarkup, favoriteButtonMarkup } from '../fragments';
 
 export function renderWord(
   word: WordEntry,
@@ -102,7 +102,15 @@ export function renderWord(
       data-base-forms="${baseFormsJson}"
       data-forms="${formsJson}">
       <header class="word-header fade-in">
-        ${summaryHtml}
+        <div class="word-header-top">
+          ${summaryHtml}
+          ${favoriteButtonMarkup({
+            kind: 'word',
+            id: word.slug,
+            label: translation,
+            className: 'btn-favorite--word',
+          })}
+        </div>
         ${progressBarMarkup(word.slug)}
       </header>
 

@@ -81,6 +81,10 @@ export interface VerbCatalog {
   blockSize?: number;
   /** Подписи категорий для UI практики */
   categoryLabels?: Record<string, string>;
+  /** Путь страницы под words/ (verbs, lessons/01, topics/food) */
+  pageId?: string;
+  /** Карта раздел/подраздел → slug[] для избранного (глобальный каталог) */
+  pages?: Record<string, string[]>;
 }
 
 export interface SiteConfig {

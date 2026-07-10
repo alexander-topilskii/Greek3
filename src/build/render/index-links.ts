@@ -1,8 +1,9 @@
 import type { CatalogWord, IndexLink, IndexPage, VerbCatalog } from '../types';
 import { sitePath } from '../site-path';
+import { buildPageSectionId, buildSubsectionId } from '../favorites-id';
 import { escapeHtml } from './html';
 import { renderBadges } from './badges';
-import { progressBarMarkup } from './fragments';
+import { favoriteButtonMarkup, progressBarMarkup } from './fragments';
 
 export function normalizeSitePath(...parts: string[]): string {
   const stack: string[] = [];
@@ -29,11 +30,17 @@ export function renderIndexLink(
   const catalogKey = link.resolvedHref ?? link.href;
   const word = catalog?.words.find((w) => w.href === catalogKey);
   const slug = word?.slug ?? '';
+  const favoriteBtn = slug
+    ? favoriteButtonMarkup({ kind: 'word', id: slug, label: link.label, className: 'btn-favorite--inline' })
+    : '';
   return `
       <a href="${escapeHtml(indexLinkSitePath(pageOutputDir, link))}" class="word-link fade-in" data-word-slug="${escapeHtml(slug)}">
         <div class="word-link-main">
           <span class="word-link-label">${escapeHtml(link.label)}</span>
-          <span class="word-link-arrow" aria-hidden="true">→</span>
+          <span class="word-link-actions">
+            ${favoriteBtn}
+            <span class="word-link-arrow" aria-hidden="true">→</span>
+          </span>
         </div>
         ${renderBadges(word)}
         ${slug ? progressBarMarkup(slug) : ''}
@@ -74,11 +81,24 @@ export function renderGroupedLinks(
       const items = section.links
         .map((link) => renderIndexLink(link, pageOutputDir, catalog))
         .join('');
+      const pageId = catalog?.pageId ?? pageOutputDir.replace(/^words\/?/, '').replace(/\/$/, '');
+      const subsectionId = section.title ? buildSubsectionId(pageId, section.title) : '';
+      const subsectionFavorite = subsectionId
+        ? favoriteButtonMarkup({
+            kind: 'section',
+            id: subsectionId,
+            label: section.title,
+            className: 'btn-favorite--subsection',
+          })
+        : '';
       const heading = section.title
-        ? `<h2 class="links-group-title">${escapeHtml(section.title)}</h2>`
+        ? `<div class="links-group-head">
+            <h2 class="links-group-title">${escapeHtml(section.title)}</h2>
+            ${subsectionFavorite}
+          </div>`
         : '';
       return `
-      <div class="links-group">
+      <div class="links-group"${subsectionId ? ` data-subsection-id="${escapeHtml(subsectionId)}"` : ''}>
         ${heading}
         <div class="links-group-items">${items}</div>
       </div>`;

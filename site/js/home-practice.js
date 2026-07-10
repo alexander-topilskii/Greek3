@@ -22,13 +22,43 @@
     return;
   }
 
-  const deckId = catalog.deckId ?? 'global';
+  const favorites = window.GreekFavorites;
+  const fullCatalog = catalog;
+
+  function getPracticeCatalog() {
+    if (!favorites?.hasAnyFavorites()) return fullCatalog;
+    return favorites.filterCatalog(fullCatalog);
+  }
+
+  function refreshCatalogRefs() {
+    const active = getPracticeCatalog();
+    catalog = active;
+    catalogSlugs = active.words.map((w) => w.slug);
+    totalFormsByWord = Object.fromEntries(
+      active.words.map((w) => [w.slug, w.formCount]),
+    );
+  }
+
+  const deckId = fullCatalog.deckId ?? 'global';
   const globalDeckId = db.GLOBAL_DECK_ID ?? 'global';
-  const categoryLabels = catalog.categoryLabels ?? {};
-  const catalogSlugs = catalog.words.map((w) => w.slug);
-  const totalFormsByWord = Object.fromEntries(
+  const categoryLabels = fullCatalog.categoryLabels ?? {};
+  let catalogSlugs = catalog.words.map((w) => w.slug);
+  let totalFormsByWord = Object.fromEntries(
     catalog.words.map((w) => [w.slug, w.formCount]),
   );
+
+  refreshCatalogRefs();
+
+  if (favorites) {
+    favorites.onChange(() => {
+      refreshCatalogRefs();
+      updateContinueHint();
+    });
+    document.addEventListener('greek3:favorites-change', () => {
+      refreshCatalogRefs();
+      updateContinueHint();
+    });
+  }
 
   const btnContinue = document.getElementById('btn-continue');
   const btnClose = document.getElementById('btn-close-practice');
@@ -611,6 +641,12 @@
 
   async function updateContinueHint() {
     if (!continueHint) return;
+
+    if (favorites?.hasAnyFavorites() && catalogSlugs.length === 0) {
+      continueHint.textContent = 'В избранном нет слов — добавьте слова или разделы';
+      return;
+    }
+
     const cards = await db.getCardsForSlugs(catalogSlugs);
     const settings = await srs.loadDeckSettings(deckId, db);
     const pool = srs.getActivePoolWords(catalog, cards, db, settings);
@@ -624,20 +660,29 @@
     const inProgress = directionLearning;
 
     if (srs.isCatalogFullyMastered(catalog, cards, db)) {
-      continueHint.textContent = `Все слова пройдены — можно повторить`;
+      if (favorites?.hasAnyFavorites()) {
+        continueHint.textContent = `Все избранные слова пройдены — можно повторить`;
+      } else {
+        continueHint.textContent = `Все слова пройдены — можно повторить`;
+      }
       return;
     }
+
+    const favoritesMode = favorites?.hasAnyFavorites();
+    const scopeLabel = favoritesMode ? 'избранных' : 'в словаре';
+    const scopeTotal = favoritesMode ? catalogSlugs.length : fullCatalog.words.length;
 
     const mastered = directionMastered || learned;
     if (mastered > 0) {
       continueHint.textContent =
-        `В группе ${mastered} из ${total} усвоено, ${inProgress} в работе · всего в словаре ${catalogSlugs.length}`;
+        `В группе ${mastered} из ${total} усвоено, ${inProgress} в работе · всего ${scopeLabel} ${scopeTotal}`;
     } else if (inProgress > 0) {
       continueHint.textContent =
-        `В группе ${inProgress} из ${total} в работе · всего в словаре ${catalogSlugs.length}`;
+        `В группе ${inProgress} из ${total} в работе · всего ${scopeLabel} ${scopeTotal}`;
     } else if (total > 0) {
-      continueHint.textContent =
-        `Группа из ${total} слов · свайп вправо «Помню» после переворота`;
+      continueHint.textContent = favoritesMode
+        ? `Группа из ${total} избранных слов · свайп вправо «Помню» после переворота`
+        : `Группа из ${total} слов · свайп вправо «Помню» после переворота`;
     }
   }
 
@@ -809,7 +854,7 @@
     srs.beginSession();
     const fullSettings = {
       ...(await srs.loadDeckSettings(deckId, db)),
-      activeLimit: catalog.words.length,
+      activeLimit: getPracticeCatalog().words.length,
     };
     await srs.resetStudyPoolMastery(catalog, db, fullSettings);
     await srs.saveDeckSettings(deckId, db, {
@@ -861,17 +906,17 @@
     clearSessionState();
 
     if (state.slug) {
-      const word = catalog.words.find((w) => w.slug === state.slug);
-      if (!word) return;
+      const resolvedWord = word ?? fullCatalog.words.find((w) => w.slug === state.slug);
+      if (!resolvedWord) return;
 
       scrollToHeroContinue();
 
       await openPractice({
-        word,
+        word: resolvedWord,
         direction:
           state.direction ??
           srs.getWordPracticeDirection(
-            word.slug,
+            resolvedWord.slug,
             await db.getCardsForSlugs(catalogSlugs),
             db,
           ) ??

@@ -11,6 +11,7 @@ const CSS_PARTS = [
   'base.css',
   'word-page.css',
   'practice.css',
+  'favorites.css',
   'cases.css',
   'learning-ladder.css',
   'misc.css',
