@@ -359,11 +359,12 @@ body {
 .practice-pool-progress {
   flex: 1 1 100%;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto auto;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
   align-items: center;
-  gap: 0.35rem 0.5rem;
+  gap: 0.3rem 0.5rem;
   width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 0.15rem 0;
   border: none;
@@ -382,7 +383,8 @@ body {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-  min-width: 1.5rem;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .pool-side-stat--studying {
@@ -392,7 +394,7 @@ body {
 }
 
 .pool-side-stat--total {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 1;
   justify-self: end;
 }
@@ -408,14 +410,15 @@ body {
 }
 
 .practice-pool-progress .pool-grid {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .practice-pool-progress .practice-pool-labels {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 3;
 }
 
 .pool-grid {
@@ -426,11 +429,12 @@ body {
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  padding: 0.35rem 0.5rem;
+  padding: 0.3rem 0.45rem;
   line-height: 0;
   background: color-mix(in srgb, var(--border) 55%, transparent);
   border-radius: 8px;
   box-shadow: inset 0 1px 2px rgba(26, 26, 46, 0.04);
+  box-sizing: border-box;
 }
 
 .pool-cell {
@@ -518,10 +522,19 @@ body {
   display: none;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.4rem 0.85rem;
-  font-size: 0.75rem;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.6875rem;
   color: var(--text-muted);
-  padding-top: 0.15rem;
+  padding-top: 0.1rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 380px) {
+  .practice-pool-labels {
+    font-size: 0.75rem;
+    gap: 0.4rem 0.85rem;
+  }
 }
 
 .practice-pool-progress.progress-labeled .practice-pool-labels {

@@ -107,6 +107,14 @@
     applyPoolGridLayout(Number(poolDotsEl.dataset.gridCount));
   });
 
+  if (poolDotsEl && typeof ResizeObserver !== 'undefined') {
+    const poolGridObserver = new ResizeObserver(() => {
+      if (!poolDotsEl.dataset.gridCount) return;
+      applyPoolGridLayout(Number(poolDotsEl.dataset.gridCount));
+    });
+    poolGridObserver.observe(poolDotsEl);
+  }
+
   function showLearningView(step) {
     currentLearningStep = step;
 
@@ -460,18 +468,33 @@
     return catalog.words.slice(0, POOL_GRID_MAX);
   }
 
+  function measurePoolGridWidth() {
+    if (!poolDotsEl) return 280;
+    const ownWidth = poolDotsEl.clientWidth;
+    if (ownWidth > 0) return ownWidth;
+    return poolDotsEl.parentElement?.clientWidth ?? 280;
+  }
+
+  function fitPoolGridColumns(cellPx, gapPx, hostWidth, count) {
+    let cols = Math.max(1, Math.floor((hostWidth + gapPx) / (cellPx + gapPx)));
+    while (cols > 1 && cols * cellPx + (cols - 1) * gapPx > hostWidth) {
+      cols -= 1;
+    }
+    return Math.min(cols, count);
+  }
+
   function applyPoolGridLayout(count) {
     if (!poolDotsEl) return;
     const gapPx = 2;
     const minCellPx = 2;
     const maxCellPx = 5;
     const maxRows = count > 500 ? 3 : count > 200 ? 4 : 5;
-    const hostWidth = poolDotsEl.parentElement?.clientWidth ?? 280;
+    const hostWidth = measurePoolGridWidth();
 
     let cellPx = minCellPx;
     let cols = 1;
     for (let candidate = maxCellPx; candidate >= minCellPx; candidate -= 1) {
-      const nextCols = Math.max(1, Math.floor((hostWidth + gapPx) / (candidate + gapPx)));
+      const nextCols = fitPoolGridColumns(candidate, gapPx, hostWidth, count);
       const rows = Math.ceil(count / nextCols);
       if (rows <= maxRows) {
         cellPx = candidate;
@@ -548,6 +571,11 @@
       slugs: dots.map((d) => d.slug),
       slugToState: new Map(dots.map((d) => [d.slug, `${d.state}:${d.progress}`])),
     };
+
+    requestAnimationFrame(() => {
+      if (!poolDotsEl?.dataset.gridCount) return;
+      applyPoolGridLayout(Number(poolDotsEl.dataset.gridCount));
+    });
   }
 
   async function syncSessionInfo(settings, cards) {
