@@ -15,9 +15,11 @@
     const pairsZone = root.querySelector('[data-match-pairs]');
     const feedbackEl = root.querySelector('[data-match-feedback]');
     const speak = global.GreekSpeak;
+    const utils = global.GreekUtils;
 
     let locked = false;
     let pairs = [];
+    let ruForms = [];
     let matchedCount = 0;
     let matchedPairIds = new Set();
     let selectedGreek = null;
@@ -34,13 +36,19 @@
       feedbackEl.textContent = '';
     }
 
+    function formatRuLabel(text) {
+      if (!text || !utils?.formatRuForChoice) return text;
+      return utils.formatRuForChoice(text, ruForms);
+    }
+
     function makeChip(text, side, id, isGreek) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `learn-match-chip learn-match-chip--${side}${isGreek ? ' greek' : ''}`;
       btn.dataset.matchId = String(id);
       btn.dataset.matchSide = side;
-      btn.textContent = text;
+      if (!isGreek) btn.dataset.matchRu = text;
+      btn.textContent = isGreek ? text : formatRuLabel(text);
       return btn;
     }
 
@@ -81,7 +89,7 @@
       row.innerHTML = `
         <span class="learn-match-pair-greek greek">${ladder().escapeHtml(greek)}</span>
         <span class="learn-match-pair-arrow" aria-hidden="true">↔</span>
-        <span class="learn-match-pair-ru">${ladder().escapeHtml(translation)}</span>`;
+        <span class="learn-match-pair-ru">${ladder().escapeHtml(formatRuLabel(translation))}</span>`;
       pairsZone.appendChild(row);
       requestAnimationFrame(() => row.classList.add('learn-match-pair-row--visible'));
     }
@@ -101,7 +109,7 @@
       const greekBtn = greekCol?.querySelector(`[data-match-id="${selectedGreek}"]`);
       const ruBtn = ruCol?.querySelector(`[data-match-id="${selectedRu}"]`);
       const greekText = greekBtn?.textContent?.trim() ?? '';
-      const ruText = ruBtn?.textContent?.trim() ?? '';
+      const ruText = ruBtn?.dataset.matchRu?.trim() ?? ruBtn?.textContent?.trim() ?? '';
       const pairIndex = findPairIndex(greekText, ruText);
 
       if (pairIndex >= 0) {
@@ -178,6 +186,7 @@
       matchedCount = 0;
       matchedPairIds = new Set();
       pairs = matchPairs ?? [];
+      ruForms = pairs.map((p) => p.translation).filter(Boolean);
       selectedGreek = null;
       selectedRu = null;
       clearCardState();
