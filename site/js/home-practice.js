@@ -462,10 +462,28 @@
 
   function applyPoolGridLayout(count) {
     if (!poolDotsEl) return;
-    const cellPx = 1;
-    const gapPx = 1;
-    const hostWidth = poolDotsEl.parentElement?.clientWidth ?? 320;
-    const cols = Math.max(1, Math.floor((hostWidth + gapPx) / (cellPx + gapPx)));
+    const gapPx = 2;
+    const minCellPx = 2;
+    const maxCellPx = 5;
+    const maxRows = count > 500 ? 3 : count > 200 ? 4 : 5;
+    const hostWidth = poolDotsEl.parentElement?.clientWidth ?? 280;
+
+    let cellPx = minCellPx;
+    let cols = 1;
+    for (let candidate = maxCellPx; candidate >= minCellPx; candidate -= 1) {
+      const nextCols = Math.max(1, Math.floor((hostWidth + gapPx) / (candidate + gapPx)));
+      const rows = Math.ceil(count / nextCols);
+      if (rows <= maxRows) {
+        cellPx = candidate;
+        cols = nextCols;
+        break;
+      }
+      if (candidate === minCellPx) {
+        cellPx = candidate;
+        cols = nextCols;
+      }
+    }
+
     poolDotsEl.style.setProperty('--pool-cell-size', `${cellPx}px`);
     poolDotsEl.style.setProperty('--pool-cell-gap', `${gapPx}px`);
     poolDotsEl.style.setProperty('--pool-grid-cols', String(cols));
