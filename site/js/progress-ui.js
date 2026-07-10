@@ -1,6 +1,8 @@
 (function () {
   const LABELED = 'progress-labeled';
   const FULLSCREEN_OPEN = 'progress-fullscreen-open';
+  const NAV_ID = 'progress-pool-fullscreen';
+  const navBack = () => window.GreekNavBack;
 
   function isPoolProgress(el) {
     return el.id === 'practice-pool-progress' || el.classList.contains('practice-pool-progress');
@@ -23,6 +25,8 @@
       overlay.classList.add('is-open');
     });
 
+    navBack()?.push(NAV_ID, () => closePoolFullscreen(trigger, true));
+
     if (trigger) {
       trigger.setAttribute('aria-expanded', 'true');
     }
@@ -31,7 +35,7 @@
     return true;
   }
 
-  function closePoolFullscreen(trigger) {
+  function closePoolFullscreen(trigger, fromNav = false) {
     const overlay = getPoolFullscreen();
     if (!overlay || !overlay.classList.contains('is-open')) return;
 
@@ -54,6 +58,8 @@
 
     const toggle = trigger ?? document.getElementById('practice-pool-progress');
     toggle?.setAttribute('aria-expanded', 'false');
+
+    if (!fromNav) navBack()?.dismiss(NAV_ID);
   }
 
   function initPoolFullscreenClose(trigger) {

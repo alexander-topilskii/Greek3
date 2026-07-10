@@ -21,6 +21,8 @@
 
   const deckId = catalog.deckId ?? listPage.getAttribute('data-deck-id') ?? 'verbs';
   const globalDeckId = db.GLOBAL_DECK_ID ?? 'global';
+  const PRACTICE_NAV_ID = 'list-practice';
+  const navBack = () => window.GreekNavBack;
   const catalogSlugs = catalog.words.map((w) => w.slug);
   const totalFormsByWord = Object.fromEntries(
     catalog.words.map((w) => [w.slug, w.formCount]),
@@ -257,11 +259,12 @@
     practiceSection?.setAttribute('aria-hidden', 'false');
     linksSection?.classList.add('hidden');
     practiceActions?.classList.add('hidden');
+    navBack()?.push(PRACTICE_NAV_ID, () => closePractice(true));
     syncCardDisplay();
     pickAndShowNext();
   }
 
-  function closePractice() {
+  function closePractice(fromNav = false) {
     srs.endSession(db);
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
@@ -269,6 +272,7 @@
     practiceActions?.classList.remove('hidden');
     setPracticeComplete(false);
     updateProgressUI();
+    if (!fromNav) navBack()?.dismiss(PRACTICE_NAV_ID);
   }
 
   async function repeatSession() {
