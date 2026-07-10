@@ -70,10 +70,14 @@
   const poolDotsEl = document.getElementById('practice-pool-dots');
   const poolCountStudying = document.getElementById('practice-pool-count-studying');
   const poolCountTotal = document.getElementById('practice-pool-count-total');
-  const poolLabelLearned = document.getElementById('practice-pool-label-learned');
-  const poolLabelActive = document.getElementById('practice-pool-label-active');
-  const poolLabelResting = document.getElementById('practice-pool-label-resting');
-  const poolLabelNew = document.getElementById('practice-pool-label-new');
+  const poolDotsDetailEl = document.getElementById('practice-pool-dots-detail');
+  const poolFullscreenStudying = document.getElementById('practice-pool-fullscreen-studying');
+  const poolFullscreenTotal = document.getElementById('practice-pool-fullscreen-total');
+  const poolFullscreenCurrent = document.getElementById('practice-pool-fullscreen-current');
+  const poolLabelLearned = document.getElementById('practice-pool-fullscreen-label-learned');
+  const poolLabelActive = document.getElementById('practice-pool-fullscreen-label-active');
+  const poolLabelResting = document.getElementById('practice-pool-fullscreen-label-resting');
+  const poolLabelNew = document.getElementById('practice-pool-fullscreen-label-new');
   const wordSourceEl = document.getElementById('practice-word-source');
   const sessionBar = document.getElementById('practice-session-bar');
   const catalogComplete = document.getElementById('practice-catalog-complete');
@@ -87,6 +91,7 @@
   let currentPick = null;
   let fc = null;
   let poolDotsSnapshot = { slugs: [], slugToState: new Map() };
+  let poolDotsDetailSnapshot = { slugs: [], slugToState: new Map() };
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnWordLink = practiceControls?.querySelector('.btn-word-link');
@@ -468,11 +473,11 @@
     return catalog.words.slice(0, POOL_GRID_MAX);
   }
 
-  function measurePoolGridWidth() {
-    if (!poolDotsEl) return 280;
-    const ownWidth = poolDotsEl.clientWidth;
+  function measurePoolGridWidth(el = poolDotsEl) {
+    if (!el) return 280;
+    const ownWidth = el.clientWidth;
     if (ownWidth > 0) return ownWidth;
-    return poolDotsEl.parentElement?.clientWidth ?? 280;
+    return el.parentElement?.clientWidth ?? 280;
   }
 
   function fitPoolGridColumns(cellPx, gapPx, hostWidth, count) {
@@ -483,13 +488,13 @@
     return Math.min(cols, count);
   }
 
-  function applyPoolGridLayout(count) {
-    if (!poolDotsEl) return;
-    const gapPx = 2;
-    const minCellPx = 2;
-    const maxCellPx = 5;
-    const maxRows = count > 500 ? 3 : count > 200 ? 4 : 5;
-    const hostWidth = measurePoolGridWidth();
+  function applyPoolGridLayout(count, el = poolDotsEl, options = {}) {
+    if (!el) return;
+    const gapPx = options.gapPx ?? 2;
+    const minCellPx = options.minCellPx ?? 2;
+    const maxCellPx = options.maxCellPx ?? 5;
+    const maxRows = options.maxRows ?? (count > 500 ? 3 : count > 200 ? 4 : 5);
+    const hostWidth = measurePoolGridWidth(el);
 
     let cellPx = minCellPx;
     let cols = 1;
@@ -507,10 +512,19 @@
       }
     }
 
-    poolDotsEl.style.setProperty('--pool-cell-size', `${cellPx}px`);
-    poolDotsEl.style.setProperty('--pool-cell-gap', `${gapPx}px`);
-    poolDotsEl.style.setProperty('--pool-grid-cols', String(cols));
-    poolDotsEl.dataset.gridCount = String(count);
+    el.style.setProperty('--pool-cell-size', `${cellPx}px`);
+    el.style.setProperty('--pool-cell-gap', `${gapPx}px`);
+    el.style.setProperty('--pool-grid-cols', String(cols));
+    el.dataset.gridCount = String(count);
+  }
+
+  function applyPoolGridLayoutDetail(count) {
+    applyPoolGridLayout(count, poolDotsDetailEl, {
+      gapPx: 3,
+      minCellPx: 6,
+      maxCellPx: 14,
+      maxRows: Math.ceil(count / 8),
+    });
   }
 
   function createPoolCellEl(dot) {
@@ -533,26 +547,32 @@
     el.setAttribute('title', dot.label);
   }
 
-  function syncPoolGrid(gridWords, cards, currentSlug) {
-    if (!poolDotsEl) return;
+  function syncPoolGrid(gridWords, cards, currentSlug, targetEl = poolDotsEl, snapshotRef = 'compact') {
+    if (!targetEl) return;
     const dots = srs.getPoolDots(gridWords, cards, db, currentSlug);
-    applyPoolGridLayout(dots.length);
+    const isDetail = targetEl === poolDotsDetailEl;
+    if (isDetail) {
+      applyPoolGridLayoutDetail(dots.length);
+    } else {
+      applyPoolGridLayout(dots.length);
+    }
 
+    const snapshot = snapshotRef === 'detail' ? poolDotsDetailSnapshot : poolDotsSnapshot;
     const existingBySlug = new Map();
-    poolDotsEl.querySelectorAll('.pool-cell').forEach((el) => {
+    targetEl.querySelectorAll('.pool-cell').forEach((el) => {
       if (el.dataset.slug) existingBySlug.set(el.dataset.slug, el);
     });
 
     const nextEls = [];
-    let structureChanged = dots.length !== poolDotsSnapshot.slugs.length;
+    let structureChanged = dots.length !== snapshot.slugs.length;
 
     for (let i = 0; i < dots.length; i += 1) {
       const dot = dots[i];
       let el = existingBySlug.get(dot.slug);
-      const prevState = poolDotsSnapshot.slugToState.get(dot.slug);
+      const prevState = snapshot.slugToState.get(dot.slug);
 
       if (el) {
-        if (poolDotsSnapshot.slugs[i] !== dot.slug) structureChanged = true;
+        if (snapshot.slugs[i] !== dot.slug) structureChanged = true;
         if (prevState !== `${dot.state}:${dot.progress}`) {
           updatePoolCellEl(el, dot);
         }
@@ -564,17 +584,26 @@
     }
 
     if (structureChanged) {
-      poolDotsEl.replaceChildren(...nextEls);
+      targetEl.replaceChildren(...nextEls);
     }
 
-    poolDotsSnapshot = {
+    const nextSnapshot = {
       slugs: dots.map((d) => d.slug),
       slugToState: new Map(dots.map((d) => [d.slug, `${d.state}:${d.progress}`])),
     };
+    if (isDetail) {
+      poolDotsDetailSnapshot = nextSnapshot;
+    } else {
+      poolDotsSnapshot = nextSnapshot;
+    }
 
     requestAnimationFrame(() => {
-      if (!poolDotsEl?.dataset.gridCount) return;
-      applyPoolGridLayout(Number(poolDotsEl.dataset.gridCount));
+      if (!targetEl?.dataset.gridCount) return;
+      if (isDetail) {
+        applyPoolGridLayoutDetail(Number(targetEl.dataset.gridCount));
+      } else {
+        applyPoolGridLayout(Number(targetEl.dataset.gridCount));
+      }
     });
   }
 
@@ -598,6 +627,21 @@
 
       if (poolCountStudying) poolCountStudying.textContent = String(pool.length);
       if (poolCountTotal) poolCountTotal.textContent = String(projectTotal);
+      if (poolFullscreenStudying) poolFullscreenStudying.textContent = String(pool.length);
+      if (poolFullscreenTotal) poolFullscreenTotal.textContent = String(projectTotal);
+
+      const currentDot = dots.find((d) => d.isCurrent);
+      if (poolFullscreenCurrent) {
+        if (currentDot) {
+          poolFullscreenCurrent.textContent = `Сейчас: ${currentDot.label}`;
+          poolFullscreenCurrent.classList.remove('hidden');
+          poolFullscreenCurrent.removeAttribute('hidden');
+        } else {
+          poolFullscreenCurrent.textContent = '';
+          poolFullscreenCurrent.classList.add('hidden');
+          poolFullscreenCurrent.setAttribute('hidden', '');
+        }
+      }
 
       if (poolLabelLearned) {
         poolLabelLearned.textContent = `${directionMastered || learned} усвоено`;
@@ -611,8 +655,20 @@
       if (poolLabelNew) {
         poolLabelNew.textContent = `${directionNew} новых`;
       }
+
+      if (window.GreekProgressUI?.isPoolFullscreenOpen?.()) {
+        syncPoolGrid(gridWords, cards, currentPick?.word?.slug ?? null, poolDotsDetailEl, 'detail');
+      }
     }
   }
+
+  document.addEventListener('greek3:progress-fullscreen-open', async () => {
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+    const gridWords = getGridWords();
+    syncPoolGrid(gridWords, cards, currentPick?.word?.slug ?? null, poolDotsDetailEl, 'detail');
+    await syncSessionInfo(settings, cards);
+  });
 
   function hideCompletionPanels() {
     catalogComplete?.classList.add('hidden');
