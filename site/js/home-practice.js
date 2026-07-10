@@ -204,12 +204,14 @@
     syncExamplesButton(word);
 
     const elRu = direction === 'el-ru';
+    const ruFormLabels = word.forms?.map((f) => f.translation).filter(Boolean) ?? [];
     quizUi?.show({
       prompt: elRu ? pair.greek : pair.translation,
       promptIsGreek: elRu,
       options,
       correct: elRu ? pair.translation : pair.greek,
       promptLabel: elRu ? 'Выберите перевод' : 'Выберите греческую форму',
+      ruFormLabels: elRu ? ruFormLabels : [],
     });
   }
 

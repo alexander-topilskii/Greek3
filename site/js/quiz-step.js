@@ -13,9 +13,11 @@
     const optionsEl = root.querySelector('[data-quiz-options]');
     const feedbackEl = root.querySelector('[data-quiz-feedback]');
     const speak = global.GreekSpeak;
+    const utils = global.GreekUtils;
 
     let locked = false;
     let correctAnswer = '';
+    let ruForms = [];
 
     function clearCardState() {
       cardEl?.classList.remove('learn-step-card--success', 'learn-step-card--error');
@@ -28,24 +30,31 @@
       feedbackEl.textContent = '';
     }
 
-    function show({ prompt, promptIsGreek, options, correct, promptLabel }) {
+    function formatRuLabel(text) {
+      if (!text || !utils?.formatRuForChoice) return text;
+      return utils.formatRuForChoice(text, ruForms);
+    }
+
+    function show({ prompt, promptIsGreek, options, correct, promptLabel, ruFormLabels }) {
       locked = false;
       correctAnswer = correct;
+      ruForms = Array.isArray(ruFormLabels) ? ruFormLabels : [];
       clearCardState();
       hideFeedback();
 
       if (labelEl) labelEl.textContent = promptLabel ?? 'Выберите перевод';
       if (promptEl) {
-        promptEl.textContent = prompt;
+        const promptText = promptIsGreek ? prompt : formatRuLabel(prompt);
+        promptEl.textContent = promptText;
         promptEl.classList.toggle('greek', !!promptIsGreek);
       }
 
       if (!optionsEl) return;
       optionsEl.innerHTML = options
-        .map(
-          (text, i) =>
-            `<button type="button" class="learn-quiz-option${promptIsGreek ? '' : ' greek'}" data-quiz-option="${i}" data-answer="${encodeURIComponent(text)}">${global.GreekLearningLadder.escapeHtml(text)}</button>`,
-        )
+        .map((text, i) => {
+          const label = promptIsGreek ? formatRuLabel(text) : text;
+          return `<button type="button" class="learn-quiz-option${promptIsGreek ? '' : ' greek'}" data-quiz-option="${i}" data-answer="${encodeURIComponent(text)}">${global.GreekLearningLadder.escapeHtml(label)}</button>`;
+        })
         .join('');
 
       root.classList.remove('learn-step--enter');
@@ -68,12 +77,24 @@
 
       if (correct) {
         cardEl?.classList.add('learn-step-card--success');
+        global.setTimeout(() => {
+          opts.onResult?.(true);
+        }, 520);
       } else {
         cardEl?.classList.add('learn-step-card--error');
         if (feedbackEl) {
           feedbackEl.hidden = false;
           feedbackEl.className = 'learn-quiz-feedback learn-quiz-feedback--bad';
-          feedbackEl.textContent = 'Не совсем — попробуем ещё раз позже';
+          feedbackEl.innerHTML =
+            '<span class="learn-quiz-feedback-text">Не совсем — попробуем ещё раз позже</span>' +
+            '<button type="button" class="btn btn-secondary learn-quiz-dismiss">Продолжить</button>';
+          feedbackEl.querySelector('.learn-quiz-dismiss')?.addEventListener(
+            'click',
+            () => {
+              opts.onResult?.(false);
+            },
+            { once: true },
+          );
         }
       }
     }
@@ -86,10 +107,6 @@
       const correct = pick === correctAnswer;
       btn.classList.add('learn-quiz-option--picked');
       reveal(correct, pick);
-
-      global.setTimeout(() => {
-        opts.onResult?.(correct);
-      }, correct ? 520 : 900);
     });
 
     return { show };
