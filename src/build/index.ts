@@ -14,12 +14,13 @@ import {
   wordOutputPath,
 } from './render';
 import { writeManifest, writeServiceWorker } from './pwa';
-import { enrichWordEntry } from './meta';
+import { enrichWordEntry, buildLevelAggregates, buildTopicAggregates } from './meta';
 import type { CatalogWord, WordEntry } from './types';
 import { HOME_SECTIONS } from './constants';
 import {
   buildCatalogForIndex,
   buildGlobalCatalog,
+  buildPagesMap,
   renderTopicLevelPages,
   writeCatalog,
 } from './catalog-build';
@@ -129,7 +130,28 @@ function main(): void {
 
   renderTopicLevelPages(globalWords);
 
-  const globalCatalog = buildGlobalCatalog(indexPages, words, wordsBySlug, wordsByHref);
+  const topicAggregates = buildTopicAggregates(globalWords);
+  const levelAggregates = buildLevelAggregates(globalWords);
+  const extraPageCatalogs = [
+    ...topicAggregates.map((t) => ({
+      pageId: `topics/${t.slug}`,
+      words: t.words,
+      subsectionTitles: ['Все записи'],
+    })),
+    ...levelAggregates.map((l) => ({
+      pageId: `levels/${l.level.toLowerCase()}`,
+      words: l.words,
+      subsectionTitles: ['Все записи'],
+    })),
+  ];
+  const pagesMap = buildPagesMap(indexPages, wordsBySlug, wordsByHref, extraPageCatalogs);
+  const globalCatalog = buildGlobalCatalog(
+    indexPages,
+    words,
+    wordsBySlug,
+    wordsByHref,
+    pagesMap,
+  );
   writeCatalog('', globalCatalog);
 
   writeHtml('index.html', renderHome([...HOME_SECTIONS], globalCatalog));

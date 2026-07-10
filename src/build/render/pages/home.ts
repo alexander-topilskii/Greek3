@@ -62,6 +62,14 @@ export function renderHome(
         ${continueBlock}
       </section>
       ${practiceBlock}
+      <section class="favorites-section hidden" id="favorites-section" aria-labelledby="favorites-section-title" hidden>
+        <div class="favorites-section-head">
+          <h2 id="favorites-section-title">Избранное</h2>
+          <p class="favorites-section-hint" id="favorites-section-hint">Обучение на главной использует только избранные слова</p>
+        </div>
+        <div class="favorites-list" id="favorites-list" role="list"></div>
+        <p class="favorites-empty hidden" id="favorites-empty" hidden>Пока ничего не добавлено. Нажмите ★ у слова или раздела.</p>
+      </section>
       <section class="sections-grid" id="sections-grid">
         ${cards}
       </section>
@@ -73,6 +81,7 @@ export function renderHome(
         'assets/js/learning-ladder.js',
         'assets/js/quiz-step.js',
         'assets/js/match-step.js',
+        'assets/js/home-favorites.js',
         'assets/js/home-practice.js',
       ]
     : [];

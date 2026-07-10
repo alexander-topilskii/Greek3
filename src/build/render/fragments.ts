@@ -285,3 +285,18 @@ export function copyWordsToolbarMarkup(): string {
       <span class="copy-words-feedback" id="copy-words-feedback" role="status" aria-live="polite"></span>
     </div>`;
 }
+
+const FAVORITE_ICON = `<svg class="favorite-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path class="favorite-icon-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="1.75"/>
+  <path class="favorite-icon-filled" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="none"/>
+</svg>`;
+
+export function favoriteButtonMarkup(options: {
+  kind: 'word' | 'section' | 'page';
+  id: string;
+  label: string;
+  className?: string;
+}): string {
+  const extraClass = options.className ? ` ${options.className}` : '';
+  return `<button type="button" class="btn-favorite${extraClass}" data-favorite-kind="${escapeHtml(options.kind)}" data-favorite-id="${escapeHtml(options.id)}" data-favorite-label="${escapeHtml(options.label)}" aria-pressed="false" aria-label="Добавить в избранное: ${escapeHtml(options.label)}" title="Добавить в избранное">${FAVORITE_ICON}</button>`;
+}

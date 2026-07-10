@@ -5,9 +5,11 @@ import {
   copyWordsToolbarMarkup,
   deckSettingsDialogMarkup,
   examplesDialogMarkup,
+  favoriteButtonMarkup,
   flashcardMarkup,
   practiceCompleteMarkup,
 } from '../fragments';
+import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
 
 export function renderIndex(
@@ -26,12 +28,25 @@ export function renderIndex(
     : '';
 
   const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const pageId = catalog?.pageId ?? pageOutputDir.replace(/^words\/?/, '').replace(/\/$/, '');
+  const pageFavoriteBtn =
+    hasWords && pageId
+      ? favoriteButtonMarkup({
+          kind: 'page',
+          id: buildPageSectionId(pageId),
+          label: page.title,
+          className: 'btn-favorite--page',
+        })
+      : '';
 
   const content = `
-    <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}">
+    <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
       ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
-        <h1>${escapeHtml(page.title)}</h1>
+        <div class="page-head-row">
+          <h1>${escapeHtml(page.title)}</h1>
+          ${pageFavoriteBtn}
+        </div>
         ${intro}
         ${catalog && catalog.words.length > 0 ? `<div class="list-practice-actions">
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>

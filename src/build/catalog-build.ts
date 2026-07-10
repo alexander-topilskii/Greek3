@@ -14,6 +14,12 @@ import { CATEGORY_LABELS } from './constants';
 import { buildCatalogWord, renderIndex, renderTopicLevelHub, sitePath, syntheticIndexFromCatalog } from './render';
 import { breadcrumbsForIndex } from './breadcrumbs';
 import { writeHtml, writeJson } from './fs';
+import {
+  addSlugToPagesMap,
+  buildPageSectionId,
+  buildSubsectionId,
+  pageIdFromIndexSource,
+} from './favorites-id';
 
 export function wordFromIndexLink(
   link: IndexLink,
@@ -27,11 +33,64 @@ export function wordFromIndexLink(
   return wordsByHref.get(base) ?? null;
 }
 
+export function buildPagesMap(
+  indexPages: IndexPage[],
+  wordsBySlug: Map<string, WordEntry>,
+  wordsByHref: Map<string, WordEntry>,
+  extraPageCatalogs: { pageId: string; words: CatalogWord[]; subsectionTitles?: string[] }[] = [],
+): Record<string, string[]> {
+  const pages: Record<string, string[]> = {};
+
+  function ingestIndexPage(index: IndexPage) {
+    const pageId = pageIdFromIndexSource(index.sourcePath);
+    if (!pageId) return;
+
+    const pageKey = buildPageSectionId(pageId);
+    const displaySections =
+      index.sections.length > 0
+        ? index.sections
+        : [{ title: '', links: index.links }];
+
+    for (const section of displaySections) {
+      const subsectionKey = section.title
+        ? buildSubsectionId(pageId, section.title)
+        : null;
+
+      for (const link of section.links) {
+        const word = wordFromIndexLink(link, wordsBySlug, wordsByHref);
+        if (!word) continue;
+        addSlugToPagesMap(pages, pageKey, word.slug);
+        if (subsectionKey) addSlugToPagesMap(pages, subsectionKey, word.slug);
+      }
+    }
+  }
+
+  for (const index of indexPages) {
+    ingestIndexPage(index);
+  }
+
+  for (const extra of extraPageCatalogs) {
+    const pageKey = buildPageSectionId(extra.pageId);
+    for (const word of extra.words) {
+      addSlugToPagesMap(pages, pageKey, word.slug);
+    }
+    if (extra.subsectionTitles?.length === 1 && extra.words.length) {
+      const subsectionKey = buildSubsectionId(extra.pageId, extra.subsectionTitles[0]);
+      for (const word of extra.words) {
+        addSlugToPagesMap(pages, subsectionKey, word.slug);
+      }
+    }
+  }
+
+  return pages;
+}
+
 export function buildGlobalCatalog(
   indexPages: IndexPage[],
   words: WordEntry[],
   wordsBySlug: Map<string, WordEntry>,
   wordsByHref: Map<string, WordEntry>,
+  pages?: Record<string, string[]>,
 ): VerbCatalog {
   const seen = new Set<string>();
   const ordered: CatalogWord[] = [];
@@ -91,7 +150,15 @@ export function buildGlobalCatalog(
     addCatalogItem(item);
   }
 
-  return { deckId: 'global', words: ordered, blockSize: CATALOG_BLOCK_SIZE, categoryLabels: CATEGORY_LABELS };
+  const pagesMap = pages ?? buildPagesMap(indexPages, wordsBySlug, wordsByHref);
+
+  return {
+    deckId: 'global',
+    words: ordered,
+    blockSize: CATALOG_BLOCK_SIZE,
+    categoryLabels: CATEGORY_LABELS,
+    pages: pagesMap,
+  };
 }
 
 export function buildCatalogForIndex(
@@ -101,8 +168,10 @@ export function buildCatalogForIndex(
   pageDir: string,
 ): VerbCatalog {
   const deckId = pageDir.replace(/^words\/?/, '').replace(/\//g, '-') || 'default';
+  const pageId = pageDir.replace(/^words\/?/, '').replace(/\/$/, '') || undefined;
   return {
     deckId,
+    pageId,
     words: index.links
       .map((link) => {
         const word = wordFromIndexLink(link, wordsBySlug, wordsByHref);

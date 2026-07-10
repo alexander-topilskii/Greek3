@@ -3,6 +3,8 @@ export const SHARED_SCRIPTS = [
   'assets/js/utils.js',
   'assets/js/normalize-search.js',
   'assets/js/db.js',
+  'assets/js/favorites.js',
+  'assets/js/favorites-ui.js',
   'assets/js/srs-schedule.js',
   'assets/js/srs-session.js',
   'assets/js/srs-progress.js',
