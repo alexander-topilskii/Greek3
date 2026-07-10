@@ -28,13 +28,13 @@ export function progressBarMarkup(slug: string): string {
 export function homePracticePanelMarkup(): string {
   return `
         <div class="practice-session-bar" id="practice-session-bar">
-          <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс набора" aria-expanded="false">
-            <span class="pool-side-stat pool-side-stat--resting">
-              <span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span>
-              <span class="pool-side-stat-value" id="practice-pool-count-resting">0</span>
-              <span class="pool-side-stat-label">отдыхает</span>
+          <button type="button" class="practice-pool-progress progress-toggle" id="practice-pool-progress" aria-label="Прогресс словаря" aria-expanded="false">
+            <span class="pool-side-stat pool-side-stat--studying">
+              <span class="progress-swatch progress-swatch--active" aria-hidden="true"></span>
+              <span class="pool-side-stat-value" id="practice-pool-count-studying">0</span>
+              <span class="pool-side-stat-label">на изучении</span>
             </span>
-            <span class="pool-dots" id="practice-pool-dots" role="list" aria-hidden="true"></span>
+            <span class="pool-grid" id="practice-pool-dots" role="list" aria-hidden="true"></span>
             <span class="pool-side-stat pool-side-stat--total">
               <span class="progress-swatch progress-swatch--total" aria-hidden="true"></span>
               <span class="pool-side-stat-value" id="practice-pool-count-total">0</span>
@@ -43,7 +43,7 @@ export function homePracticePanelMarkup(): string {
             <span class="practice-pool-labels">
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-label-learned">0 усвоено</span></span>
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-label-active">0 в работе</span></span>
-              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span><span id="practice-pool-label-resting">0 отдыхает</span></span>
+              <span class="practice-pool-label practice-pool-label--resting"><span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span><span id="practice-pool-label-resting">0 отдыхаем</span></span>
               <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="practice-pool-label-new">0 новых</span></span>
             </span>
           </button>

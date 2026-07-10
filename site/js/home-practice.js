@@ -38,7 +38,7 @@
   const continueHint = document.getElementById('continue-hint');
   const poolProgress = document.getElementById('practice-pool-progress');
   const poolDotsEl = document.getElementById('practice-pool-dots');
-  const poolCountResting = document.getElementById('practice-pool-count-resting');
+  const poolCountStudying = document.getElementById('practice-pool-count-studying');
   const poolCountTotal = document.getElementById('practice-pool-count-total');
   const poolLabelLearned = document.getElementById('practice-pool-label-learned');
   const poolLabelActive = document.getElementById('practice-pool-label-active');
@@ -71,6 +71,11 @@
   let matchUi = null;
 
   const SESSION_KEY = 'greek3:home-practice-session';
+
+  window.addEventListener('resize', () => {
+    if (!poolDotsEl?.dataset.gridCount) return;
+    applyPoolGridLayout(Number(poolDotsEl.dataset.gridCount));
+  });
 
   function showLearningView(step) {
     currentLearningStep = step;
@@ -419,126 +424,104 @@
     wordSourceEl?.setAttribute('hidden', '');
   }
 
-  function applyPoolDotsLayout(count) {
-    if (!poolDotsEl) return;
-    const rows = count > 12 ? 2 : 1;
-    const perRow = Math.ceil(count / rows);
-    const gapPx = count > 24 ? 3 : count > 15 ? 4 : 5;
-    const dotPx = Math.min(11, Math.max(6, Math.floor((300 - gapPx * Math.max(0, perRow - 1)) / perRow)));
-    const rowWidth = perRow * dotPx + Math.max(0, perRow - 1) * gapPx;
-    poolDotsEl.style.setProperty('--pool-dot-size', `${dotPx}px`);
-    poolDotsEl.style.setProperty('--pool-dot-gap', `${gapPx}px`);
-    poolDotsEl.style.setProperty('--pool-dots-cols', String(perRow));
-    poolDotsEl.style.maxWidth = `${rowWidth}px`;
-    poolDotsEl.classList.toggle('pool-dots--compact', count > 12);
-    poolDotsEl.classList.toggle('pool-dots--multirow', rows > 1);
+  const POOL_GRID_MAX = 1000;
+
+  function getGridWords() {
+    return catalog.words.slice(0, POOL_GRID_MAX);
   }
 
-  function createPoolDotEl(dot) {
+  function applyPoolGridLayout(count) {
+    if (!poolDotsEl) return;
+    const cellPx = 1;
+    const gapPx = 1;
+    const hostWidth = poolDotsEl.parentElement?.clientWidth ?? 320;
+    const cols = Math.max(1, Math.floor((hostWidth + gapPx) / (cellPx + gapPx)));
+    poolDotsEl.style.setProperty('--pool-cell-size', `${cellPx}px`);
+    poolDotsEl.style.setProperty('--pool-cell-gap', `${gapPx}px`);
+    poolDotsEl.style.setProperty('--pool-grid-cols', String(cols));
+    poolDotsEl.dataset.gridCount = String(count);
+  }
+
+  function createPoolCellEl(dot) {
     const el = document.createElement('span');
-    el.className = 'pool-dot';
-    el.classList.add(`pool-dot--${dot.state}`);
-    if (dot.isCurrent) el.classList.add('pool-dot--current');
+    el.className = 'pool-cell';
+    el.classList.add(`pool-cell--${dot.state}`);
+    if (dot.isCurrent) el.classList.add('pool-cell--current');
     el.dataset.slug = dot.slug;
     el.setAttribute('role', 'listitem');
     el.setAttribute('title', dot.label);
-    el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
+    el.style.setProperty('--pool-cell-progress', `${dot.progress}%`);
     return el;
   }
 
-  function updatePoolDotEl(el, dot) {
-    el.className = 'pool-dot';
-    el.classList.add(`pool-dot--${dot.state}`);
-    if (dot.isCurrent) el.classList.add('pool-dot--current');
-    el.style.setProperty('--pool-dot-progress', `${dot.progress}%`);
+  function updatePoolCellEl(el, dot) {
+    el.className = 'pool-cell';
+    el.classList.add(`pool-cell--${dot.state}`);
+    if (dot.isCurrent) el.classList.add('pool-cell--current');
+    el.style.setProperty('--pool-cell-progress', `${dot.progress}%`);
     el.setAttribute('title', dot.label);
   }
 
-  function animatePoolDotExit(el) {
-    if (!el || el.classList.contains('pool-dot--exit')) return;
-    el.classList.add('pool-dot--exit');
-    const remove = () => el.remove();
-    el.addEventListener('animationend', remove, { once: true });
-    setTimeout(remove, 450);
-  }
-
-  function syncPoolDots(pool, cards, currentSlug) {
+  function syncPoolGrid(gridWords, cards, currentSlug) {
     if (!poolDotsEl) return;
-    const dots = srs.getPoolDots(pool, cards, db, currentSlug);
-    applyPoolDotsLayout(dots.length);
-
-    const newSlugOrder = dots.map((d) => d.slug);
-    const prevSlugs = new Set(poolDotsSnapshot.slugs);
-    const prevStates = poolDotsSnapshot.slugToState;
-    const newSlugs = new Set(newSlugOrder);
-
-    for (const slug of prevSlugs) {
-      if (newSlugs.has(slug)) continue;
-      const oldEl = poolDotsEl.querySelector(`.pool-dot[data-slug="${slug}"]`);
-      if (oldEl && !oldEl.classList.contains('pool-dot--exit')) {
-        animatePoolDotExit(oldEl);
-      }
-    }
+    const dots = srs.getPoolDots(gridWords, cards, db, currentSlug);
+    applyPoolGridLayout(dots.length);
 
     const existingBySlug = new Map();
-    poolDotsEl.querySelectorAll('.pool-dot').forEach((el) => {
-      if (el.dataset.slug && !el.classList.contains('pool-dot--exit')) {
-        existingBySlug.set(el.dataset.slug, el);
-      }
+    poolDotsEl.querySelectorAll('.pool-cell').forEach((el) => {
+      if (el.dataset.slug) existingBySlug.set(el.dataset.slug, el);
     });
 
     const nextEls = [];
-    for (const dot of dots) {
-      const prevState = prevStates.get(dot.slug);
+    let structureChanged = dots.length !== poolDotsSnapshot.slugs.length;
+
+    for (let i = 0; i < dots.length; i += 1) {
+      const dot = dots[i];
       let el = existingBySlug.get(dot.slug);
+      const prevState = poolDotsSnapshot.slugToState.get(dot.slug);
 
       if (el) {
-        existingBySlug.delete(dot.slug);
-        updatePoolDotEl(el, dot);
-        if (dot.state === 'mastered' && prevState && prevState !== 'mastered') {
-          el.classList.add('pool-dot--mastered-pop');
+        if (poolDotsSnapshot.slugs[i] !== dot.slug) structureChanged = true;
+        if (prevState !== `${dot.state}:${dot.progress}`) {
+          updatePoolCellEl(el, dot);
         }
       } else {
-        el = createPoolDotEl(dot);
-        if (!prevSlugs.has(dot.slug)) {
-          el.classList.add('pool-dot--enter');
-        }
+        el = createPoolCellEl(dot);
+        structureChanged = true;
       }
       nextEls.push(el);
     }
 
-    for (const [, el] of existingBySlug) {
-      el.remove();
+    if (structureChanged) {
+      poolDotsEl.replaceChildren(...nextEls);
     }
 
-    const exitingEls = [...poolDotsEl.querySelectorAll('.pool-dot--exit')];
-    poolDotsEl.replaceChildren(...nextEls, ...exitingEls);
-
     poolDotsSnapshot = {
-      slugs: newSlugOrder,
-      slugToState: new Map(dots.map((d) => [d.slug, d.state])),
+      slugs: dots.map((d) => d.slug),
+      slugToState: new Map(dots.map((d) => [d.slug, `${d.state}:${d.progress}`])),
     };
   }
 
   async function syncSessionInfo(settings, cards) {
     if (poolProgress) {
       const pool = srs.getActivePoolWords(catalog, cards, db, settings);
+      const gridWords = getGridWords();
+      const projectTotal = catalog.words.length;
       const direction = currentPick?.direction ?? srs.resolveAutoDirection(catalog, cards, db, settings);
       const {
         learned,
-        total,
         directionMastered,
         directionLearning,
         directionNew,
-      } = srs.getPoolProgress(pool, cards, db, direction);
+      } = srs.getPoolProgress(gridWords, cards, db, direction);
 
-      const dots = srs.getPoolDots(pool, cards, db, currentPick?.word?.slug ?? null);
+      const dots = srs.getPoolDots(gridWords, cards, db, currentPick?.word?.slug ?? null);
       const resting = dots.filter((d) => d.state === 'resting').length;
 
-      syncPoolDots(pool, cards, currentPick?.word?.slug ?? null);
+      syncPoolGrid(gridWords, cards, currentPick?.word?.slug ?? null);
 
-      if (poolCountResting) poolCountResting.textContent = String(resting);
-      if (poolCountTotal) poolCountTotal.textContent = String(total);
+      if (poolCountStudying) poolCountStudying.textContent = String(pool.length);
+      if (poolCountTotal) poolCountTotal.textContent = String(projectTotal);
 
       if (poolLabelLearned) {
         poolLabelLearned.textContent = `${directionMastered || learned} усвоено`;
@@ -547,7 +530,7 @@
         poolLabelActive.textContent = `${directionLearning} в работе`;
       }
       if (poolLabelResting) {
-        poolLabelResting.textContent = `${resting} отдыхает`;
+        poolLabelResting.textContent = `${resting} отдыхаем`;
       }
       if (poolLabelNew) {
         poolLabelNew.textContent = `${directionNew} новых`;

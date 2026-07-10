@@ -385,7 +385,7 @@ body {
   min-width: 1.5rem;
 }
 
-.pool-side-stat--resting {
+.pool-side-stat--studying {
   grid-column: 1;
   grid-row: 1;
   justify-self: start;
@@ -407,7 +407,7 @@ body {
   display: inline;
 }
 
-.practice-pool-progress .pool-dots {
+.practice-pool-progress .pool-grid {
   grid-column: 2;
   grid-row: 1;
 }
@@ -417,116 +417,52 @@ body {
   grid-row: 2;
 }
 
-.pool-dots {
-  display: flex;
-  flex-wrap: wrap;
+.pool-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--pool-grid-cols, auto-fill), var(--pool-cell-size, 1px));
+  gap: var(--pool-cell-gap, 1px);
   justify-content: center;
-  align-content: center;
-  gap: var(--pool-dot-gap, 0.35rem);
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
   padding: 0.1rem 0;
+  line-height: 0;
 }
 
-.pool-dots--multirow {
-  row-gap: calc(var(--pool-dot-gap, 0.35rem) + 1px);
-}
-
-.pool-dots--compact {
-  gap: var(--pool-dot-gap, 0.22rem);
-}
-
-.pool-dot {
-  --pool-dot-size: 0.65rem;
+.pool-cell {
+  --pool-cell-size: 1px;
   position: relative;
-  width: var(--pool-dot-size);
-  height: var(--pool-dot-size);
-  border-radius: 999px;
+  width: var(--pool-cell-size);
+  height: var(--pool-cell-size);
+  border-radius: 0;
   flex-shrink: 0;
   background: var(--progress-new);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
-.pool-dot--new {
-  background: transparent;
-  border: 2px solid var(--progress-new);
-  box-sizing: border-box;
+.pool-cell--new {
+  background: var(--progress-new);
 }
 
-.pool-dot--learning {
-  box-shadow: inset 0 0 0 1.5px var(--pool-learning);
-  background: conic-gradient(
-    var(--pool-learning) var(--pool-dot-progress, 0%),
+.pool-cell--learning {
+  background: linear-gradient(
+    to top,
+    var(--pool-learning) var(--pool-cell-progress, 0%),
     var(--pool-learning-soft) 0
   );
 }
 
-.pool-dot--resting {
+.pool-cell--resting {
   background: var(--pool-resting);
 }
 
-.pool-dot--mastered {
+.pool-cell--mastered {
   background: var(--pool-mastered);
 }
 
-.pool-dot--current {
-  transform: scale(1.12);
-  box-shadow: 0 0 0 1.5px var(--bg-card), 0 0 0 2.5px color-mix(in srgb, var(--text-muted) 35%, transparent);
+.pool-cell--current {
+  box-shadow: 0 0 0 1px var(--text);
   z-index: 1;
-}
-
-@keyframes pool-dot-enter {
-  from {
-    opacity: 0;
-    transform: translateY(0.45rem) scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes pool-dot-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-0.55rem) scale(0.55);
-  }
-}
-
-@keyframes pool-dot-mastered-pop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.2) translateY(-0.15rem);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-  }
-}
-
-.pool-dot--enter {
-  animation: pool-dot-enter 0.35s ease-out both;
-}
-
-.pool-dot--exit {
-  pointer-events: none;
-  animation: pool-dot-exit 0.4s ease-in forwards;
-  z-index: 2;
-}
-
-.pool-dot--mastered-pop {
-  animation: pool-dot-mastered-pop 0.45s ease-out;
-}
-
-.pool-dot--current.pool-dot--enter,
-.pool-dot--current.pool-dot--mastered-pop {
-  animation-duration: 0.35s;
 }
 
 .practice-pool-progress:focus-visible {
