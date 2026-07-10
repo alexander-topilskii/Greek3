@@ -410,6 +410,7 @@ body {
 .practice-pool-progress .pool-grid {
   grid-column: 2;
   grid-row: 1;
+  align-self: center;
 }
 
 .practice-pool-progress .practice-pool-labels {
@@ -419,49 +420,63 @@ body {
 
 .pool-grid {
   display: grid;
-  grid-template-columns: repeat(var(--pool-grid-cols, auto-fill), var(--pool-cell-size, 1px));
-  gap: var(--pool-cell-gap, 1px);
+  grid-template-columns: repeat(var(--pool-grid-cols, auto-fill), var(--pool-cell-size, 3px));
+  gap: var(--pool-cell-gap, 2px);
   justify-content: center;
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  padding: 0.1rem 0;
+  padding: 0.35rem 0.5rem;
   line-height: 0;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 2px rgba(26, 26, 46, 0.04);
 }
 
 .pool-cell {
-  --pool-cell-size: 1px;
+  --pool-cell-size: 3px;
   position: relative;
   width: var(--pool-cell-size);
   height: var(--pool-cell-size);
-  border-radius: 0;
+  border-radius: 2px;
   flex-shrink: 0;
   background: var(--progress-new);
-  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.25s ease;
 }
 
 .pool-cell--new {
-  background: var(--progress-new);
+  background: color-mix(in srgb, var(--progress-new) 35%, var(--bg-card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--progress-new) 70%, transparent);
 }
 
 .pool-cell--learning {
-  background: linear-gradient(
-    to top,
+  background: conic-gradient(
+    from 225deg,
     var(--pool-learning) var(--pool-cell-progress, 0%),
     var(--pool-learning-soft) 0
   );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pool-learning) 25%, transparent);
 }
 
 .pool-cell--resting {
-  background: var(--pool-resting);
+  background: linear-gradient(145deg, #facc15, var(--pool-resting));
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 
 .pool-cell--mastered {
-  background: var(--pool-mastered);
+  background: linear-gradient(145deg, #3b82f6, var(--pool-mastered));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .pool-cell--current {
-  box-shadow: 0 0 0 1px var(--text);
+  transform: scale(1.2);
+  box-shadow:
+    0 0 0 1.5px var(--bg-card),
+    0 0 0 2.5px var(--accent),
+    0 1px 4px rgba(37, 99, 235, 0.25);
   z-index: 1;
 }
 
@@ -503,9 +518,10 @@ body {
   display: none;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.35rem 0.75rem;
+  gap: 0.4rem 0.85rem;
   font-size: 0.75rem;
   color: var(--text-muted);
+  padding-top: 0.15rem;
 }
 
 .practice-pool-progress.progress-labeled .practice-pool-labels {
@@ -520,30 +536,34 @@ body {
 
 .progress-swatch {
   display: inline-block;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 999px;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 3px;
   flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .progress-swatch--learned {
-  background: var(--pool-mastered);
+  background: linear-gradient(145deg, #3b82f6, var(--pool-mastered));
 }
 
 .progress-swatch--active {
-  background: var(--pool-learning);
+  background: conic-gradient(from 225deg, var(--pool-learning) 75%, var(--pool-learning-soft) 0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pool-learning) 30%, transparent);
 }
 
 .progress-swatch--resting {
-  background: var(--pool-resting);
+  background: linear-gradient(145deg, #facc15, var(--pool-resting));
 }
 
 .progress-swatch--total {
-  background: var(--progress-new);
+  background: color-mix(in srgb, var(--progress-new) 35%, var(--bg-card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--progress-new) 70%, transparent);
 }
 
 .progress-swatch--new {
-  background: var(--progress-new);
+  background: color-mix(in srgb, var(--progress-new) 35%, var(--bg-card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--progress-new) 70%, transparent);
 }
 
 .practice-word-source {
