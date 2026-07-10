@@ -211,10 +211,49 @@ async function testResetPreservesMigrationFlags() {
   console.log('✓ reset clears cards but keeps migration flags');
 }
 
+async function testSeenWords() {
+  const storage = makeLocalStorage();
+  const idb = makeIndexedDB();
+  const db = loadDb(storage, idb);
+  await db.init();
+
+  const cards = [
+    {
+      id: 'seen-word#summary#el-ru',
+      deckId: 'global',
+      wordSlug: 'seen-word',
+      type: 'summary',
+      direction: 'el-ru',
+      repetitions: 0,
+      remembered: 0,
+      forgotten: 1,
+      lastReview: Date.now(),
+      nextReview: 0,
+      ease: 2.5,
+      interval: 0,
+    },
+  ];
+  idb._stores.cards.set(cards[0].id, cards[0]);
+
+  if (!(await db.isWordSeen('seen-word', cards))) {
+    throw new Error('Expected word with card activity to count as seen');
+  }
+  if (await db.isWordSeen('fresh-word', cards)) {
+    throw new Error('Expected word without activity to be unseen');
+  }
+
+  await db.markWordSeen('fresh-word');
+  if (!(await db.isWordSeen('fresh-word', cards))) {
+    throw new Error('Expected markWordSeen to persist');
+  }
+  console.log('✓ seen-words tracking');
+}
+
 async function main() {
   await testPutAndBackup();
   await testRestoreFromBackup();
   await testResetPreservesMigrationFlags();
+  await testSeenWords();
   console.log('\nAll DB backup tests passed.');
 }
 

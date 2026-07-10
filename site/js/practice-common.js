@@ -20,31 +20,41 @@
     }
   }
 
+  async function applyNewRibbon(fc, slug, db, options = {}) {
+    if (!fc?.setNewRibbon || !slug || !db?.isWordSeen) return;
+    const cards = options.cards ?? (await db.getAllCards());
+    const seen = await db.isWordSeen(slug, cards);
+    fc.setNewRibbon(!seen);
+    if (!seen) {
+      await db.markWordSeen(slug);
+    }
+  }
+
   /**
    * @param {object} fc - flashcard instance
    * @param {object} pick
-   * @param {{ practiceDirection?: string|null, supportsForms?: boolean }} [options]
+   * @param {{ practiceDirection?: string|null, supportsForms?: boolean, db?: object, cards?: object[] }} [options]
    */
-  function showCardContent(fc, pick, options = {}) {
+  async function showCardContent(fc, pick, options = {}) {
     if (!fc || !pick) return;
     const direction = resolveDirection(pick, options.practiceDirection);
     const word = pick.word;
 
     if (pick.type === 'summary' || pick.isNew || (pick.card && pick.card.type === 'summary')) {
       showSummaryCard(fc, pick, direction);
-      return;
-    }
-
-    if (options.supportsForms) {
+    } else if (options.supportsForms) {
       const formIndex = pick.formIndex ?? pick.card?.formIndex ?? 0;
       const form = word.forms?.[formIndex];
       if (form) {
         fc.showPair(form.greek, form.translation);
-        return;
+      } else {
+        showSummaryCard(fc, pick, direction);
       }
+    } else {
+      showSummaryCard(fc, pick, direction);
     }
 
-    showSummaryCard(fc, pick, direction);
+    await applyNewRibbon(fc, word.slug, options.db, options);
   }
 
   async function ensurePickCard(pick, db, options = {}) {
@@ -142,6 +152,7 @@
     greekSummaryLines,
     showSummaryCard,
     showCardContent,
+    applyNewRibbon,
     ensurePickCard,
     gradeCurrentWithPoolExpand,
   };

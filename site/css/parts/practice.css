@@ -83,6 +83,24 @@
   position: relative;
   z-index: 1;
   user-select: none;
+  overflow: hidden;
+}
+
+.flashcard-new-ribbon {
+  position: absolute;
+  top: 14px;
+  right: -30px;
+  z-index: 3;
+  padding: 0.2rem 2.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  transform: rotate(45deg);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  pointer-events: none;
 }
 
 .flashcard:active {

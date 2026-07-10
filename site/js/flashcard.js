@@ -30,6 +30,7 @@
     const backText = root.querySelector('[data-flash-back-text]');
     const hintLeft = root.querySelector('.flashcard-hint--left');
     const hintRight = root.querySelector('.flashcard-hint--right');
+    const newRibbon = root.querySelector('[data-flash-new-ribbon]');
     const btnSpeak = root.parentElement?.querySelector('.btn-speak');
     const speak = global.GreekSpeak;
 
@@ -149,6 +150,7 @@
 
     function showPair(greek, translation) {
       setGreekLines([greek]);
+      if (greek === '—') setNewRibbon(false);
       if (startWithRussian) {
         applyFaces(translation, greek, false, true);
       } else {
@@ -160,6 +162,7 @@
 
     function showMultiLine(frontLines, backLines, frontIsGreek, backIsGreek) {
       setGreekLines(frontIsGreek ? frontLines : backLines);
+      if (frontLines.length === 1 && frontLines[0] === '—') setNewRibbon(false);
       const frontHtml = frontLines.map((l) => `<span class="${frontIsGreek ? 'greek' : ''}">${escape(l)}</span>`).join('<br>');
       const backHtml = backLines.map((l) => `<span class="${backIsGreek ? 'greek' : ''}">${escape(l)}</span>`).join('<br>');
       if (frontLabel) frontLabel.textContent = frontIsGreek ? 'Греческий' : 'Русский';
@@ -181,6 +184,13 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    }
+
+    function setNewRibbon(visible) {
+      if (!newRibbon) return;
+      newRibbon.hidden = !visible;
+      newRibbon.toggleAttribute('hidden', !visible);
+      newRibbon.setAttribute('aria-hidden', visible ? 'false' : 'true');
     }
 
     function resetFlip() {
@@ -291,6 +301,7 @@
     return {
       showPair,
       showMultiLine,
+      setNewRibbon,
       toggleLang(btn) {
         startWithRussian = !startWithRussian;
         setLangButton(btn);
