@@ -176,10 +176,11 @@
     });
   }
 
-  function showCardContent(pick) {
-    common.showCardContent(fc, pick, {
+  async function showCardContent(pick) {
+    await common.showCardContent(fc, pick, {
       practiceDirection: practiceDirection,
       supportsForms: true,
+      db,
     });
   }
 
@@ -239,7 +240,7 @@
       return;
     }
 
-    showCardContent(currentPick);
+    await showCardContent(currentPick);
     syncExamplesButton(currentPick.word);
   }
 

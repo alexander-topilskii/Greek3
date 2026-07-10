@@ -145,6 +145,7 @@ export function flashcardMarkup(id = 'flashcard-root', controls: FlashcardContro
         <span class="flashcard-hint flashcard-hint--right">Помню</span>
       </div>
       <div class="flashcard" tabindex="0" role="button" aria-label="Карточка — тап перевернуть, свайп оценить">
+        <span class="flashcard-new-ribbon" data-flash-new-ribbon hidden aria-hidden="true">new</span>
         <div class="flashcard-drag">
           <div class="flashcard-inner">
             <div class="flashcard-front">

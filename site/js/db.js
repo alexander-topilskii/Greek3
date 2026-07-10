@@ -9,6 +9,7 @@
   const DIRECTIONS = ['el-ru', 'ru-el'];
 
   const MIGRATION_KEYS = ['migration:direction-v2', 'migration:global-deck-v3'];
+  const SEEN_WORDS_KEY = 'seen-words-v1';
 
   let dbPromise = null;
   let migrationPromise = null;
@@ -177,6 +178,14 @@
     return `${card.wordSlug}#form#${card.formIndex}#${direction}`;
   }
 
+  function wordHasCardActivity(cards, slug) {
+    return cards.some(
+      (c) =>
+        c.wordSlug === slug &&
+        ((c.lastReview ?? 0) > 0 || (c.remembered ?? 0) > 0 || (c.forgotten ?? 0) > 0),
+    );
+  }
+
   function mergeCardsByCanonicalId(cards, mapCard) {
     const byId = new Map();
     for (const card of cards) {
@@ -325,6 +334,25 @@
       return tx('settings', 'readwrite', (store) =>
         requestToPromise(store.put({ key, value })),
       );
+    },
+
+    async getSeenWords() {
+      const stored = await this.getSetting(SEEN_WORDS_KEY, []);
+      return new Set(Array.isArray(stored) ? stored.filter(Boolean) : []);
+    },
+
+    async isWordSeen(slug, cards = null) {
+      const allCards = cards ?? (await this.getAllCards());
+      if (wordHasCardActivity(allCards, slug)) return true;
+      const seen = await this.getSeenWords();
+      return seen.has(slug);
+    },
+
+    async markWordSeen(slug) {
+      const seen = await this.getSeenWords();
+      if (seen.has(slug)) return;
+      seen.add(slug);
+      await this.setSetting(SEEN_WORDS_KEY, [...seen]);
     },
 
     async flushBackup() {

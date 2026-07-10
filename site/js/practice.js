@@ -33,6 +33,8 @@
   const btnReset = document.getElementById('btn-reset-word');
   const formRows = document.querySelectorAll('.form-row');
 
+  const common = window.GreekPracticeCommon;
+
   let currentIndex = 0;
   let mode = 'forms';
 
@@ -89,15 +91,21 @@
     });
   }
 
-  function showForm(index) {
+  async function applyNewRibbon() {
+    if (!common?.applyNewRibbon) return;
+    await common.applyNewRibbon(fc, wordSlug, db);
+  }
+
+  async function showForm(index) {
     mode = 'forms';
     currentIndex = ((index % forms.length) + forms.length) % forms.length;
     const form = forms[currentIndex];
     fc.showPair(form.greek, form.translation);
     highlightRow();
+    await applyNewRibbon();
   }
 
-  function showSummary() {
+  async function showSummary() {
     mode = 'summary';
     const greekLines = baseForms.length ? baseForms : forms.slice(0, 3).map((f) => f.greek);
     if (fc.startWithRussian) {
@@ -106,25 +114,26 @@
       fc.showMultiLine(greekLines, [translation], true, false);
     }
     formRows.forEach((row) => row.classList.remove('is-active'));
+    await applyNewRibbon();
   }
 
-  function randomForm() {
+  async function randomForm() {
     let next;
     do {
       next = Math.floor(Math.random() * forms.length);
     } while (next === currentIndex && forms.length > 1);
-    showForm(next);
+    await showForm(next);
   }
 
-  function randomMixed() {
-    if (Math.random() < 0.3 && baseForms.length) showSummary();
-    else randomForm();
+  async function randomMixed() {
+    if (Math.random() < 0.3 && baseForms.length) await showSummary();
+    else await randomForm();
   }
 
   async function gradeAndNext(remembered) {
     await gradeCurrent(remembered);
     await updateWordProgress();
-    randomMixed();
+    await randomMixed();
   }
 
   async function updateWordProgress() {
@@ -134,18 +143,20 @@
     srs.applyProgressBar(bar, st);
   }
 
-  btnRandom?.addEventListener('click', randomMixed);
-  btnLang?.addEventListener('click', () => {
+  btnRandom?.addEventListener('click', () => {
+    randomMixed();
+  });
+  btnLang?.addEventListener('click', async () => {
     fc.toggleLang(btnLang);
-    if (mode === 'summary') showSummary();
-    else showForm(currentIndex);
+    if (mode === 'summary') await showSummary();
+    else await showForm(currentIndex);
   });
 
   btnReset?.addEventListener('click', async () => {
     if (!confirm('Сбросить прогресс этого слова?')) return;
     await db.deleteWordCards(wordSlug);
     await updateWordProgress();
-    randomMixed();
+    await randomMixed();
     settingsDialog?.close();
   });
 
@@ -154,9 +165,11 @@
   });
 
   fc.setLangButton(btnLang);
-  randomMixed();
 
   db.init()
-    .then(() => updateWordProgress())
+    .then(() => {
+      updateWordProgress();
+      return randomMixed();
+    })
     .catch(() => {});
 })();

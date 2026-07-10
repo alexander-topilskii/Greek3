@@ -297,7 +297,7 @@
     const stepIdx = card.learningStep ?? 0;
 
     if (ladder.isSummaryLearningStep(stepIdx)) {
-      showCardContent(pick);
+      await showCardContent(pick);
       showLearningView(ladder.STEPS.SUMMARY);
       return;
     }
@@ -323,7 +323,7 @@
     }
 
     await clearLearningLadderState(pick);
-    showCardContent(pick);
+    await showCardContent(pick);
     showLearningView(ladder.STEPS.SUMMARY);
   }
 
@@ -715,9 +715,10 @@
     return fc;
   }
 
-  function showCardContent(pick) {
-    common.showCardContent(fc, pick, {
+  async function showCardContent(pick) {
+    await common.showCardContent(fc, pick, {
       practiceDirection: pick.direction ?? 'el-ru',
+      db,
     });
     const word = pick.word;
     setWordSource(word, pick.direction);
