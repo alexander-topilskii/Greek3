@@ -40,13 +40,32 @@ export function homePracticePanelMarkup(): string {
               <span class="pool-side-stat-value" id="practice-pool-count-total">0</span>
               <span class="pool-side-stat-label">всего</span>
             </span>
-            <span class="practice-pool-labels">
-              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-label-learned">0 усвоено</span></span>
-              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-label-active">0 в работе</span></span>
-              <span class="practice-pool-label practice-pool-label--resting"><span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span><span id="practice-pool-label-resting">0 отдыхаем</span></span>
-              <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="practice-pool-label-new">0 новых</span></span>
-            </span>
           </button>
+        </div>
+        <div class="progress-fullscreen" id="practice-pool-fullscreen" hidden aria-hidden="true">
+          <div class="progress-fullscreen-toolbar">
+            <button type="button" class="progress-fullscreen-close" id="practice-pool-fullscreen-close" aria-label="Свернуть прогресс">← Назад</button>
+            <h2 class="progress-fullscreen-title">Прогресс словаря</h2>
+          </div>
+          <div class="progress-fullscreen-summary">
+            <div class="progress-fullscreen-stat progress-fullscreen-stat--studying">
+              <span class="progress-fullscreen-stat-value" id="practice-pool-fullscreen-studying">0</span>
+              <span class="progress-fullscreen-stat-label">на изучении</span>
+            </div>
+            <div class="progress-fullscreen-stat progress-fullscreen-stat--total">
+              <span class="progress-fullscreen-stat-value" id="practice-pool-fullscreen-total">0</span>
+              <span class="progress-fullscreen-stat-label">всего</span>
+            </div>
+          </div>
+          <p class="progress-fullscreen-current hidden" id="practice-pool-fullscreen-current" hidden></p>
+          <div class="progress-fullscreen-legend" id="practice-pool-fullscreen-legend">
+            <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="practice-pool-fullscreen-label-learned">0 усвоено</span></span>
+            <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="practice-pool-fullscreen-label-active">0 в работе</span></span>
+            <span class="practice-pool-label practice-pool-label--resting"><span class="progress-swatch progress-swatch--resting" aria-hidden="true"></span><span id="practice-pool-fullscreen-label-resting">0 отдыхаем</span></span>
+            <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="practice-pool-fullscreen-label-new">0 новых</span></span>
+            <span class="practice-pool-label"><span class="progress-swatch progress-swatch--current" aria-hidden="true"></span><span>сейчас</span></span>
+          </div>
+          <div class="pool-grid pool-grid--detail" id="practice-pool-dots-detail" role="list"></div>
         </div>
         <div class="learn-stage" id="learn-stage">
           <div class="learn-stage-body">
