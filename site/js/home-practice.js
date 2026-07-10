@@ -527,6 +527,10 @@
     });
   }
 
+  function poolCellRenderKey(dot) {
+    return `${dot.state}:${dot.progress}:${dot.isCurrent ? 1 : 0}`;
+  }
+
   function createPoolCellEl(dot) {
     const el = document.createElement('span');
     el.className = 'pool-cell';
@@ -573,7 +577,7 @@
 
       if (el) {
         if (snapshot.slugs[i] !== dot.slug) structureChanged = true;
-        if (prevState !== `${dot.state}:${dot.progress}`) {
+        if (prevState !== poolCellRenderKey(dot)) {
           updatePoolCellEl(el, dot);
         }
       } else {
@@ -589,7 +593,7 @@
 
     const nextSnapshot = {
       slugs: dots.map((d) => d.slug),
-      slugToState: new Map(dots.map((d) => [d.slug, `${d.state}:${d.progress}`])),
+      slugToState: new Map(dots.map((d) => [d.slug, poolCellRenderKey(d)])),
     };
     if (isDetail) {
       poolDotsDetailSnapshot = nextSnapshot;
