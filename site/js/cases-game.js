@@ -108,6 +108,14 @@
     return 'Слова';
   }
 
+  function unitNumberLabel(unit) {
+    return unit.numberLabel ?? 'ед. число';
+  }
+
+  function unitTopicLabel(unit) {
+    return `${unit.caseLabel} · ${unit.genderLabel} · ${unitNumberLabel(unit)}`;
+  }
+
   function updateHeader() {
     const unit = currentUnit();
     const stage = currentStage();
@@ -118,7 +126,7 @@
     }
 
     if (titleEl) {
-      titleEl.textContent = `${unit.caseLabel} · ${unit.genderLabel}`;
+      titleEl.textContent = unitTopicLabel(unit);
     }
 
     if (descEl) {
@@ -230,7 +238,7 @@
   }
 
   function endingsPromptLabel(unit) {
-    return `${unit.caseLabel} · ${unit.genderLabel} — какое окончание?`;
+    return `${unitTopicLabel(unit)} — какое окончание?`;
   }
 
   function showQuizQuestion() {
@@ -272,7 +280,7 @@
         .join('');
     } else {
       if (promptLabelEl) {
-        promptLabelEl.textContent = `${unit.caseLabel} · ${unit.genderLabel} — выберите перевод`;
+        promptLabelEl.textContent = `${unitTopicLabel(unit)} — выберите перевод`;
       }
       if (promptEl) {
         promptEl.textContent = q.ru;
