@@ -44,6 +44,8 @@
     }
     if (/[ийь]$/i.test(w)) return w.slice(0, -1) + 'и';
     if (/о$/i.test(w)) return w.slice(0, -1) + 'а';
+    // Plural adjectives/nouns already in plural (выходные, синие, красные)
+    if (/(ные|ые|ие)$/i.test(w)) return w;
     if (/е$/i.test(w)) return w.slice(0, -1) + 'я';
     if (/[бвгджзйклмнпрстфхцчшщ]$/i.test(w)) return w + 'ы';
     return w + 'и';

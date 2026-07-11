@@ -24,5 +24,10 @@ if (utils.formatRuForChoice('конверты (мн.)', ['конверт (ед.)
 if (utils.formatRuForChoice('друг (м.р., ед.)', ['друг (м.р., ед.)']) !== 'друг') {
   throw new Error('Expected case label stripped');
 }
+if (
+  utils.formatRuForChoice('выходные (мн.)', ['выходные (ед.)', 'выходные (мн.)']) !== 'выходные'
+) {
+  throw new Error('Expected plural adjective выходные unchanged');
+}
 
 console.log('✓ ru choice label formatting');
