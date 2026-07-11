@@ -34,13 +34,19 @@
 
 /* Flashcard root */
 .flashcard-root {
+  --flashcard-bleed: clamp(1.75rem, 7vw, 3.25rem);
   position: relative;
   touch-action: pan-y;
+  padding-block: var(--flashcard-bleed);
+  overflow-x: clip;
 }
 
 .flashcard-hints {
   position: absolute;
-  inset: 0;
+  top: var(--flashcard-bleed);
+  right: 0;
+  bottom: var(--flashcard-bleed);
+  left: 0;
   pointer-events: none;
   z-index: 0;
   display: flex;
@@ -83,7 +89,7 @@
   position: relative;
   z-index: 1;
   user-select: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .flashcard-new-ribbon {
