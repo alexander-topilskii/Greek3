@@ -160,7 +160,7 @@ export function renderCasesIndex(
       ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите падежи и управление глаголов — затем потренируйтесь в мини-игре.</p>'}
+        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем пройдите последовательное обучение: правило → окончания → слова в контексте.</p>'}
       </div>
 
       ${casesCheatSheetMarkup()}
@@ -171,19 +171,32 @@ export function renderCasesIndex(
 
       <section class="cases-game fade-in" id="cases-game" aria-label="Практика падежей">
         <div class="cases-game-head">
-          <h2>Мини-игра: перевод фраз</h2>
-          <p class="cases-game-desc">Русская фраза — выберите правильный греческий перевод. Простая лексика A1–A2.</p>
+          <p class="cases-game-progress" data-cases-progress>Блок 1 из 12</p>
+          <span class="cases-game-badge" data-cases-badge hidden></span>
+          <h2 data-cases-title>Именительный · мужской род</h2>
+          <p class="cases-game-desc" data-cases-desc>Последовательное обучение: правило → окончания → слова в контексте.</p>
+          <div class="cases-game-stages" data-cases-stages aria-label="Этапы блока"></div>
           <p class="cases-game-score">Счёт: <span data-cases-score>0 / 0</span></p>
         </div>
         <div class="cases-game-card">
-          <p class="cases-game-ru" data-cases-ru>—</p>
-          <div class="cases-game-options" data-cases-options></div>
-          <div class="cases-game-meta" data-cases-meta hidden>
-            <span class="cases-game-badge" data-cases-badge aria-hidden="true"></span>
-            <p class="cases-game-hint" data-cases-hint></p>
+          <div class="cases-game-view" data-cases-view="lesson">
+            <h3 class="cases-game-lesson-title" data-cases-lesson-title>Правило</h3>
+            <p class="cases-game-lesson-body" data-cases-lesson-body></p>
+            <p class="cases-game-lesson-pattern greek" data-cases-lesson-pattern></p>
+            <p class="cases-game-lesson-hint" data-cases-lesson-hint></p>
+            <ul class="cases-game-lesson-examples" data-cases-lesson-examples></ul>
+          </div>
+          <div class="cases-game-view" data-cases-view="quiz" hidden>
+            <p class="cases-game-prompt-label" data-cases-prompt-label></p>
+            <p class="cases-game-prompt" data-cases-prompt>—</p>
+            <div class="cases-game-options" data-cases-options></div>
+          </div>
+          <div class="cases-game-view cases-game-view--complete" data-cases-view="complete" hidden>
+            <p class="cases-game-complete-text">Все блоки пройдены. Можно начать заново или вернуться к шпаргалке выше.</p>
           </div>
           <p class="cases-game-feedback" data-cases-feedback hidden></p>
           <div class="cases-game-actions">
+            <button type="button" class="btn btn-primary" data-cases-continue>Понятно →</button>
             <button type="button" class="btn btn-primary" data-cases-next hidden>Дальше →</button>
             <button type="button" class="btn btn-secondary" data-cases-restart hidden>Начать заново</button>
           </div>
