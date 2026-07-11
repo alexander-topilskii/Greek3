@@ -2406,6 +2406,101 @@ body.practice-immersive-open {
   margin-top: 1rem;
 }
 
+/* Cases review */
+.cases-review {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.cases-review-head h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+.cases-review-desc {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.cases-review-card {
+  margin-top: 0.5rem;
+}
+
+.cases-review-match[hidden] {
+  display: none;
+}
+
+.cases-review-match-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cases-review-match-col-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cases-review-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cases-review-chip {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0.875rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), opacity var(--transition);
+}
+
+.cases-review-chip.greek {
+  font-family: var(--font-greek);
+}
+
+.cases-review-chip:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cases-review-chip--selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cases-review-chip--matched {
+  border-color: var(--success);
+  background: #ecfdf5;
+  color: #065f46;
+  cursor: default;
+  opacity: 0.9;
+}
+
+.cases-review-chip--wrong {
+  border-color: var(--error);
+  background: #fef2f2;
+}
+
+@media (max-width: 480px) {
+  .cases-review-match-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Footer */
 .site-footer {
   border-top: 1px solid var(--border);

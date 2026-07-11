@@ -202,11 +202,41 @@ export function renderCasesIndex(
           </div>
         </div>
       </section>
+
+      <section class="cases-review fade-in" id="cases-review" aria-label="Повторение падежей">
+        <div class="cases-review-head">
+          <h2>Повторение</h2>
+          <p class="cases-review-desc">Задания вперемешу: артикль, окончание, перевод, сопоставление. Больше примеров из всего курса.</p>
+          <p class="cases-game-score">Счёт: <span data-review-score>0 / 0</span></p>
+        </div>
+        <div class="cases-game-card cases-review-card">
+          <p class="cases-game-prompt-label" data-review-label>—</p>
+          <p class="cases-game-prompt" data-review-prompt>—</p>
+          <div class="cases-game-options" data-review-options></div>
+          <div class="cases-review-match" data-review-match hidden>
+            <div class="cases-review-match-cols">
+              <div class="cases-review-match-col">
+                <span class="cases-review-match-col-label">Греческий</span>
+                <div class="cases-review-match-list" data-review-match-greek></div>
+              </div>
+              <div class="cases-review-match-col">
+                <span class="cases-review-match-col-label">Русский</span>
+                <div class="cases-review-match-list" data-review-match-ru></div>
+              </div>
+            </div>
+          </div>
+          <p class="cases-game-feedback" data-review-feedback hidden></p>
+          <div class="cases-game-actions">
+            <button type="button" class="btn btn-primary" data-review-next hidden>Дальше →</button>
+            <button type="button" class="btn btn-secondary" data-review-again hidden>Новый раунд</button>
+          </div>
+        </div>
+      </section>
       ${catalogJson}
       ${gameJson}
     </section>`;
 
-  const scripts = ['assets/js/cases-game.js'];
+  const scripts = ['assets/js/cases-game.js', 'assets/js/cases-review.js'];
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   return layout(content, page.title, breadcrumbs, scripts);
