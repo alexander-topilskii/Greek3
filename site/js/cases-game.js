@@ -167,6 +167,18 @@
     });
   }
 
+  function clearFeedback() {
+    if (!feedbackEl) return;
+    feedbackEl.hidden = true;
+    feedbackEl.className = 'cases-game-feedback';
+    feedbackEl.innerHTML = '';
+  }
+
+  function setQuizActions({ continueHidden, nextHidden }) {
+    if (btnContinue) btnContinue.hidden = continueHidden;
+    if (btnNext) btnNext.hidden = nextHidden;
+  }
+
   function renderLesson() {
     const unit = currentUnit();
     const lesson = unit.lesson ?? {};
@@ -197,10 +209,10 @@
       }
     }
 
+    clearFeedback();
     showView('lesson');
     updateHeader();
-    btnContinue.hidden = false;
-    btnNext.hidden = true;
+    setQuizActions({ continueHidden: false, nextHidden: true });
     btnRestart.hidden = unitIndex > 0 || stageIndex > 0;
   }
 
@@ -217,11 +229,14 @@
     return `−${ending}`;
   }
 
+  function endingsPromptLabel(unit) {
+    return `${unit.caseLabel} · ${unit.genderLabel} — какое окончание?`;
+  }
+
   function showQuizQuestion() {
     locked = false;
-    feedbackEl.hidden = true;
-    feedbackEl.className = 'cases-game-feedback';
-    btnNext.hidden = true;
+    clearFeedback();
+    setQuizActions({ continueHidden: true, nextHidden: true });
 
     const unit = currentUnit();
     const stage = currentStage();
@@ -242,7 +257,7 @@
     updateHeader();
 
     if (stage === 'endings') {
-      if (promptLabelEl) promptLabelEl.textContent = 'Какое окончание?';
+      if (promptLabelEl) promptLabelEl.textContent = endingsPromptLabel(unit);
       if (promptEl) {
         promptEl.innerHTML = `<span class="greek cases-game-stem">${escapeHtml(q.prompt)}</span><span class="cases-game-blank">___</span>`;
         promptEl.classList.add('greek');
@@ -256,7 +271,9 @@
         )
         .join('');
     } else {
-      if (promptLabelEl) promptLabelEl.textContent = 'Выберите перевод';
+      if (promptLabelEl) {
+        promptLabelEl.textContent = `${unit.caseLabel} · ${unit.genderLabel} — выберите перевод`;
+      }
       if (promptEl) {
         promptEl.textContent = q.ru;
         promptEl.classList.remove('greek');
@@ -306,7 +323,7 @@
     } else {
       btnNext.textContent = 'Дальше →';
     }
-    btnNext.hidden = false;
+    setQuizActions({ continueHidden: true, nextHidden: false });
   }
 
   function advanceStage() {
@@ -350,8 +367,8 @@
     }
     if (badgeEl) badgeEl.hidden = true;
     if (scoreEl) scoreEl.hidden = true;
-    btnContinue.hidden = true;
-    btnNext.hidden = true;
+    clearFeedback();
+    setQuizActions({ continueHidden: true, nextHidden: true });
     btnRestart.hidden = false;
   }
 
