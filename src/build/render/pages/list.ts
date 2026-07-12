@@ -1,4 +1,5 @@
 import type { IndexPage, VerbCatalog } from '../../types';
+import { sitePath } from '../../site-path';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
@@ -138,7 +139,6 @@ export function renderCasesIndex(
   pageOutputDir: string,
   breadcrumbs: { label: string; href?: string }[],
   catalog: VerbCatalog | undefined,
-  gameData: unknown,
 ): string {
   const links = renderGroupedLinks(page, pageOutputDir, catalog);
   const intro = page.intro
@@ -149,15 +149,17 @@ export function renderCasesIndex(
     ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
     : '';
 
-  const gameJson = `<script type="application/json" id="cases-game-data">${embedJson(gameData)}</script>`;
-
   const hasWords = Boolean(catalog && catalog.words.length > 0);
 
   const content = `
     <section class="verbs-list-page cases-page" data-deck-id="cases">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем пройдите последовательное обучение: правило → окончания → слова в контексте.</p>'}
+        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем откройте тренировку для практики артиклей, окончаний и переводов.</p>'}
+        <div class="cases-practice-launch fade-in">
+          <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
+          <p class="cases-practice-launch-hint">Артикли, окончания, переводы и сопоставление форм — в отдельной тренировке с прогрессом.</p>
+        </div>
       </div>
 
       ${casesCheatSheetMarkup()}
@@ -165,75 +167,10 @@ export function renderCasesIndex(
       <section class="links-list" id="verbs-links">
         ${links}
       </section>
-
-      <section class="cases-game fade-in" id="cases-game" aria-label="Практика падежей">
-        <div class="cases-game-head">
-          <p class="cases-game-progress" data-cases-progress>Блок 1 из 12</p>
-          <span class="cases-game-badge" data-cases-badge hidden></span>
-          <h2 data-cases-title>Именительный · мужской род</h2>
-          <p class="cases-game-desc" data-cases-desc>Последовательное обучение: правило → окончания → слова в контексте.</p>
-          <div class="cases-game-stages" data-cases-stages aria-label="Этапы блока"></div>
-          <p class="cases-game-score">Счёт: <span data-cases-score>0 / 0</span></p>
-        </div>
-        <div class="cases-game-card">
-          <div class="cases-game-view" data-cases-view="lesson">
-            <h3 class="cases-game-lesson-title" data-cases-lesson-title>Правило</h3>
-            <p class="cases-game-lesson-body" data-cases-lesson-body></p>
-            <p class="cases-game-lesson-pattern greek" data-cases-lesson-pattern></p>
-            <p class="cases-game-lesson-hint" data-cases-lesson-hint></p>
-            <ul class="cases-game-lesson-examples" data-cases-lesson-examples></ul>
-          </div>
-          <div class="cases-game-view" data-cases-view="quiz" hidden>
-            <p class="cases-game-prompt-label" data-cases-prompt-label></p>
-            <p class="cases-game-prompt" data-cases-prompt>—</p>
-            <div class="cases-game-options" data-cases-options></div>
-          </div>
-          <div class="cases-game-view cases-game-view--complete" data-cases-view="complete" hidden>
-            <p class="cases-game-complete-text">Все блоки пройдены. Можно начать заново или вернуться к шпаргалке выше.</p>
-          </div>
-          <p class="cases-game-feedback" data-cases-feedback hidden></p>
-          <div class="cases-game-actions">
-            <button type="button" class="btn btn-primary" data-cases-continue>Понятно →</button>
-            <button type="button" class="btn btn-primary" data-cases-next hidden>Дальше →</button>
-            <button type="button" class="btn btn-secondary" data-cases-restart hidden>Начать заново</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="cases-review fade-in" id="cases-review" aria-label="Повторение падежей">
-        <div class="cases-review-head">
-          <h2>Повторение</h2>
-          <p class="cases-review-desc">Задания вперемешу: артикль, окончание, перевод, сопоставление. Больше примеров из всего курса.</p>
-          <p class="cases-game-score">Счёт: <span data-review-score>0 / 0</span></p>
-        </div>
-        <div class="cases-game-card cases-review-card">
-          <p class="cases-game-prompt-label" data-review-label>—</p>
-          <p class="cases-game-prompt" data-review-prompt>—</p>
-          <div class="cases-game-options" data-review-options></div>
-          <div class="cases-review-match" data-review-match hidden>
-            <div class="cases-review-match-cols">
-              <div class="cases-review-match-col">
-                <span class="cases-review-match-col-label">Греческий</span>
-                <div class="cases-review-match-list" data-review-match-greek></div>
-              </div>
-              <div class="cases-review-match-col">
-                <span class="cases-review-match-col-label">Русский</span>
-                <div class="cases-review-match-list" data-review-match-ru></div>
-              </div>
-            </div>
-          </div>
-          <p class="cases-game-feedback" data-review-feedback hidden></p>
-          <div class="cases-game-actions">
-            <button type="button" class="btn btn-primary" data-review-next hidden>Дальше →</button>
-            <button type="button" class="btn btn-secondary" data-review-again hidden>Новый раунд</button>
-          </div>
-        </div>
-      </section>
       ${catalogJson}
-      ${gameJson}
     </section>`;
 
-  const scripts = ['assets/js/cases-game.js', 'assets/js/cases-review.js'];
+  const scripts: string[] = [];
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);

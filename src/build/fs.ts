@@ -13,6 +13,7 @@ const CSS_PARTS = [
   'practice.css',
   'favorites.css',
   'cases.css',
+  'cases-practice.css',
   'learning-ladder.css',
   'misc.css',
 ];
