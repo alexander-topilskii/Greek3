@@ -15,8 +15,8 @@ export function renderHome(
 ): string {
   const cards = sections
     .map(
-      (s) => `
-    <a href="${s.href.startsWith('#') ? s.href : escapeHtml(sitePath(s.href))}" class="section-card fade-in">
+      (s, order) => `
+    <a href="${s.href.startsWith('#') ? s.href : escapeHtml(sitePath(s.href))}" class="section-card fade-in" data-section-href="${escapeHtml(s.href)}" data-section-order="${order}">
       <h2>${escapeHtml(s.title)}</h2>
       <p>${escapeHtml(s.description)}</p>
       <span class="card-arrow" aria-hidden="true">→</span>

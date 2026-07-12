@@ -18,4 +18,5 @@ export const SHARED_SCRIPTS = [
   'assets/js/flashcard.js',
   'assets/js/examples-dialog.js',
   'assets/js/pwa.js',
+  'assets/js/home-sections.js',
 ];
