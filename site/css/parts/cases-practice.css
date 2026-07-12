@@ -251,6 +251,27 @@
   display: none !important;
 }
 
+.cases-game-dual-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cases-game-options-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.cases-game-options-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .cases-review-match[hidden] {
   display: none !important;
 }
