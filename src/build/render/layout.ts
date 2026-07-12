@@ -36,7 +36,7 @@ export function layout(
     })),
   );
 
-  const logoText = `<span class="logo-title" aria-pressed="false">${escapeHtml(LOGO_TITLE)}</span><sup class="logo-version" hidden aria-hidden="true" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>`;
+  const logoText = escapeHtml(LOGO_TITLE);
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -67,7 +67,7 @@ export function layout(
       </a>
       <nav class="site-nav">
         ${searchButtonMarkup()}
-        ${options.showSettings ? settingsButtonMarkup() : ''}
+        ${options.showSettings ? settingsButtonMarkup(BUILD_VERSION) : ''}
       </nav>
     </div>
   </header>

@@ -2,6 +2,26 @@
   const ROOT = '__root__';
   const layers = [];
   let suppressPop = 0;
+  let lockedScrollY = 0;
+
+  function lockBodyScroll() {
+    if (document.body.classList.contains('dialog-open')) return;
+    lockedScrollY = window.scrollY;
+    document.body.classList.add('dialog-open');
+    document.body.style.top = `-${lockedScrollY}px`;
+  }
+
+  function unlockBodyScroll() {
+    if (document.querySelector('dialog[open]')) return;
+    document.body.classList.remove('dialog-open');
+    document.body.style.top = '';
+    window.scrollTo(0, lockedScrollY);
+  }
+
+  function syncBodyScrollLock() {
+    if (document.querySelector('dialog[open]')) lockBodyScroll();
+    else unlockBodyScroll();
+  }
 
   function isOpen(id) {
     return layers.some((layer) => layer.id === id);
@@ -59,10 +79,13 @@
           if (dialog.open) dialog.close();
         });
       }
-      return showModal();
+      const result = showModal();
+      syncBodyScrollLock();
+      return result;
     };
 
     dialog.addEventListener('close', () => {
+      syncBodyScrollLock();
       if (isOpen(id)) dismiss(id);
     });
   }
