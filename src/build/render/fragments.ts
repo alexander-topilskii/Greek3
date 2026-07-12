@@ -80,6 +80,15 @@ export function homePracticePanelMarkup(flashcardRootId = 'home-flashcard-root')
                 <p class="learn-quiz-feedback" data-quiz-feedback hidden></p>
               </div>
             </div>
+            <div class="learn-step learn-step--spell hidden" id="learn-view-spell" hidden>
+              <div class="learn-step-card learn-step-card--spell">
+                <span class="learn-step-label" data-spell-label>Соберите греческое слово</span>
+                <p class="learn-step-prompt" data-spell-prompt>—</p>
+                <div class="learn-spell-assembly" data-spell-assembly aria-live="polite"></div>
+                <div class="learn-spell-bank" data-spell-bank></div>
+                <p class="learn-spell-feedback" data-spell-feedback hidden></p>
+              </div>
+            </div>
             <div class="learn-step learn-step--match hidden" id="learn-view-match" hidden>
               <div class="learn-step-card learn-step-card--match">
                 <span class="learn-step-label">Сопоставьте формы и переводы</span>
