@@ -3,10 +3,15 @@
   const STEPS = {
     SUMMARY: 'summary',
     QUIZ: 'quiz',
+    SPELL: 'spell',
     MATCH: 'match',
   };
 
-  const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.MATCH];
+  const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.SPELL, STEPS.MATCH];
+
+  const SPELL_EXTRA_LETTERS = 2;
+  const SPELL_MAX_LENGTH = 18;
+  const GREEK_DECOY_LETTERS = 'αβγδεζηθικλμνξοπρστυφχψωάέήίόύώ';
 
   function shuffle(arr) {
     return utils ? utils.shuffle(arr) : arr.slice();
@@ -105,6 +110,54 @@
     return pairs[Math.floor(Math.random() * pairs.length)];
   }
 
+  function normalizeGreek(text) {
+    return String(text ?? '').normalize('NFC');
+  }
+
+  function splitGreekLetters(text) {
+    return [...normalizeGreek(text)];
+  }
+
+  /** @param {import('./types').CatalogWord} word */
+  function getSpellablePairs(word) {
+    return getBaseFormPairs(word).filter((pair) => {
+      const greek = normalizeGreek(pair.greek);
+      if (!greek || greek.includes(' ')) return false;
+      const letters = splitGreekLetters(greek);
+      return letters.length >= 2 && letters.length <= SPELL_MAX_LENGTH;
+    });
+  }
+
+  function pickSpellPair(word) {
+    return pickRandomPair(getSpellablePairs(word));
+  }
+
+  function buildSpellLetterBank(greek, extraCount = SPELL_EXTRA_LETTERS) {
+    const letters = splitGreekLetters(greek);
+    const inWord = new Set(letters);
+    const decoys = [];
+    const pool = shuffle([...GREEK_DECOY_LETTERS]);
+
+    for (const ch of pool) {
+      if (decoys.length >= extraCount) break;
+      if (!inWord.has(ch)) decoys.push(ch);
+    }
+
+    while (decoys.length < extraCount) {
+      for (const ch of pool) {
+        if (decoys.length >= extraCount) break;
+        decoys.push(ch);
+      }
+      break;
+    }
+
+    const bank = letters
+      .map((char, index) => ({ id: index, char }))
+      .concat(decoys.map((char, index) => ({ id: letters.length + index, char })));
+
+    return shuffle(bank);
+  }
+
   /**
    * @param {import('./types').CatalogWord[]} poolWords
    * @param {import('./types').CatalogWord} word
@@ -192,6 +245,7 @@
   function buildLearningPath(word) {
     const steps = [];
     if (getBaseFormPairs(word).length) steps.push(STEPS.QUIZ);
+    if (getSpellablePairs(word).length) steps.push(STEPS.SPELL);
     if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
     return steps;
   }
@@ -228,6 +282,9 @@
     getBaseFormPairs,
     getFormBlocks,
     getMatchPairs,
+    getSpellablePairs,
+    pickSpellPair,
+    buildSpellLetterBank,
     pickRandomPair,
     buildQuizOptions,
     shouldUseLadder,

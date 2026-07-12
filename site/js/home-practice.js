@@ -11,6 +11,7 @@
   const ladder = window.GreekLearningLadder;
   const quizStep = window.GreekQuizStep;
   const matchStep = window.GreekMatchStep;
+  const spellStep = window.GreekSpellStep;
   const common = window.GreekPracticeCommon;
   if (!db || !srs || !flash || !ladder || !common) return;
 
@@ -133,9 +134,11 @@
   const learnViewFlashcard = document.getElementById('learn-view-flashcard');
   const learnViewQuiz = document.getElementById('learn-view-quiz');
   const learnViewMatch = document.getElementById('learn-view-match');
+  const learnViewSpell = document.getElementById('learn-view-spell');
   let currentLearningStep = ladder.STEPS.SUMMARY;
   let quizUi = null;
   let matchUi = null;
+  let spellUi = null;
 
   window.addEventListener('resize', () => {
     if (!poolDotsEl?.dataset.gridCount) return;
@@ -155,12 +158,15 @@
 
     const isSummary = step === ladder.STEPS.SUMMARY;
     const isQuiz = step === ladder.STEPS.QUIZ;
+    const isSpell = step === ladder.STEPS.SPELL;
     const isMatch = step === ladder.STEPS.MATCH;
 
     learnViewFlashcard?.classList.toggle('hidden', !isSummary);
     learnViewFlashcard?.toggleAttribute('hidden', !isSummary);
     learnViewQuiz?.classList.toggle('hidden', !isQuiz);
     learnViewQuiz?.toggleAttribute('hidden', !isQuiz);
+    learnViewSpell?.classList.toggle('hidden', !isSpell);
+    learnViewSpell?.toggleAttribute('hidden', !isSpell);
     learnViewMatch?.classList.toggle('hidden', !isMatch);
     learnViewMatch?.toggleAttribute('hidden', !isMatch);
 
@@ -170,6 +176,10 @@
     if (isQuiz) {
       learnViewQuiz?.classList.remove('learn-step--visible');
       requestAnimationFrame(() => learnViewQuiz?.classList.add('learn-step--enter'));
+    }
+    if (isSpell) {
+      learnViewSpell?.classList.remove('learn-step--visible');
+      requestAnimationFrame(() => learnViewSpell?.classList.add('learn-step--enter'));
     }
     if (isMatch) {
       learnViewMatch?.classList.remove('learn-step--visible');
@@ -238,6 +248,13 @@
     const pathIndex = stepIdx - 1;
     const stepName = ladder.learningPathStepName(path, pathIndex);
 
+    if (stepName === ladder.STEPS.SPELL) {
+      const spellPair = ladder.pickSpellPair(pick.word);
+      if (!spellPair) {
+        await advanceLadderOrFinish(pick);
+        return true;
+      }
+    }
     if (stepName === ladder.STEPS.MATCH) {
       const matchPairs = ladder.getMatchPairs(pick.word);
       if (matchPairs.length < 2) {
@@ -293,6 +310,39 @@
     });
   }
 
+  async function showSpellForPick(pick) {
+    const word = pick.word;
+    const pair = ladder.pickSpellPair(word);
+    if (!pair) {
+      if (await skipUnavailableLadderGame(pick)) return;
+      await advanceLadderOrFinish(pick);
+      return;
+    }
+
+    if (!spellUi && learnViewSpell && spellStep) {
+      spellUi = spellStep.init({
+        root: learnViewSpell,
+        onResult: (correct) => {
+          if (correct) onLearningGamePassed();
+          else failLearningLadder();
+        },
+      });
+    }
+
+    showLearningView(ladder.STEPS.SPELL);
+    setWordSource(word, pick.direction ?? 'el-ru');
+    syncWordLink(pick);
+    syncExamplesButton(word);
+
+    const ruFormLabels = word.forms?.map((f) => f.translation).filter(Boolean) ?? [];
+    spellUi?.show({
+      translation: pair.translation,
+      greek: pair.greek,
+      ruFormLabels,
+      letterBank: ladder.buildSpellLetterBank(pair.greek),
+    });
+  }
+
   async function showMatchForPick(pick) {
     const word = pick.word;
     const matchPairs = ladder.getMatchPairs(word);
@@ -340,6 +390,15 @@
 
     if (stepName === ladder.STEPS.QUIZ) {
       await showQuizForPick(pick);
+      return;
+    }
+    if (stepName === ladder.STEPS.SPELL) {
+      const spellPair = ladder.pickSpellPair(pick.word);
+      if (!spellPair) {
+        await advanceLadderOrFinish(pick);
+        return;
+      }
+      await showSpellForPick(pick);
       return;
     }
     if (stepName === ladder.STEPS.MATCH) {

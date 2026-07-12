@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:site": "npm run build && node dist/build/index.js",
-    "test": "npm run build && node scripts/test-srs-pick.mjs && node scripts/test-db-backup.mjs && node scripts/test-learning-ladder.mjs && node scripts/test-match-step.mjs && node scripts/test-ru-choice-labels.mjs",
+    "test": "npm run build && node scripts/test-srs-pick.mjs && node scripts/test-db-backup.mjs && node scripts/test-learning-ladder.mjs && node scripts/test-match-step.mjs && node scripts/test-spell-step.mjs && node scripts/test-ru-choice-labels.mjs",
     "test:srs": "node scripts/test-srs-pick.mjs",
     "test:db": "node scripts/test-db-backup.mjs",
     "build:pages": "SITE_BASE_URL=/Greek3 npm run build:site",
