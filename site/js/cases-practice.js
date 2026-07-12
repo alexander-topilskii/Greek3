@@ -213,14 +213,23 @@
     return normalizeGreek(greek).includes(normalizeGreek(stem));
   }
 
+  const MATCH_ROOT_CANONICAL = {
+    μητερ: 'μαμ',
+  };
+
+  function canonicalMatchRoot(root) {
+    const key = normalizeGreek(root);
+    return MATCH_ROOT_CANONICAL[key] ?? key;
+  }
+
   function buildMatchRoots() {
     const byRoot = new Map();
 
     const addItem = (root, entry) => {
-      const key = normalizeGreek(root);
+      const key = canonicalMatchRoot(root);
       if (!key) return;
       if (!byRoot.has(key)) byRoot.set(key, []);
-      byRoot.get(key).push(entry);
+      byRoot.get(key).push({ ...entry, root: key });
     };
 
     for (const unit of units) {
@@ -233,7 +242,6 @@
           greek: context.greek,
           ru: context.ru,
           unit,
-          root: normalizeGreek(root),
         });
       }
     }
@@ -244,7 +252,7 @@
         if (!item.correct || !item.ru) continue;
         const root = knownRoots.find((r) => stemAppearsInGreek(item.correct, r));
         if (!root) continue;
-        addItem(root, { greek: item.correct, ru: item.ru, unit, root });
+        addItem(root, { greek: item.correct, ru: item.ru, unit });
       }
     }
 
@@ -711,8 +719,18 @@
   }
 
   function buildMatchMulti(pool, used) {
-    for (const group of shuffle(pool.matchRoots ?? [])) {
-      const pairs = pickMatchPairsFromSources(group.items, used);
+    const roots = pool.matchRoots ?? [];
+    if (!roots.length) return null;
+
+    for (const group of shuffle(roots)) {
+      const available = group.items.filter((p) => p.greek && p.ru && !used.has(p.greek));
+      let pairs = pickMatchPairsFromSources(available, used);
+      if (!pairs) {
+        pairs = pickMatchPairsFromSources(
+          shuffle(group.items.filter((p) => p.greek && p.ru)),
+          used,
+        );
+      }
       if (!pairs) continue;
       return {
         type: 'match-multi',
@@ -722,13 +740,7 @@
       };
     }
 
-    const pairs = pickMatchPairsFromSources(pool.matchMulti, used);
-    if (!pairs) return null;
-    return {
-      type: 'match-multi',
-      cellId: cellId(pairs[0].unit.id, 'el-ru'),
-      pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
-    };
+    return null;
   }
 
   function isMatchPairCorrect(leftId, rightId) {
@@ -892,9 +904,7 @@
         promptEl.textContent =
           q.type === 'forms-id'
             ? 'Нажмите греческую форму, затем описание падежа, рода и числа.'
-            : q.matchRoot
-              ? 'Нажмите русскую фразу, затем греческий перевод. Все пары — разные формы одного слова.'
-              : 'Нажмите русскую фразу, затем греческий перевод.';
+            : 'Нажмите русскую фразу, затем греческий перевод. Все пары — разные формы одного слова.';
         promptEl.classList.remove('greek');
       }
       if (q.type === 'forms-id') {
