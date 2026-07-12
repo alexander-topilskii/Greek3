@@ -237,6 +237,7 @@ export function deckSettingsDialogMarkup(maxWords: number): string {
           <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
           <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
         </div>
+        ${copyWordsSettingsSectionMarkup()}
       </div>
     </form>
   </dialog>`;
@@ -280,6 +281,7 @@ export function homeSettingsDialogMarkup(): string {
         <div class="settings-actions">
           <button type="button" class="btn btn-secondary" id="btn-save-home-settings">Сохранить</button>
         </div>
+        ${copyWordsSettingsSectionMarkup()}
         <hr class="settings-divider">
         <div class="pwa-install-section" id="pwa-install-section" hidden>
           <button type="button" class="btn btn-secondary" id="btn-install-app">Установить приложение</button>
@@ -293,17 +295,18 @@ export function homeSettingsDialogMarkup(): string {
   </dialog>`;
 }
 
-export function copyWordsToolbarMarkup(): string {
+export function copyWordsSettingsSectionMarkup(): string {
   return `
-    <div class="copy-words-toolbar fade-in" role="group" aria-label="Копировать слова для AI-практики">
-      <button type="button" class="btn btn-secondary btn-copy-words" data-copy-mode="studied" title="Скопировать слова в работе и выученные">
-        <span class="btn-copy-icon" aria-hidden="true">📋</span> В работе
-      </button>
-      <button type="button" class="btn btn-secondary btn-copy-words" data-copy-mode="all" title="Скопировать все слова раздела">
-        <span class="btn-copy-icon" aria-hidden="true">📋</span> Все
-      </button>
-      <span class="copy-words-feedback" id="copy-words-feedback" role="status" aria-live="polite"></span>
-    </div>`;
+        <hr class="settings-divider">
+        <div class="settings-copy-words">
+          <p class="settings-section-label">Копировать для AI-практики</p>
+          <p class="settings-hint">Список слов в буфер обмена — удобно для чата с ИИ.</p>
+          <div class="settings-actions settings-copy-actions" role="group" aria-label="Копировать слова">
+            <button type="button" class="btn btn-secondary btn-copy-words" data-copy-mode="studied" title="Скопировать слова в работе и выученные">В работе</button>
+            <button type="button" class="btn btn-secondary btn-copy-words" data-copy-mode="all" title="Скопировать все слова раздела">Все</button>
+          </div>
+          <p class="copy-words-feedback settings-hint" id="copy-words-feedback" role="status" aria-live="polite"></p>
+        </div>`;
 }
 
 const FAVORITE_ICON = `<svg class="favorite-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
