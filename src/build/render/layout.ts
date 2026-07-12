@@ -1,6 +1,7 @@
 import { pwaScope } from '../pwa';
 import { ASSET_VERSION, sitePath } from '../site-path';
-import { escapeHtml } from './html';
+import { HOME_SECTIONS } from '../constants';
+import { embedJson, escapeHtml } from './html';
 import { SITE_CONFIG } from './config';
 import { SHARED_SCRIPTS } from './scripts';
 import { searchButtonMarkup, settingsButtonMarkup } from './fragments';
@@ -27,6 +28,12 @@ export function layout(
     .join('\n  ');
 
   const scope = pwaScope(SITE_CONFIG.baseUrl);
+  const homeSectionsConfig = embedJson(
+    HOME_SECTIONS.map((section, order) => ({
+      href: section.href,
+      order,
+    })),
+  );
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -71,6 +78,7 @@ export function layout(
     </div>
   </footer>
   ${options.bodyEnd ?? ''}
+  <script type="application/json" id="home-sections-config">${homeSectionsConfig}</script>
   ${scripts}
 </body>
 </html>`;
