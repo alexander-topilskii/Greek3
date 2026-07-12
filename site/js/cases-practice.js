@@ -34,6 +34,21 @@
     genitive: 'Родительный',
     accusative: 'Винительный',
   };
+  const CASE_ROW_SHORT = {
+    nominative: 'Им.',
+    genitive: 'Род.',
+    accusative: 'Вин.',
+  };
+  const GROUP_SLOTS = [
+    { gender: 'masculine', plural: false, label: 'м.ед.' },
+    { gender: 'feminine', plural: false, label: 'ж.ед.' },
+    { gender: 'mixed', plural: false, label: 'м/ж.ед.' },
+    { gender: 'neuter', plural: false, label: 'ср.' },
+    { gender: 'masculine', plural: true, label: 'м.мн.' },
+    { gender: 'feminine', plural: true, label: 'ж.мн.' },
+    { gender: 'mixed', plural: true, label: 'м/ж.мн.' },
+    { gender: 'neuter', plural: true, label: 'ср.мн.' },
+  ];
 
   const labelEl = document.getElementById('cases-task-label');
   const ruContextEl = document.getElementById('cases-task-ru');
@@ -49,11 +64,10 @@
   const btnAgain = document.getElementById('cases-task-again');
   const scoreEl = document.getElementById('cases-session-score');
 
+  const progressBoard = document.getElementById('cases-progress-board');
+  const progressDetailBoard = document.getElementById('cases-progress-detail-board');
+  const progressPercent = document.getElementById('cases-progress-percent');
   const progressToggle = document.getElementById('cases-progress-toggle');
-  const progressGrid = document.getElementById('cases-progress-grid');
-  const progressDetail = document.getElementById('cases-progress-detail');
-  const progressStudying = document.getElementById('cases-progress-studying');
-  const progressTotal = document.getElementById('cases-progress-total');
   const progressFullscreen = document.getElementById('cases-progress-fullscreen');
   const progressFullscreenClose = document.getElementById('cases-progress-fullscreen-close');
   const legendMastered = document.getElementById('cases-legend-mastered');
@@ -86,17 +100,6 @@
   function unitTopic(unit) {
     const num = unit.numberLabel ?? 'ед. число';
     return `${unit.caseLabel} · ${unit.genderLabel} · ${num}`;
-  }
-
-  function unitShort(unit) {
-    const genderShort = {
-      masculine: 'м.',
-      feminine: 'ж.',
-      neuter: 'ср.',
-      mixed: 'м/ж',
-    };
-    const num = (unit.numberLabel ?? 'ед. число').includes('мн') ? 'мн.' : 'ед.';
-    return `${genderShort[unit.gender] ?? unit.genderLabel} · ${num}`;
   }
 
   function cellId(unitId, skill) {
@@ -216,25 +219,8 @@
     return sentenceContextsCache;
   }
 
-  function sentenceContainsForm(sentence, wordForm) {
-    const noun = normalizeGreek(getNounFromForm(wordForm));
-    if (!noun) return false;
-    return normalizeGreek(sentence)
-      .split(/\s+/)
-      .some((token) => token === noun);
-  }
-
-  function inferRuFromSentenceTail(greekSentence) {
-    const parts = greekSentence.trim().split(/\s+/);
-    if (parts.length < 3) return null;
-    const tail = normalizeGreek(parts.slice(2).join(' '));
-    for (const ctx of sentenceContexts()) {
-      if (ctx.source !== 'correct') continue;
-      const ctxParts = ctx.greek.trim().split(/\s+/);
-      if (ctxParts.length < 3) continue;
-      if (normalizeGreek(ctxParts.slice(2).join(' ')) === tail) return ctx.ru;
-    }
-    return null;
+  function sentenceContainsExactForm(sentence, wordForm) {
+    return Boolean(findPhraseIndex(sentence, wordForm));
   }
 
   function resolvePhraseContext(unit, item, wordForm) {
@@ -242,13 +228,25 @@
       return { ru: item.context.ru, greek: item.context.greek };
     }
 
-    const matches = sentenceContexts().filter((ctx) => sentenceContainsForm(ctx.greek, wordForm));
-    const preferred = matches.find((ctx) => ctx.source === 'correct' || ctx.source === 'example');
-    if (preferred) return { ru: preferred.ru, greek: preferred.greek };
+    const tryCandidate = (ru, greek) => {
+      if (!ru || !greek || !sentenceContainsExactForm(greek, wordForm)) return null;
+      return { ru, greek };
+    };
 
-    for (const ctx of matches) {
-      const ru = inferRuFromSentenceTail(ctx.greek);
-      if (ru) return { ru, greek: ctx.greek };
+    for (const word of unit.words ?? []) {
+      const hit = tryCandidate(word.ru, word.correct);
+      if (hit) return hit;
+    }
+
+    for (const example of unit.lesson?.examples ?? []) {
+      const hit = tryCandidate(example.ru, example.greek);
+      if (hit) return hit;
+    }
+
+    for (const ctx of sentenceContexts()) {
+      if (ctx.source === 'wrong') continue;
+      const hit = tryCandidate(ctx.ru, ctx.greek);
+      if (hit) return hit;
     }
 
     return null;
@@ -387,86 +385,96 @@
     return ids;
   }
 
-  function renderProgressTile(id, detailed) {
-    const [unitId, skill] = id.split(':');
-    const unit = units.find((u) => u.id === unitId);
-    if (!unit) return '';
-    const state = cellState(id);
-    const isCurrent = id === currentCellId;
-    const cls = [
-      'cases-progress-chip',
-      `cases-progress-chip--${state}`,
-      isCurrent ? 'cases-progress-chip--current' : '',
-      detailed ? 'cases-progress-chip--detail' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    const title = detailed
-      ? `${unitTopic(unit)} · ${SKILL_LABELS[skill] ?? skill}`
-      : SKILL_LABELS[skill] ?? skill;
-    return `<span class="${cls}" role="listitem" data-cell-id="${escapeHtml(id)}" title="${escapeHtml(title)}"><span class="cases-progress-chip-label">${escapeHtml(SKILL_LABELS[skill] ?? skill)}</span></span>`;
+  function unitIsPlural(unit) {
+    return (unit.numberLabel ?? 'ед. число').includes('мн');
   }
 
-  function renderUnitTile(unit, detailed) {
-    const chips = SKILLS.map((skill) => renderProgressTile(cellId(unit.id, skill), false)).join('');
-    const caseCls = `cases-progress-unit cases-progress-unit--${unit.case}`;
-    const label = detailed ? unitTopic(unit) : unitShort(unit);
+  function unitMatchesSlot(unit, slot) {
+    return unit.gender === slot.gender && unitIsPlural(unit) === slot.plural;
+  }
+
+  function findUnitForSlot(caseName, slot) {
+    return units.find((unit) => unit.case === caseName && unitMatchesSlot(unit, slot));
+  }
+
+  function cellProgressPercent(id) {
+    const cell = ensureCell(id);
+    if (cell.total === 0) return 0;
+    const ratio = cell.correct / cell.total;
+    if (cell.total >= MASTERED_MIN && ratio >= MASTERED_THRESHOLD) return 100;
+    return Math.round(ratio * 100);
+  }
+
+  function renderProgressCell(id, detailed) {
+    const percent = cellProgressPercent(id);
+    const isCurrent = id === currentCellId;
+    const [unitId, skill] = id.split(':');
+    const unit = units.find((u) => u.id === unitId);
+    const title = unit
+      ? `${unitTopic(unit)} · ${SKILL_LABELS[skill] ?? skill} · ${percent}%`
+      : `${percent}%`;
+    const sizeClass = detailed ? ' cases-progress-cell--detail' : '';
+    const currentClass = isCurrent ? ' cases-progress-cell--current' : '';
+    return `<span class="cases-progress-cell${sizeClass}${currentClass}" role="listitem" data-cell-id="${escapeHtml(id)}" style="--cell-progress: ${percent}%" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"></span>`;
+  }
+
+  function renderProgressGroup(unit, slot, detailed) {
+    if (!unit) {
+      const placeholder = SKILLS.map(() => `<span class="cases-progress-cell cases-progress-cell--empty" aria-hidden="true"></span>`).join('');
+      return `
+        <div class="cases-progress-group cases-progress-group--empty">
+          <span class="cases-progress-group-label">${escapeHtml(slot.label)}</span>
+          <div class="cases-progress-cells" role="list">${placeholder}</div>
+        </div>`;
+    }
+
+    const cells = SKILLS.map((skill) => renderProgressCell(cellId(unit.id, skill), detailed)).join('');
     return `
-      <div class="${caseCls}${detailed ? ' cases-progress-unit--detail' : ''}" role="listitem" data-unit-id="${escapeHtml(unit.id)}">
-        <span class="cases-progress-unit-label">${escapeHtml(label)}</span>
-        <div class="cases-progress-unit-chips">${chips}</div>
+      <div class="cases-progress-group" data-unit-id="${escapeHtml(unit.id)}">
+        <span class="cases-progress-group-label" title="${escapeHtml(unitTopic(unit))}">${escapeHtml(slot.label)}</span>
+        <div class="cases-progress-cells" role="list">${cells}</div>
       </div>`;
+  }
+
+  function renderProgressBoardMarkup(detailed) {
+    return CASE_ORDER.map((caseName) => {
+      const groups = GROUP_SLOTS.map((slot) => renderProgressGroup(findUnitForSlot(caseName, slot), slot, detailed)).join('');
+      const rowLabel = detailed
+        ? CASE_SECTION_LABELS[caseName]
+        : CASE_ROW_SHORT[caseName];
+      return `
+        <div class="cases-progress-row cases-progress-row--${caseName}${detailed ? ' cases-progress-row--detail' : ''}" data-case="${caseName}">
+          <span class="cases-progress-row-label" title="${escapeHtml(CASE_SECTION_LABELS[caseName])}">${escapeHtml(rowLabel)}</span>
+          <div class="cases-progress-groups">${groups}</div>
+        </div>`;
+    }).join('');
   }
 
   function renderProgress() {
     const ids = allCellIds();
+    let progressSum = 0;
     let mastered = 0;
-    let learning = 0;
-    let studying = 0;
+    let started = 0;
 
     for (const id of ids) {
-      const state = cellState(id);
-      if (state === 'mastered') mastered += 1;
-      else if (state === 'learning') {
-        learning += 1;
-        studying += 1;
-      } else studying += 1;
+      const percent = cellProgressPercent(id);
+      progressSum += percent;
+      if (percent >= 100) mastered += 1;
+      else if (percent > 0) started += 1;
     }
 
-    if (progressStudying) progressStudying.textContent = String(studying);
-    if (progressTotal) progressTotal.textContent = String(ids.length);
+    const overallPercent = ids.length ? Math.round(progressSum / ids.length) : 0;
+
+    if (progressPercent) progressPercent.textContent = `${overallPercent}%`;
     if (legendMastered) legendMastered.textContent = `${mastered} усвоено`;
-    if (legendLearning) legendLearning.textContent = `${learning} в работе`;
-    if (legendNew) legendNew.textContent = `${ids.length - mastered - learning} новых`;
+    if (legendLearning) legendLearning.textContent = `${started} в работе`;
+    if (legendNew) legendNew.textContent = `${ids.length - mastered - started} новых`;
 
-    if (progressGrid) {
-      progressGrid.innerHTML = units
-        .slice(0, 8)
-        .map((unit) => {
-          const states = SKILLS.map((s) => cellState(cellId(unit.id, s)));
-          const worst = states.includes('new')
-            ? 'new'
-            : states.includes('learning')
-              ? 'learning'
-              : 'mastered';
-          return `<span class="cases-progress-mini cases-progress-mini--${worst}${unit.id === currentCellId?.split(':')[0] ? ' cases-progress-mini--current' : ''}" role="listitem" title="${escapeHtml(unitTopic(unit))}"></span>`;
-        })
-        .join('');
-    }
+    const markup = renderProgressBoardMarkup(false);
+    const detailMarkup = renderProgressBoardMarkup(true);
 
-    if (progressDetail) {
-      const byCase = CASE_ORDER.map((caseName) => {
-        const caseUnits = units.filter((u) => u.case === caseName);
-        if (!caseUnits.length) return '';
-        const tiles = caseUnits.map((u) => renderUnitTile(u, true)).join('');
-        return `
-          <section class="cases-progress-case-group" data-case="${caseName}">
-            <h3 class="cases-progress-case-title cases-progress-case-title--${caseName}">${escapeHtml(CASE_SECTION_LABELS[caseName] ?? caseName)}</h3>
-            <div class="cases-progress-case-grid">${tiles}</div>
-          </section>`;
-      }).join('');
-      progressDetail.innerHTML = byCase;
-    }
+    if (progressBoard) progressBoard.innerHTML = markup;
+    if (progressDetailBoard) progressDetailBoard.innerHTML = detailMarkup;
   }
 
   function buildPool() {
