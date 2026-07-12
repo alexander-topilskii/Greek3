@@ -3,7 +3,7 @@ import { pwaScope } from '../pwa';
 import { ASSET_VERSION, sitePath } from '../site-path';
 import { HOME_SECTIONS } from '../constants';
 import { embedJson, escapeHtml } from './html';
-import { SITE_CONFIG } from './config';
+import { LOGO_TITLE, SITE_CONFIG } from './config';
 import { SHARED_SCRIPTS } from './scripts';
 import { searchButtonMarkup, settingsButtonMarkup } from './fragments';
 
@@ -37,8 +37,8 @@ export function layout(
   );
 
   const logoText = options.showBuildVersion
-    ? `Greek<sup class="logo-version" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>3`
-    : escapeHtml(SITE_CONFIG.title);
+    ? `${LOGO_TITLE}<sup class="logo-version" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>`
+    : escapeHtml(LOGO_TITLE);
 
   return `<!DOCTYPE html>
 <html lang="ru">
