@@ -7,10 +7,15 @@ import {
   examplesDialogMarkup,
   favoriteButtonMarkup,
   flashcardMarkup,
+  homePracticePanelMarkup,
   practiceCompleteMarkup,
 } from '../fragments';
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
+
+function isLessonPage(pageDir: string): boolean {
+  return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
+}
 
 export function renderIndex(
   page: IndexPage,
@@ -29,6 +34,7 @@ export function renderIndex(
 
   const hasWords = Boolean(catalog && catalog.words.length > 0);
   const pageId = catalog?.pageId ?? pageOutputDir.replace(/^words\/?/, '').replace(/\/$/, '');
+  const lessonPage = isLessonPage(pageOutputDir);
   const pageFavoriteBtn =
     hasWords && pageId
       ? favoriteButtonMarkup({
@@ -39,20 +45,39 @@ export function renderIndex(
         })
       : '';
 
+  const lessonLearnBtn =
+    lessonPage && hasWords
+      ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-lesson-learn">Обучение</button>`
+      : '';
+
+  const lessonLearningBlock =
+    lessonPage && hasWords
+      ? `
+      <section class="home-practice list-practice hidden" id="lesson-practice" aria-hidden="true">
+        <div class="practice-panel practice-panel--wide fade-in">
+          ${homePracticePanelMarkup('lesson-flashcard-root')}
+        </div>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-lesson-practice">← К уроку</button>
+      </section>`
+      : '';
+
   const content = `
-    <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
+    <section class="verbs-list-page"${lessonPage && hasWords ? ` data-learning-practice data-learning-mode="lesson" data-practice-section-id="lesson-practice" data-flashcard-root-id="lesson-flashcard-root" data-open-btn-id="btn-lesson-learn" data-close-btn-id="btn-close-lesson-practice" data-nav-id="lesson-practice-immersive" data-session-key="greek3:lesson-practice-session" data-hide-on-open="#verbs-links,.list-practice-actions,.page-head,#list-practice"` : ''} data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
       <div class="page-head fade-in list-head">
         <div class="page-head-row">
           <h1>${escapeHtml(page.title)}</h1>
           ${pageFavoriteBtn}
         </div>
         ${intro}
-        ${catalog && catalog.words.length > 0 ? `<div class="list-practice-actions">
+        ${hasWords ? `<div class="list-practice-actions">
+          ${lessonLearnBtn}
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
           <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
         </div>` : ''}
       </div>
+
+      ${lessonLearningBlock}
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
@@ -70,7 +95,18 @@ export function renderIndex(
 
   const scripts =
     catalog && catalog.words.length > 0
-      ? ['assets/js/list-controls.js', 'assets/js/list-practice.js']
+      ? [
+          'assets/js/list-controls.js',
+          'assets/js/list-practice.js',
+          ...(lessonPage
+            ? [
+                'assets/js/learning-ladder.js',
+                'assets/js/quiz-step.js',
+                'assets/js/match-step.js',
+                'assets/js/home-practice.js',
+              ]
+            : []),
+        ]
       : [];
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);

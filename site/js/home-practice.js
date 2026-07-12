@@ -1,6 +1,9 @@
 (function () {
-  const homePage = document.querySelector('.home-page');
-  if (!homePage) return;
+  const scope = document.querySelector('[data-learning-practice]');
+  if (!scope) return;
+
+  const mode = scope.dataset.learningMode || 'home';
+  const isLesson = mode === 'lesson';
 
   const db = window.GreekDB;
   const srs = window.GreekSRS;
@@ -11,21 +14,48 @@
   const common = window.GreekPracticeCommon;
   if (!db || !srs || !flash || !ladder || !common) return;
 
-  const catalogEl = document.getElementById('global-catalog');
+  const catalogId = isLesson ? 'verbs-catalog' : 'global-catalog';
+  const catalogEl = document.getElementById(catalogId);
   if (!catalogEl) return;
 
   let catalog;
   try {
     catalog = JSON.parse(catalogEl.textContent ?? '{}');
   } catch (e) {
-    console.error('Global catalog parse error', e);
+    console.error('Learning practice catalog parse error', e);
     return;
   }
 
-  const favorites = window.GreekFavorites;
+  const favorites = isLesson ? null : window.GreekFavorites;
   const fullCatalog = catalog;
-  const PRACTICE_NAV_ID = 'home-practice-immersive';
+  const PRACTICE_NAV_ID = scope.dataset.navId || 'home-practice-immersive';
+  const flashcardRootId = scope.dataset.flashcardRootId || 'home-flashcard-root';
+  const SESSION_KEY = scope.dataset.sessionKey || 'greek3:home-practice-session';
+  const hideSelectors = (
+    scope.dataset.hideOnOpen || '#sections-grid,#hero-continue'
+  )
+    .split(',')
+    .map((sel) => sel.trim())
+    .filter(Boolean);
   const navBack = () => window.GreekNavBack;
+
+  function hidePageChrome() {
+    hideSelectors.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => {
+        el.classList.add('hidden');
+        el.setAttribute('aria-hidden', 'true');
+      });
+    });
+  }
+
+  function showPageChrome() {
+    hideSelectors.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => {
+        el.classList.remove('hidden');
+        el.removeAttribute('aria-hidden');
+      });
+    });
+  }
 
   function getPracticeCatalog() {
     if (!favorites?.hasAnyFavorites()) return fullCatalog;
@@ -62,9 +92,9 @@
     });
   }
 
-  const btnContinue = document.getElementById('btn-continue');
-  const btnClose = document.getElementById('btn-close-practice');
-  const practiceSection = document.getElementById('home-practice');
+  const btnContinue = document.getElementById(scope.dataset.openBtnId || 'btn-continue');
+  const btnClose = document.getElementById(scope.dataset.closeBtnId || 'btn-close-practice');
+  const practiceSection = document.getElementById(scope.dataset.practiceSectionId || 'home-practice');
   const sectionsGrid = document.getElementById('sections-grid');
   const heroContinue = document.getElementById('hero-continue');
   const continueHint = document.getElementById('continue-hint');
@@ -106,8 +136,6 @@
   let currentLearningStep = ladder.STEPS.SUMMARY;
   let quizUi = null;
   let matchUi = null;
-
-  const SESSION_KEY = 'greek3:home-practice-session';
 
   window.addEventListener('resize', () => {
     if (!poolDotsEl?.dataset.gridCount) return;
@@ -688,6 +716,12 @@
   function showCatalogCompleteUI() {
     catalogComplete?.classList.remove('hidden');
     catalogComplete?.removeAttribute('hidden');
+    const completeText = catalogComplete?.querySelector('.practice-catalog-complete-text');
+    if (completeText) {
+      completeText.textContent = isLesson
+        ? 'Все слова урока пройдены в обоих направлениях.'
+        : 'Все слова каталога пройдены в обоих направлениях.';
+    }
     practiceControls?.classList.add('hidden');
     practiceControls?.setAttribute('hidden', '');
     showLearningView(ladder.STEPS.SUMMARY);
@@ -706,7 +740,7 @@
 
   function initFlashcard() {
     if (fc) return fc;
-    const root = document.getElementById('home-flashcard-root');
+    const root = document.getElementById(flashcardRootId);
     if (!root) return null;
     fc = flash.init({
       root,
@@ -926,9 +960,7 @@
     hideCompletionPanels();
     practiceSection?.classList.remove('hidden');
     practiceSection?.setAttribute('aria-hidden', 'false');
-    sectionsGrid?.classList.add('hidden');
-    heroContinue?.classList.add('hidden');
-    heroContinue?.setAttribute('hidden', '');
+    hidePageChrome();
 
     if (resumePick) {
       currentPick = resumePick;
@@ -951,11 +983,9 @@
     clearSessionState();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
-    sectionsGrid?.classList.remove('hidden');
-    heroContinue?.classList.remove('hidden');
-    heroContinue?.removeAttribute('hidden');
+    showPageChrome();
     hideCompletionPanels();
-    updateContinueHint();
+    if (!isLesson) updateContinueHint();
     window.GreekPWA?.consumePendingReload?.();
     if (!fromNav) navBack()?.dismiss(PRACTICE_NAV_ID);
   }
@@ -992,23 +1022,25 @@
     if (currentPick?.word) examples?.show(currentPick.word);
   });
 
-  btnHeaderSettings?.addEventListener('click', async () => {
-    await loadHomeSettingsUI();
-    settingsDialog?.showModal();
-  });
+  if (!isLesson) {
+    btnHeaderSettings?.addEventListener('click', async () => {
+      await loadHomeSettingsUI();
+      settingsDialog?.showModal();
+    });
 
-  btnSaveHomeSettings?.addEventListener('click', saveHomeSettings);
+    btnSaveHomeSettings?.addEventListener('click', saveHomeSettings);
 
-  btnResetAll?.addEventListener('click', async () => {
-    if (!confirm('Сбросить весь прогресс? Все выученные слова будут забыты.')) return;
-    await db.resetAllProgress();
-    currentPick = null;
-    await updateContinueHint();
-    settingsDialog?.close();
-    if (!practiceSection?.classList.contains('hidden')) {
-      await pickAndShowNext();
-    }
-  });
+    btnResetAll?.addEventListener('click', async () => {
+      if (!confirm('Сбросить весь прогресс? Все выученные слова будут забыты.')) return;
+      await db.resetAllProgress();
+      currentPick = null;
+      await updateContinueHint();
+      settingsDialog?.close();
+      if (!practiceSection?.classList.contains('hidden')) {
+        await pickAndShowNext();
+      }
+    });
+  }
 
   async function tryRestorePractice() {
     const state = readSessionState();
@@ -1043,14 +1075,16 @@
     }
   }
 
-  async function initHomePractice() {
+  async function initLearningPractice() {
     try {
       await db.init();
-      await loadHomeSettingsUI();
-      await updateContinueHint();
-      await tryRestorePractice();
+      if (!isLesson) {
+        await loadHomeSettingsUI();
+        await updateContinueHint();
+        await tryRestorePractice();
+      }
     } catch (err) {
-      console.error('Home practice init error', err);
+      console.error('Learning practice init error', err);
       if (continueHint) {
         continueHint.textContent = 'Не удалось загрузить прогресс — проверьте, что сайт не в режиме инкогнито';
       }
@@ -1063,5 +1097,5 @@
     }
   });
 
-  initHomePractice();
+  initLearningPractice();
 })();
