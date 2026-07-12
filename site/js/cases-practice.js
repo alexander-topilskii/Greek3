@@ -84,6 +84,7 @@
   let matchPairs = [];
   let matchSelected = { left: null, right: null };
   let matchMatched = new Set();
+  let matchMatchedSides = new Set();
   let matchWrongFlash = null;
   let matchLeftSide = 'greek';
 
@@ -418,36 +419,45 @@
     return `<span class="cases-progress-cell${sizeClass}${currentClass}" role="listitem" data-cell-id="${escapeHtml(id)}" style="--cell-progress: ${percent}%" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"></span>`;
   }
 
-  function renderProgressGroup(unit, slot, detailed) {
+  function renderProgressGroupCells(unit, detailed) {
     if (!unit) {
-      const placeholder = SKILLS.map(() => `<span class="cases-progress-cell cases-progress-cell--empty" aria-hidden="true"></span>`).join('');
-      return `
-        <div class="cases-progress-group cases-progress-group--empty">
-          <span class="cases-progress-group-label">${escapeHtml(slot.label)}</span>
-          <div class="cases-progress-cells" role="list">${placeholder}</div>
-        </div>`;
+      const placeholder = SKILLS.map(
+        () => `<span class="cases-progress-cell cases-progress-cell--empty" aria-hidden="true"></span>`,
+      ).join('');
+      return `<div class="cases-progress-cells" role="list">${placeholder}</div>`;
     }
 
     const cells = SKILLS.map((skill) => renderProgressCell(cellId(unit.id, skill), detailed)).join('');
-    return `
-      <div class="cases-progress-group" data-unit-id="${escapeHtml(unit.id)}">
-        <span class="cases-progress-group-label" title="${escapeHtml(unitTopic(unit))}">${escapeHtml(slot.label)}</span>
-        <div class="cases-progress-cells" role="list">${cells}</div>
-      </div>`;
+    return `<div class="cases-progress-cells" role="list">${cells}</div>`;
   }
 
   function renderProgressBoardMarkup(detailed) {
-    return CASE_ORDER.map((caseName) => {
-      const groups = GROUP_SLOTS.map((slot) => renderProgressGroup(findUnitForSlot(caseName, slot), slot, detailed)).join('');
-      const rowLabel = detailed
-        ? CASE_SECTION_LABELS[caseName]
-        : CASE_ROW_SHORT[caseName];
+    const colLabels = GROUP_SLOTS.map(
+      (slot) => `<span class="cases-progress-col-label">${escapeHtml(slot.label)}</span>`,
+    ).join('');
+
+    const header = `
+      <div class="cases-progress-header${detailed ? ' cases-progress-header--detail' : ''}">
+        <span class="cases-progress-corner" aria-hidden="true"></span>
+        <div class="cases-progress-columns" role="presentation">${colLabels}</div>
+      </div>`;
+
+    const rows = CASE_ORDER.map((caseName) => {
+      const cols = GROUP_SLOTS.map((slot) => {
+        const unit = findUnitForSlot(caseName, slot);
+        const unitTitle = unit ? ` title="${escapeHtml(unitTopic(unit))}"` : '';
+        return `<div class="cases-progress-col"${unitTitle}>${renderProgressGroupCells(unit, detailed)}</div>`;
+      }).join('');
+
+      const rowLabel = detailed ? CASE_SECTION_LABELS[caseName] : CASE_ROW_SHORT[caseName];
       return `
         <div class="cases-progress-row cases-progress-row--${caseName}${detailed ? ' cases-progress-row--detail' : ''}" data-case="${caseName}">
           <span class="cases-progress-row-label" title="${escapeHtml(CASE_SECTION_LABELS[caseName])}">${escapeHtml(rowLabel)}</span>
-          <div class="cases-progress-groups">${groups}</div>
+          <div class="cases-progress-columns">${cols}</div>
         </div>`;
     }).join('');
+
+    return header + rows;
   }
 
   function renderProgress() {
@@ -616,7 +626,18 @@
 
   function buildMatchMulti(pool, used) {
     const sources = shuffle(pool.matchMulti.filter((p) => p.greek && p.ru && !used.has(p.greek)));
-    const pairs = sources.slice(0, MATCH_PAIR_COUNT);
+    const pairs = [];
+    const seenGreek = new Set();
+    const seenRu = new Set();
+
+    for (const item of sources) {
+      if (pairs.length >= MATCH_PAIR_COUNT) break;
+      if (seenGreek.has(item.greek) || seenRu.has(item.ru)) continue;
+      pairs.push(item);
+      seenGreek.add(item.greek);
+      seenRu.add(item.ru);
+    }
+
     if (pairs.length < 3) return null;
     pairs.forEach((p) => used.add(p.greek));
     const unit = pairs[0].unit;
@@ -625,6 +646,23 @@
       cellId: cellId(unit.id, 'el-ru'),
       pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
     };
+  }
+
+  function isMatchPairCorrect(leftId, rightId) {
+    const leftPair = matchPairs.find((p) => p.id === leftId);
+    const rightPair = matchPairs.find((p) => p.id === rightId);
+    if (!leftPair || !rightPair) return false;
+    if ('label' in leftPair || 'label' in rightPair) {
+      return leftId === rightId;
+    }
+    return leftPair.ru === rightPair.ru && leftPair.greek === rightPair.greek;
+  }
+
+  function markMatchSide(id, side) {
+    const rootEl = side === 'left' ? matchLeftEl : matchRightEl;
+    rootEl
+      ?.querySelector(`[data-match-id="${id}"][data-match-side="${side}"]`)
+      ?.classList.add('cases-review-chip--matched');
   }
 
   function buildSession(pool) {
@@ -681,13 +719,26 @@
   }
 
   function showQuizUI() {
-    if (optionsEl) optionsEl.hidden = false;
-    if (matchEl) matchEl.hidden = true;
+    if (optionsEl) {
+      optionsEl.hidden = false;
+      optionsEl.removeAttribute('hidden');
+    }
+    if (matchEl) {
+      matchEl.hidden = true;
+      matchEl.setAttribute('hidden', '');
+    }
   }
 
   function showMatchUI(leftLabel, rightLabel, leftSide) {
-    if (optionsEl) optionsEl.hidden = true;
-    if (matchEl) matchEl.hidden = false;
+    if (optionsEl) {
+      optionsEl.hidden = true;
+      optionsEl.setAttribute('hidden', '');
+      optionsEl.innerHTML = '';
+    }
+    if (matchEl) {
+      matchEl.hidden = false;
+      matchEl.removeAttribute('hidden');
+    }
     if (matchColLeft) matchColLeft.textContent = leftLabel;
     if (matchColRight) matchColRight.textContent = rightLabel;
     matchLeftSide = leftSide;
@@ -708,6 +759,7 @@
     locked = false;
     matchPairs = pairs;
     matchMatched = new Set();
+    matchMatchedSides = new Set();
     matchSelected = { left: null, right: null };
     if (matchWrongFlash) {
       clearTimeout(matchWrongFlash);
@@ -943,7 +995,8 @@
 
     const id = Number(btn.getAttribute('data-match-id'));
     const side = btn.getAttribute('data-match-side');
-    if (matchMatched.has(id)) return;
+    const sideKey = `${side}:${id}`;
+    if (matchMatchedSides.has(sideKey)) return;
 
     if (side === 'left') {
       matchSelected.left = id;
@@ -957,15 +1010,14 @@
 
     if (matchSelected.left == null || matchSelected.right == null) return;
 
-    if (matchSelected.left === matchSelected.right) {
-      const matchedId = matchSelected.left;
-      matchMatched.add(matchedId);
-      matchLeftEl
-        .querySelector(`[data-match-id="${matchedId}"][data-match-side="left"]`)
-        ?.classList.add('cases-review-chip--matched');
-      matchRightEl
-        .querySelector(`[data-match-id="${matchedId}"][data-match-side="right"]`)
-        ?.classList.add('cases-review-chip--matched');
+    if (isMatchPairCorrect(matchSelected.left, matchSelected.right)) {
+      const leftId = matchSelected.left;
+      const rightId = matchSelected.right;
+      matchMatched.add(leftId);
+      matchMatchedSides.add(`left:${leftId}`);
+      matchMatchedSides.add(`right:${rightId}`);
+      markMatchSide(leftId, 'left');
+      markMatchSide(rightId, 'right');
       matchSelected = { left: null, right: null };
       if (matchMatched.size >= matchPairs.length) {
         finishMatch(true, q);
