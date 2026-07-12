@@ -53,7 +53,7 @@ export function renderHome(
   const hasHomePractice = Boolean(globalCatalog && globalCatalog.words.length > 0);
 
   const content = `
-    <section class="home-page verbs-list-page" data-deck-id="global">
+    <section class="home-page verbs-list-page" data-deck-id="global" data-learning-practice data-learning-mode="home">
       <section class="hero fade-in">
         <p class="hero-label">Современный греческий</p>
         <h1>Изучай и практикуй<br><span class="hero-accent">ελληνικά</span></h1>
