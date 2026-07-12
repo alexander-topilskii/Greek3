@@ -2813,6 +2813,14 @@ body.practice-immersive-open {
   margin-bottom: 0.35rem;
 }
 
+.cases-game-options[hidden] {
+  display: none !important;
+}
+
+.cases-review-match[hidden] {
+  display: none !important;
+}
+
 .cases-practice-back {
   align-self: flex-start;
 }
