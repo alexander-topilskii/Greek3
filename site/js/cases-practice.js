@@ -20,6 +20,8 @@
   const PROGRESS_KEY = 'greek3-cases-practice-progress';
   const MASTERED_THRESHOLD = 0.75;
   const MASTERED_MIN = 6;
+  const ARTICLE_BASIC_MIN = 5;
+  const ARTICLE_BASIC_RATIO = 0.7;
 
   const SKILLS = ['grammar', 'el-ru', 'ru-el'];
   const SKILL_LABELS = {
@@ -87,6 +89,7 @@
   let matchMatchedSides = new Set();
   let matchWrongFlash = null;
   let matchLeftSide = 'greek';
+  let dualPick = { article: null, ending: null };
 
   let progress = { cells: {} };
 
@@ -281,6 +284,16 @@
     return null;
   }
 
+  function buildGreekWithArticleAndEndingBlank(greek, wordForm, prompt) {
+    const match = findPhraseIndex(greek, wordForm);
+    if (!match) return null;
+
+    const promptParts = prompt.trim().split(/\s+/);
+    const stemOnly = promptParts.length > 1 ? promptParts.slice(1).join('') : prompt.trim();
+    const replacement = preserveCase(match.text, `___ ${stemOnly}___`);
+    return greek.slice(0, match.index) + replacement + greek.slice(match.index + match.length);
+  }
+
   function buildGreekWithEndingBlank(greek, prompt, correct) {
     const complete = `${prompt}${correct}`.trim();
     const match = findPhraseIndex(greek, complete);
@@ -368,10 +381,22 @@
     return 'learning';
   }
 
-  function recordAnswer(id, correct) {
+  function isArticleAdvanced(unitId) {
+    const cell = ensureCell(cellId(unitId, 'grammar'));
+    const basic = cell.articleBasic;
+    if (!basic || basic.total < ARTICLE_BASIC_MIN) return false;
+    return basic.correct / basic.total >= ARTICLE_BASIC_RATIO;
+  }
+
+  function recordAnswer(id, correct, taskType) {
     const cell = ensureCell(id);
     cell.total += 1;
     if (correct) cell.correct += 1;
+    if (taskType === 'article') {
+      if (!cell.articleBasic) cell.articleBasic = { correct: 0, total: 0 };
+      cell.articleBasic.total += 1;
+      if (correct) cell.articleBasic.correct += 1;
+    }
     saveProgress();
     renderProgress();
   }
@@ -490,6 +515,7 @@
   function buildPool() {
     const pool = {
       article: [],
+      articleAdvanced: [],
       ending: [],
       translateElRu: [],
       translateRuEl: [],
@@ -528,10 +554,29 @@
 
           if (parsed.article) {
             const articleBlank = buildGreekWithArticleBlank(context.greek, answer);
-            if (articleBlank) {
+            const bothBlank = buildGreekWithArticleAndEndingBlank(context.greek, answer, item.prompt);
+            const grammarCellId = cellId(unit.id, 'grammar');
+            const advanced = isArticleAdvanced(unit.id);
+
+            if (advanced && bothBlank) {
+              pool.articleAdvanced.push({
+                type: 'article-advanced',
+                cellId: grammarCellId,
+                topic,
+                unit,
+                stem: parsed.stem,
+                word: answer,
+                correctArticle: parsed.article,
+                correctEnding: item.correct,
+                wrongEndings: item.wrong ?? [],
+                ruContext: context.ru,
+                greekFull: context.greek,
+                greekBlank: bothBlank,
+              });
+            } else if (articleBlank) {
               pool.article.push({
                 type: 'article',
-                cellId: cellId(unit.id, 'grammar'),
+                cellId: grammarCellId,
                 topic,
                 unit,
                 stem: parsed.stem,
@@ -669,6 +714,9 @@
     const buckets = [
       ...pool.article,
       ...pool.article,
+      ...pool.articleAdvanced,
+      ...pool.articleAdvanced,
+      ...pool.articleAdvanced,
       ...pool.ending,
       ...pool.ending,
       ...pool.ending,
@@ -746,6 +794,7 @@
 
   function typeLabel(type) {
     if (type === 'article') return 'Выберите артикль';
+    if (type === 'article-advanced') return 'Выберите артикль и окончание';
     if (type === 'ending') return 'Выберите окончание';
     if (type === 'translate-el-ru') return 'Выберите перевод (ελ → ру)';
     if (type === 'translate-ru-el') return 'Выберите перевод (ру → ελ)';
@@ -791,6 +840,7 @@
     clearFeedback();
     if (btnNext) btnNext.hidden = true;
     locked = false;
+    dualPick = { article: null, ending: null };
 
     if (index >= queue.length) {
       showSessionComplete();
@@ -854,6 +904,33 @@
             `<button type="button" class="cases-game-option greek" data-answer="${encodeURIComponent(text)}">${escapeHtml(text)}</button>`,
         )
         .join('');
+    } else if (q.type === 'article-advanced') {
+      setRuContext(q.ruContext);
+      setPhrasePrompt(q.greekBlank);
+      dualPick = { article: null, ending: null };
+      const articles = articleOptions(q.unit, q.correctArticle);
+      const endings = shuffle([q.correctEnding, ...q.wrongEndings.slice(0, 3)]);
+      optionsEl.innerHTML = `
+        <div class="cases-game-dual-options">
+          <p class="cases-game-options-hint">Артикль</p>
+          <div class="cases-game-options-row" data-pick="article">
+            ${articles
+              .map(
+                (text) =>
+                  `<button type="button" class="cases-game-option greek" data-pick="article" data-answer="${encodeURIComponent(text)}">${escapeHtml(text)}</button>`,
+              )
+              .join('')}
+          </div>
+          <p class="cases-game-options-hint">Окончание</p>
+          <div class="cases-game-options-row" data-pick="ending">
+            ${endings
+              .map(
+                (text) =>
+                  `<button type="button" class="cases-game-option greek" data-pick="ending" data-answer="${encodeURIComponent(text)}">${escapeHtml(formatEndingOption(text))}</button>`,
+              )
+              .join('')}
+          </div>
+        </div>`;
     } else if (q.type === 'translate-el-ru') {
       setRuContext(null);
       if (promptEl) {
@@ -884,9 +961,31 @@
     }
   }
 
-  function revealQuiz(correct, q) {
+  function revealArticleAdvanced(correct, q, picks) {
     locked = true;
     recordAnswer(q.cellId, correct);
+    feedbackEl.hidden = false;
+    feedbackEl.className = `cases-game-feedback cases-game-feedback--${correct ? 'ok' : 'bad'}`;
+    feedbackEl.innerHTML = correct
+      ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.greekFull)}</span>`
+      : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.greekFull)}</span>`;
+
+    optionsEl.querySelectorAll('.cases-game-option').forEach((btn) => {
+      const kind = btn.getAttribute('data-pick');
+      const val = decodeURIComponent(btn.getAttribute('data-answer') ?? '');
+      const expected = kind === 'article' ? q.correctArticle : q.correctEnding;
+      const picked = kind === 'article' ? picks.article : picks.ending;
+      btn.disabled = true;
+      if (val === expected) btn.classList.add('cases-game-option--correct');
+      else if (val === picked) btn.classList.add('cases-game-option--wrong');
+    });
+
+    if (btnNext) btnNext.hidden = false;
+  }
+
+  function revealQuiz(correct, q) {
+    locked = true;
+    recordAnswer(q.cellId, correct, q.type);
     feedbackEl.hidden = false;
     feedbackEl.className = `cases-game-feedback cases-game-feedback--${correct ? 'ok' : 'bad'}`;
 
@@ -894,7 +993,7 @@
       feedbackEl.innerHTML = correct
         ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.greekFull)}</span>`
         : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.greekFull)}</span>`;
-    } else if (q.type === 'article') {
+    } else if (q.type === 'article' || q.type === 'article-advanced') {
       feedbackEl.innerHTML = correct
         ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.greekFull)}</span>`
         : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.greekFull)}</span>`;
@@ -980,6 +1079,28 @@
     if (!q || q.type === 'match-multi' || q.type === 'forms-id') return;
 
     const pick = decodeURIComponent(btn.getAttribute('data-answer') ?? '');
+
+    if (q.type === 'article-advanced') {
+      const kind = btn.getAttribute('data-pick');
+      if (!kind) return;
+
+      dualPick[kind] = pick;
+      optionsEl
+        .querySelectorAll(`.cases-game-option[data-pick="${kind}"]`)
+        .forEach((el) => el.classList.remove('cases-game-option--picked'));
+      btn.classList.add('cases-game-option--picked');
+
+      if (dualPick.article == null || dualPick.ending == null) return;
+
+      const correct =
+        dualPick.article === q.correctArticle && dualPick.ending === q.correctEnding;
+      answered += 1;
+      if (correct) score += 1;
+      updateScore();
+      revealArticleAdvanced(correct, q, { ...dualPick });
+      return;
+    }
+
     const correct = pick === q.correct;
     btn.classList.add('cases-game-option--picked');
     answered += 1;
