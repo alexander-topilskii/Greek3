@@ -43,6 +43,12 @@
   font-family: var(--font-greek);
 }
 
+.logo-title {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .logo-version {
   font-size: 0.5em;
   font-weight: 600;
@@ -51,6 +57,10 @@
   color: var(--text-muted);
   margin-left: 0.02em;
   letter-spacing: -0.03em;
+}
+
+.logo-version[hidden] {
+  display: none;
 }
 
 .site-nav {

@@ -14,7 +14,7 @@ export function layout(
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
   extraScripts: string[] = [],
-  options: { showSettings?: boolean; bodyEnd?: string; showBuildVersion?: boolean } = {},
+  options: { showSettings?: boolean; bodyEnd?: string } = {},
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -36,9 +36,7 @@ export function layout(
     })),
   );
 
-  const logoText = options.showBuildVersion
-    ? `${LOGO_TITLE}<sup class="logo-version" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>`
-    : escapeHtml(LOGO_TITLE);
+  const logoText = `<span class="logo-title" aria-pressed="false">${escapeHtml(LOGO_TITLE)}</span><sup class="logo-version" hidden aria-hidden="true" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>`;
 
   return `<!DOCTYPE html>
 <html lang="ru">
