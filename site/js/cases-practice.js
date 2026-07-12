@@ -666,7 +666,7 @@
   }
 
   function buildSession(pool) {
-    const buckets = [
+    const quizItems = [
       ...pool.article,
       ...pool.article,
       ...pool.ending,
@@ -684,9 +684,17 @@
 
     const usedMatch = new Set();
     const session = [];
-    let bucketIdx = 0;
+    let quizBag = shuffle(quizItems.slice());
 
-    while (session.length < SESSION_SIZE && bucketIdx < buckets.length * 2) {
+    const drawQuiz = () => {
+      if (!quizBag.length) quizBag = shuffle(quizItems.slice());
+      const item = pickWeighted(quizBag);
+      const index = quizBag.indexOf(item);
+      if (index >= 0) quizBag.splice(index, 1);
+      return item;
+    };
+
+    while (session.length < SESSION_SIZE) {
       if (session.length > 0 && session.length % 8 === 0) {
         const match = buildMatchMulti(pool, usedMatch);
         if (match) {
@@ -694,14 +702,7 @@
           continue;
         }
       }
-      if (bucketIdx < buckets.length) {
-        session.push(pickWeighted([buckets[bucketIdx]]));
-        bucketIdx += 1;
-      } else break;
-    }
-
-    while (session.length < SESSION_SIZE && bucketIdx < buckets.length) {
-      session.push(pickWeighted([buckets[bucketIdx++]]));
+      session.push(drawQuiz());
     }
 
     return shuffle(session);
