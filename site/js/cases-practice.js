@@ -216,25 +216,8 @@
     return sentenceContextsCache;
   }
 
-  function sentenceContainsForm(sentence, wordForm) {
-    const noun = normalizeGreek(getNounFromForm(wordForm));
-    if (!noun) return false;
-    return normalizeGreek(sentence)
-      .split(/\s+/)
-      .some((token) => token === noun);
-  }
-
-  function inferRuFromSentenceTail(greekSentence) {
-    const parts = greekSentence.trim().split(/\s+/);
-    if (parts.length < 3) return null;
-    const tail = normalizeGreek(parts.slice(2).join(' '));
-    for (const ctx of sentenceContexts()) {
-      if (ctx.source !== 'correct') continue;
-      const ctxParts = ctx.greek.trim().split(/\s+/);
-      if (ctxParts.length < 3) continue;
-      if (normalizeGreek(ctxParts.slice(2).join(' ')) === tail) return ctx.ru;
-    }
-    return null;
+  function sentenceContainsExactForm(sentence, wordForm) {
+    return Boolean(findPhraseIndex(sentence, wordForm));
   }
 
   function resolvePhraseContext(unit, item, wordForm) {
@@ -242,13 +225,25 @@
       return { ru: item.context.ru, greek: item.context.greek };
     }
 
-    const matches = sentenceContexts().filter((ctx) => sentenceContainsForm(ctx.greek, wordForm));
-    const preferred = matches.find((ctx) => ctx.source === 'correct' || ctx.source === 'example');
-    if (preferred) return { ru: preferred.ru, greek: preferred.greek };
+    const tryCandidate = (ru, greek) => {
+      if (!ru || !greek || !sentenceContainsExactForm(greek, wordForm)) return null;
+      return { ru, greek };
+    };
 
-    for (const ctx of matches) {
-      const ru = inferRuFromSentenceTail(ctx.greek);
-      if (ru) return { ru, greek: ctx.greek };
+    for (const word of unit.words ?? []) {
+      const hit = tryCandidate(word.ru, word.correct);
+      if (hit) return hit;
+    }
+
+    for (const example of unit.lesson?.examples ?? []) {
+      const hit = tryCandidate(example.ru, example.greek);
+      if (hit) return hit;
+    }
+
+    for (const ctx of sentenceContexts()) {
+      if (ctx.source === 'wrong') continue;
+      const hit = tryCandidate(ctx.ru, ctx.greek);
+      if (hit) return hit;
     }
 
     return null;
