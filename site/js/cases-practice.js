@@ -418,36 +418,45 @@
     return `<span class="cases-progress-cell${sizeClass}${currentClass}" role="listitem" data-cell-id="${escapeHtml(id)}" style="--cell-progress: ${percent}%" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"></span>`;
   }
 
-  function renderProgressGroup(unit, slot, detailed) {
+  function renderProgressGroupCells(unit, detailed) {
     if (!unit) {
-      const placeholder = SKILLS.map(() => `<span class="cases-progress-cell cases-progress-cell--empty" aria-hidden="true"></span>`).join('');
-      return `
-        <div class="cases-progress-group cases-progress-group--empty">
-          <span class="cases-progress-group-label">${escapeHtml(slot.label)}</span>
-          <div class="cases-progress-cells" role="list">${placeholder}</div>
-        </div>`;
+      const placeholder = SKILLS.map(
+        () => `<span class="cases-progress-cell cases-progress-cell--empty" aria-hidden="true"></span>`,
+      ).join('');
+      return `<div class="cases-progress-cells" role="list">${placeholder}</div>`;
     }
 
     const cells = SKILLS.map((skill) => renderProgressCell(cellId(unit.id, skill), detailed)).join('');
-    return `
-      <div class="cases-progress-group" data-unit-id="${escapeHtml(unit.id)}">
-        <span class="cases-progress-group-label" title="${escapeHtml(unitTopic(unit))}">${escapeHtml(slot.label)}</span>
-        <div class="cases-progress-cells" role="list">${cells}</div>
-      </div>`;
+    return `<div class="cases-progress-cells" role="list">${cells}</div>`;
   }
 
   function renderProgressBoardMarkup(detailed) {
-    return CASE_ORDER.map((caseName) => {
-      const groups = GROUP_SLOTS.map((slot) => renderProgressGroup(findUnitForSlot(caseName, slot), slot, detailed)).join('');
-      const rowLabel = detailed
-        ? CASE_SECTION_LABELS[caseName]
-        : CASE_ROW_SHORT[caseName];
+    const colLabels = GROUP_SLOTS.map(
+      (slot) => `<span class="cases-progress-col-label">${escapeHtml(slot.label)}</span>`,
+    ).join('');
+
+    const header = `
+      <div class="cases-progress-header${detailed ? ' cases-progress-header--detail' : ''}">
+        <span class="cases-progress-corner" aria-hidden="true"></span>
+        <div class="cases-progress-columns" role="presentation">${colLabels}</div>
+      </div>`;
+
+    const rows = CASE_ORDER.map((caseName) => {
+      const cols = GROUP_SLOTS.map((slot) => {
+        const unit = findUnitForSlot(caseName, slot);
+        const unitTitle = unit ? ` title="${escapeHtml(unitTopic(unit))}"` : '';
+        return `<div class="cases-progress-col"${unitTitle}>${renderProgressGroupCells(unit, detailed)}</div>`;
+      }).join('');
+
+      const rowLabel = detailed ? CASE_SECTION_LABELS[caseName] : CASE_ROW_SHORT[caseName];
       return `
         <div class="cases-progress-row cases-progress-row--${caseName}${detailed ? ' cases-progress-row--detail' : ''}" data-case="${caseName}">
           <span class="cases-progress-row-label" title="${escapeHtml(CASE_SECTION_LABELS[caseName])}">${escapeHtml(rowLabel)}</span>
-          <div class="cases-progress-groups">${groups}</div>
+          <div class="cases-progress-columns">${cols}</div>
         </div>`;
     }).join('');
+
+    return header + rows;
   }
 
   function renderProgress() {

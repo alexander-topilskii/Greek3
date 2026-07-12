@@ -20,7 +20,6 @@ export function renderCasesPractice(
           </div>
           <div class="cases-progress-board" id="cases-progress-board" role="img" aria-label="Прогресс по падежам"></div>
         </div>
-        <p class="cases-practice-score">Счёт: <span id="cases-session-score">0 / 0</span></p>
       </div>
 
       <div class="progress-fullscreen cases-progress-fullscreen" id="cases-progress-fullscreen" hidden aria-hidden="true">
