@@ -7,6 +7,7 @@ import {
   buildSearchIndex,
   outputDirFor,
   renderCasesIndex,
+  renderCasesPractice,
   renderHome,
   renderIndex,
   renderSearch,
@@ -111,7 +112,6 @@ function main(): void {
             pageDir,
             breadcrumbsForIndex(relative, index.title),
             catalog.words.length > 0 ? catalog : undefined,
-            casesGameData,
           )
         : renderIndex(
             index,
@@ -121,6 +121,16 @@ function main(): void {
           );
     writeHtml(out, html);
     console.log(`  📄 ${out} (+ catalog ${catalog.words.length} words)`);
+
+    if (relative.toLowerCase() === 'cases/readme.md') {
+      const practiceOut = 'words/cases/practice.html';
+      const practiceCrumbs = [
+        ...breadcrumbsForIndex(relative, index.title),
+        { label: 'Тренировка падежей' },
+      ];
+      writeHtml(practiceOut, renderCasesPractice(casesGameData, practiceCrumbs));
+      console.log(`  🎯 ${practiceOut}`);
+    }
   }
 
   const globalWords: CatalogWord[] = words.map((word) => {
