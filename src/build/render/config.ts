@@ -5,3 +5,6 @@ export const SITE_CONFIG: SiteConfig = {
   description: 'Изучение и практика современного греческого языка',
   baseUrl: process.env.SITE_BASE_URL ?? '',
 };
+
+/** Текст в шапке рядом с логотипом α */
+export const LOGO_TITLE = 'Ελληνικά';
