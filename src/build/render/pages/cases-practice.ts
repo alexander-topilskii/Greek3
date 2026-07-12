@@ -11,21 +11,15 @@ export function renderCasesPractice(
   const content = `
     <section class="cases-practice-page" id="cases-practice-page" aria-label="Тренировка падежей">
       <div class="cases-practice-toolbar">
-        <button type="button" class="practice-pool-progress cases-progress-toggle progress-toggle" id="cases-progress-toggle" aria-label="Прогресс по падежам" aria-expanded="false">
-          <span class="cases-progress-summary">
-            <span class="cases-progress-stat">
-              <span class="progress-swatch progress-swatch--active" aria-hidden="true"></span>
-              <span class="cases-progress-stat-value" id="cases-progress-studying">0</span>
-              <span class="cases-progress-stat-label">в работе</span>
-            </span>
-            <span class="cases-progress-grid" id="cases-progress-grid" role="list" aria-hidden="true"></span>
-            <span class="cases-progress-stat">
-              <span class="progress-swatch progress-swatch--total" aria-hidden="true"></span>
-              <span class="cases-progress-stat-value" id="cases-progress-total">0</span>
-              <span class="cases-progress-stat-label">всего</span>
-            </span>
-          </span>
-        </button>
+        <div class="cases-progress-panel">
+          <div class="cases-progress-panel-head">
+            <p class="cases-progress-overall">
+              Прогресс: <span id="cases-progress-percent">0%</span>
+            </p>
+            <button type="button" class="cases-progress-expand progress-toggle" id="cases-progress-toggle" aria-label="Развернуть прогресс" aria-expanded="false">⋯</button>
+          </div>
+          <div class="cases-progress-board" id="cases-progress-board" role="img" aria-label="Прогресс по падежам"></div>
+        </div>
         <p class="cases-practice-score">Счёт: <span id="cases-session-score">0 / 0</span></p>
       </div>
 
@@ -38,9 +32,11 @@ export function renderCasesPractice(
           <span class="practice-pool-label"><span class="progress-swatch progress-swatch--learned" aria-hidden="true"></span><span id="cases-legend-mastered">0 усвоено</span></span>
           <span class="practice-pool-label"><span class="progress-swatch progress-swatch--active" aria-hidden="true"></span><span id="cases-legend-learning">0 в работе</span></span>
           <span class="practice-pool-label"><span class="progress-swatch progress-swatch--new" aria-hidden="true"></span><span id="cases-legend-new">0 новых</span></span>
+          <span class="practice-pool-label cases-progress-legend-swatch"><span class="cases-progress-legend-sample" aria-hidden="true"></span><span>заполнение</span></span>
           <span class="practice-pool-label"><span class="progress-swatch progress-swatch--current" aria-hidden="true"></span><span>сейчас</span></span>
         </div>
-        <div class="cases-progress-detail" id="cases-progress-detail" role="list"></div>
+        <p class="cases-progress-skill-hint">В каждой группе: формы · ελ→ру · ру→ελ</p>
+        <div class="cases-progress-board cases-progress-board--detail" id="cases-progress-detail-board" role="img" aria-label="Детальный прогресс по падежам"></div>
       </div>
 
       <div class="cases-practice-card fade-in">
