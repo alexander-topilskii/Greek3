@@ -351,12 +351,6 @@
           });
         }
 
-        pool.matchMulti.push({
-          greek: answer,
-          ru: `${parsed.stem || answer.split(' ').slice(1).join(' ')} (${formLabel(unit)})`,
-          unit,
-        });
-
         pool.formsId.push({
           greek: answer,
           label: formLabel(unit),
@@ -444,7 +438,7 @@
     const unit = pairs[0].unit;
     return {
       type: 'match-multi',
-      cellId: cellId(unit.id, 'grammar'),
+      cellId: cellId(unit.id, 'el-ru'),
       pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
     };
   }
@@ -520,17 +514,13 @@
     if (type === 'ending') return 'Выберите окончание';
     if (type === 'translate-el-ru') return 'Выберите перевод (ελ → ру)';
     if (type === 'translate-ru-el') return 'Выберите перевод (ру → ελ)';
-    if (type === 'match-multi') return 'Сопоставьте формы и описания';
+    if (type === 'match-multi') return 'Сопоставьте пары';
     if (type === 'forms-id') return 'Сопоставьте формы с падежом, родом и числом';
     return 'Задание';
   }
 
-  function renderMatch(pairs, leftKey, rightKey, leftIsGreek) {
-    showMatchUI(
-      leftIsGreek ? 'Ελληνικά' : 'Описание',
-      leftIsGreek ? 'Описание' : 'Ελληνικά',
-      leftIsGreek ? 'greek' : 'label',
-    );
+  function renderMatch(pairs, leftKey, rightKey, columns) {
+    showMatchUI(columns.leftLabel, columns.rightLabel, columns.leftKey);
     locked = false;
     matchPairs = pairs;
     matchMatched = new Set();
@@ -543,8 +533,8 @@
     const leftItems = shuffle(pairs.map((p) => ({ ...p, side: 'left' })));
     const rightItems = shuffle(pairs.map((p) => ({ ...p, side: 'right' })));
 
-    const leftClass = leftIsGreek ? 'cases-review-chip greek' : 'cases-review-chip';
-    const rightClass = leftIsGreek ? 'cases-review-chip' : 'cases-review-chip greek';
+    const leftClass = columns.leftGreek ? 'cases-review-chip greek' : 'cases-review-chip';
+    const rightClass = columns.rightGreek ? 'cases-review-chip greek' : 'cases-review-chip';
 
     matchLeftEl.innerHTML = leftItems
       .map(
@@ -581,12 +571,26 @@
         promptEl.textContent =
           q.type === 'forms-id'
             ? 'Нажмите греческую форму, затем описание падежа, рода и числа.'
-            : 'Нажмите греческую форму, затем описание или перевод.';
+            : 'Нажмите русскую фразу, затем греческий перевод.';
         promptEl.classList.remove('greek');
       }
-      const leftKey = 'greek';
-      const rightKey = q.type === 'forms-id' ? 'label' : 'ru';
-      renderMatch(q.pairs, leftKey, rightKey, true);
+      if (q.type === 'forms-id') {
+        renderMatch(q.pairs, 'greek', 'label', {
+          leftLabel: 'Ελληνικά',
+          rightLabel: 'Падеж · род · число',
+          leftKey: 'greek',
+          leftGreek: true,
+          rightGreek: false,
+        });
+      } else {
+        renderMatch(q.pairs, 'ru', 'greek', {
+          leftLabel: 'Русский',
+          rightLabel: 'Ελληνικά',
+          leftKey: 'ru',
+          leftGreek: false,
+          rightGreek: true,
+        });
+      }
       return;
     }
 
