@@ -3,7 +3,6 @@ import { sitePath } from '../../site-path';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
-  copyWordsToolbarMarkup,
   examplesDialogMarkup,
   homePracticePanelMarkup,
   homeSettingsDialogMarkup,
@@ -55,7 +54,6 @@ export function renderHome(
 
   const content = `
     <section class="home-page verbs-list-page" data-deck-id="global">
-      ${hasHomePractice ? copyWordsToolbarMarkup() : ''}
       <section class="hero fade-in">
         <p class="hero-label">Современный греческий</p>
         <h1>Изучай и практикуй<br><span class="hero-accent">ελληνικά</span></h1>

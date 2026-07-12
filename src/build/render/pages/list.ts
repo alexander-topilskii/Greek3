@@ -2,7 +2,6 @@ import type { IndexPage, VerbCatalog } from '../../types';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
-  copyWordsToolbarMarkup,
   deckSettingsDialogMarkup,
   examplesDialogMarkup,
   favoriteButtonMarkup,
@@ -41,7 +40,6 @@ export function renderIndex(
 
   const content = `
     <section class="verbs-list-page" data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
-      ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
         <div class="page-head-row">
           <h1>${escapeHtml(page.title)}</h1>
@@ -157,7 +155,6 @@ export function renderCasesIndex(
 
   const content = `
     <section class="verbs-list-page cases-page" data-deck-id="cases">
-      ${hasWords ? copyWordsToolbarMarkup() : ''}
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
         ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем пройдите последовательное обучение: правило → окончания → слова в контексте.</p>'}
@@ -239,5 +236,13 @@ export function renderCasesIndex(
   const scripts = ['assets/js/cases-game.js', 'assets/js/cases-review.js'];
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
-  return layout(content, page.title, breadcrumbs, scripts);
+  const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const layoutOptions = hasDeckPractice
+    ? {
+        showSettings: true,
+        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+      }
+    : {};
+
+  return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
 }

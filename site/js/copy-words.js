@@ -5,8 +5,8 @@
 
   const catalogEl =
     document.getElementById('verbs-catalog') ?? document.getElementById('global-catalog');
-  const toolbar = document.querySelector('.copy-words-toolbar');
-  if (!catalogEl || !toolbar) return;
+  const copyButtons = document.querySelectorAll('.btn-copy-words[data-copy-mode]');
+  if (!catalogEl || !copyButtons.length) return;
 
   let catalog;
   try {
@@ -18,7 +18,9 @@
 
   const words = catalog.words ?? [];
   if (!words.length) {
-    toolbar.hidden = true;
+    copyButtons.forEach((btn) => {
+      btn.closest('.settings-copy-words')?.setAttribute('hidden', '');
+    });
     return;
   }
 
@@ -99,7 +101,7 @@
     }
   }
 
-  toolbar.querySelectorAll('[data-copy-mode]').forEach((btn) => {
+  copyButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       handleCopy(btn.getAttribute('data-copy-mode'), btn);
     });
