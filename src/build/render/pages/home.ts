@@ -86,9 +86,10 @@ export function renderHome(
   const layoutOptions = hasHomePractice
     ? {
         showSettings: true,
+        showBuildVersion: true,
         bodyEnd: `${examplesDialogMarkup()}${homeSettingsDialogMarkup()}`,
       }
-    : {};
+    : { showBuildVersion: true };
 
   return layout(content, 'Главная', undefined, scripts, layoutOptions);
 }
