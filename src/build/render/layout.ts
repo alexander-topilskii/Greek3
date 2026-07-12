@@ -1,5 +1,6 @@
 import { pwaScope } from '../pwa';
 import { ASSET_VERSION, sitePath } from '../site-path';
+import { BUILD_VERSION } from '../build-version';
 import { HOME_SECTIONS } from '../constants';
 import { embedJson, escapeHtml } from './html';
 import { SITE_CONFIG } from './config';
@@ -13,7 +14,7 @@ export function layout(
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
   extraScripts: string[] = [],
-  options: { showSettings?: boolean; bodyEnd?: string } = {},
+  options: { showSettings?: boolean; bodyEnd?: string; showBuildVersion?: boolean } = {},
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -34,6 +35,10 @@ export function layout(
       order,
     })),
   );
+
+  const logoText = options.showBuildVersion
+    ? `Greek<sup class="logo-version" aria-label="Версия ${escapeHtml(BUILD_VERSION)}">${escapeHtml(BUILD_VERSION)}</sup>3`
+    : escapeHtml(SITE_CONFIG.title);
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -60,7 +65,7 @@ export function layout(
     <div class="container header-inner">
       <a href="${sitePath('index.html')}" class="logo">
         <span class="logo-mark">α</span>
-        <span class="logo-text">${escapeHtml(SITE_CONFIG.title)}</span>
+        <span class="logo-text">${logoText}</span>
       </a>
       <nav class="site-nav">
         ${searchButtonMarkup()}
