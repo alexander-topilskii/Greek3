@@ -2684,6 +2684,27 @@ body.practice-immersive-open {
   box-shadow: var(--shadow-sm);
 }
 
+.cases-context-ru {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.cases-context-ru[hidden] {
+  display: none;
+}
+
+.cases-context-el {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.cases-practice-card .cases-game-prompt-label {
+  margin-bottom: 0.35rem;
+}
+
 .cases-practice-back {
   align-self: flex-start;
 }

@@ -36,6 +36,7 @@
   };
 
   const labelEl = document.getElementById('cases-task-label');
+  const ruContextEl = document.getElementById('cases-task-ru');
   const promptEl = document.getElementById('cases-task-prompt');
   const optionsEl = document.getElementById('cases-task-options');
   const matchEl = document.getElementById('cases-task-match');
@@ -172,6 +173,166 @@
 
   function formLabel(unit) {
     return `${unit.caseLabel}, ${unit.genderLabel}, ${unit.numberLabel ?? 'ед. число'}`;
+  }
+
+  function escapeRegex(text) {
+    return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function normalizeGreek(text) {
+    return String(text)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .replace(/[.,;:!?…]/g, '')
+      .trim();
+  }
+
+  function getNounFromForm(wordForm) {
+    const parts = String(wordForm ?? '').trim().split(/\s+/);
+    return parts.length > 1 ? parts.slice(1).join(' ') : parts[0] ?? '';
+  }
+
+  function collectSentenceContexts() {
+    const contexts = [];
+    for (const unit of units) {
+      for (const word of unit.words ?? []) {
+        contexts.push({ ru: word.ru, greek: word.correct, unit, source: 'correct' });
+        for (const wrong of word.wrong ?? []) {
+          contexts.push({ ru: word.ru, greek: wrong, unit, source: 'wrong' });
+        }
+      }
+      for (const example of unit.lesson?.examples ?? []) {
+        contexts.push({ ru: example.ru, greek: example.greek, unit, source: 'example' });
+      }
+    }
+    return contexts;
+  }
+
+  let sentenceContextsCache = null;
+
+  function sentenceContexts() {
+    if (!sentenceContextsCache) sentenceContextsCache = collectSentenceContexts();
+    return sentenceContextsCache;
+  }
+
+  function sentenceContainsForm(sentence, wordForm) {
+    const noun = normalizeGreek(getNounFromForm(wordForm));
+    if (!noun) return false;
+    return normalizeGreek(sentence)
+      .split(/\s+/)
+      .some((token) => token === noun);
+  }
+
+  function inferRuFromSentenceTail(greekSentence) {
+    const parts = greekSentence.trim().split(/\s+/);
+    if (parts.length < 3) return null;
+    const tail = normalizeGreek(parts.slice(2).join(' '));
+    for (const ctx of sentenceContexts()) {
+      if (ctx.source !== 'correct') continue;
+      const ctxParts = ctx.greek.trim().split(/\s+/);
+      if (ctxParts.length < 3) continue;
+      if (normalizeGreek(ctxParts.slice(2).join(' ')) === tail) return ctx.ru;
+    }
+    return null;
+  }
+
+  function resolvePhraseContext(unit, item, wordForm) {
+    if (item.context?.ru && item.context?.greek) {
+      return { ru: item.context.ru, greek: item.context.greek };
+    }
+
+    const matches = sentenceContexts().filter((ctx) => sentenceContainsForm(ctx.greek, wordForm));
+    const preferred = matches.find((ctx) => ctx.source === 'correct' || ctx.source === 'example');
+    if (preferred) return { ru: preferred.ru, greek: preferred.greek };
+
+    for (const ctx of matches) {
+      const ru = inferRuFromSentenceTail(ctx.greek);
+      if (ru) return { ru, greek: ctx.greek };
+    }
+
+    return null;
+  }
+
+  function findPhraseIndex(sentence, phrase) {
+    const words = phrase.trim().split(/\s+/);
+    const regex = new RegExp(words.map(escapeRegex).join('\\s+'), 'iu');
+    const match = sentence.match(regex);
+    return match ? { index: match.index, length: match[0].length, text: match[0] } : null;
+  }
+
+  function preserveCase(template, value) {
+    if (!template || !value) return value;
+    return template[0] === template[0].toUpperCase()
+      ? value.charAt(0).toUpperCase() + value.slice(1)
+      : value;
+  }
+
+  function buildGreekWithArticleBlank(greek, wordForm) {
+    const parts = wordForm.trim().split(/\s+/);
+    if (parts.length < 2) return null;
+    const article = parts[0];
+    const noun = parts.slice(1).join(' ');
+    const variants = [article, article.charAt(0).toUpperCase() + article.slice(1)];
+
+    for (const variant of variants) {
+      const regex = new RegExp(`(${escapeRegex(variant)})(\\s+)(${escapeRegex(noun)})`, 'iu');
+      if (regex.test(greek)) return greek.replace(regex, '___$2$3');
+    }
+    return null;
+  }
+
+  function buildGreekWithEndingBlank(greek, prompt, correct) {
+    const complete = `${prompt}${correct}`.trim();
+    const match = findPhraseIndex(greek, complete);
+    if (match) {
+      const promptParts = prompt.trim().split(/\s+/);
+      const blank =
+        promptParts.length > 1
+          ? `${match.text.split(/\s+/)[0]} ${promptParts.slice(1).join('')}___`
+          : `${prompt}___`;
+      return greek.slice(0, match.index) + blank + greek.slice(match.index + match.length);
+    }
+
+    const noun = getNounFromForm(complete);
+    const nounMatch = findPhraseIndex(greek, noun);
+    if (!nounMatch) return null;
+
+    const stem = prompt.trim().split(/\s+/).pop() ?? prompt;
+    const blankNoun = preserveCase(nounMatch.text, `${stem}___`);
+    return greek.slice(0, nounMatch.index) + blankNoun + greek.slice(nounMatch.index + nounMatch.length);
+  }
+
+  function formatGreekWithBlank(text) {
+    if (!text.includes('___')) {
+      return `<span class="greek">${escapeHtml(text)}</span>`;
+    }
+    return text
+      .split('___')
+      .map((part, index) => {
+        const chunk = `<span class="greek">${escapeHtml(part)}</span>`;
+        return index === 0 ? chunk : `<span class="cases-game-blank">___</span>${chunk}`;
+      })
+      .join('');
+  }
+
+  function setRuContext(ru) {
+    if (!ruContextEl) return;
+    if (ru) {
+      ruContextEl.textContent = ru;
+      ruContextEl.hidden = false;
+      ruContextEl.removeAttribute('hidden');
+    } else {
+      ruContextEl.textContent = '';
+      ruContextEl.hidden = true;
+      ruContextEl.setAttribute('hidden', '');
+    }
+  }
+
+  function setPhrasePrompt(greekBlank) {
+    if (!promptEl) return;
+    promptEl.innerHTML = formatGreekWithBlank(greekBlank);
+    promptEl.classList.add('greek', 'cases-context-el');
   }
 
   function loadProgress() {
@@ -327,35 +488,44 @@
       for (const item of unit.endings ?? []) {
         const parsed = parsePrompt(item.prompt);
         const answer = item.answer ?? `${item.prompt}${item.correct}`;
+        const context = resolvePhraseContext(unit, item, answer);
 
-        pool.ending.push({
-          type: 'ending',
-          cellId: cellId(unit.id, 'grammar'),
-          topic,
-          unit,
-          prompt: item.prompt,
-          correct: item.correct,
-          wrong: item.wrong ?? [],
-          answer,
-        });
+        if (context) {
+          const endingBlank = buildGreekWithEndingBlank(context.greek, item.prompt, item.correct);
+          if (endingBlank) {
+            pool.ending.push({
+              type: 'ending',
+              cellId: cellId(unit.id, 'grammar'),
+              topic,
+              unit,
+              prompt: item.prompt,
+              correct: item.correct,
+              wrong: item.wrong ?? [],
+              answer,
+              ruContext: context.ru,
+              greekFull: context.greek,
+              greekBlank: endingBlank,
+            });
+          }
 
-        if (parsed.article) {
-          pool.article.push({
-            type: 'article',
-            cellId: cellId(unit.id, 'grammar'),
-            topic,
-            unit,
-            stem: parsed.stem,
-            word: answer,
-            correct: parsed.article,
-          });
+          if (parsed.article) {
+            const articleBlank = buildGreekWithArticleBlank(context.greek, answer);
+            if (articleBlank) {
+              pool.article.push({
+                type: 'article',
+                cellId: cellId(unit.id, 'grammar'),
+                topic,
+                unit,
+                stem: parsed.stem,
+                word: answer,
+                correct: parsed.article,
+                ruContext: context.ru,
+                greekFull: context.greek,
+                greekBlank: articleBlank,
+              });
+            }
+          }
         }
-
-        pool.matchMulti.push({
-          greek: answer,
-          ru: `${parsed.stem || answer.split(' ').slice(1).join(' ')} (${formLabel(unit)})`,
-          unit,
-        });
 
         pool.formsId.push({
           greek: answer,
@@ -444,7 +614,7 @@
     const unit = pairs[0].unit;
     return {
       type: 'match-multi',
-      cellId: cellId(unit.id, 'grammar'),
+      cellId: cellId(unit.id, 'el-ru'),
       pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
     };
   }
@@ -520,17 +690,13 @@
     if (type === 'ending') return 'Выберите окончание';
     if (type === 'translate-el-ru') return 'Выберите перевод (ελ → ру)';
     if (type === 'translate-ru-el') return 'Выберите перевод (ру → ελ)';
-    if (type === 'match-multi') return 'Сопоставьте формы и описания';
+    if (type === 'match-multi') return 'Сопоставьте пары';
     if (type === 'forms-id') return 'Сопоставьте формы с падежом, родом и числом';
     return 'Задание';
   }
 
-  function renderMatch(pairs, leftKey, rightKey, leftIsGreek) {
-    showMatchUI(
-      leftIsGreek ? 'Ελληνικά' : 'Описание',
-      leftIsGreek ? 'Описание' : 'Ελληνικά',
-      leftIsGreek ? 'greek' : 'label',
-    );
+  function renderMatch(pairs, leftKey, rightKey, columns) {
+    showMatchUI(columns.leftLabel, columns.rightLabel, columns.leftKey);
     locked = false;
     matchPairs = pairs;
     matchMatched = new Set();
@@ -543,8 +709,8 @@
     const leftItems = shuffle(pairs.map((p) => ({ ...p, side: 'left' })));
     const rightItems = shuffle(pairs.map((p) => ({ ...p, side: 'right' })));
 
-    const leftClass = leftIsGreek ? 'cases-review-chip greek' : 'cases-review-chip';
-    const rightClass = leftIsGreek ? 'cases-review-chip' : 'cases-review-chip greek';
+    const leftClass = columns.leftGreek ? 'cases-review-chip greek' : 'cases-review-chip';
+    const rightClass = columns.rightGreek ? 'cases-review-chip greek' : 'cases-review-chip';
 
     matchLeftEl.innerHTML = leftItems
       .map(
@@ -576,28 +742,41 @@
     renderProgress();
 
     if (q.type === 'match-multi' || q.type === 'forms-id') {
+      setRuContext(null);
       if (labelEl) labelEl.textContent = `${typeLabel(q.type)} · ${index + 1} / ${queue.length}`;
       if (promptEl) {
         promptEl.textContent =
           q.type === 'forms-id'
             ? 'Нажмите греческую форму, затем описание падежа, рода и числа.'
-            : 'Нажмите греческую форму, затем описание или перевод.';
+            : 'Нажмите русскую фразу, затем греческий перевод.';
         promptEl.classList.remove('greek');
       }
-      const leftKey = 'greek';
-      const rightKey = q.type === 'forms-id' ? 'label' : 'ru';
-      renderMatch(q.pairs, leftKey, rightKey, true);
+      if (q.type === 'forms-id') {
+        renderMatch(q.pairs, 'greek', 'label', {
+          leftLabel: 'Ελληνικά',
+          rightLabel: 'Падеж · род · число',
+          leftKey: 'greek',
+          leftGreek: true,
+          rightGreek: false,
+        });
+      } else {
+        renderMatch(q.pairs, 'ru', 'greek', {
+          leftLabel: 'Русский',
+          rightLabel: 'Ελληνικά',
+          leftKey: 'ru',
+          leftGreek: false,
+          rightGreek: true,
+        });
+      }
       return;
     }
 
     showQuizUI();
-    if (labelEl) labelEl.textContent = `${typeLabel(q.type)} · ${q.topic}`;
+    if (labelEl) labelEl.textContent = typeLabel(q.type);
 
     if (q.type === 'ending') {
-      if (promptEl) {
-        promptEl.innerHTML = `<span class="greek cases-game-stem">${escapeHtml(q.prompt)}</span><span class="cases-game-blank">___</span>`;
-        promptEl.classList.add('greek');
-      }
+      setRuContext(q.ruContext);
+      setPhrasePrompt(q.greekBlank);
       const options = shuffle([q.correct, ...q.wrong.slice(0, 3)]);
       optionsEl.innerHTML = options
         .map(
@@ -606,11 +785,8 @@
         )
         .join('');
     } else if (q.type === 'article') {
-      const displayWord = (q.word ?? '').trim().split(/\s+/).slice(1).join(' ') || q.stem;
-      if (promptEl) {
-        promptEl.innerHTML = `<span class="cases-game-blank">___</span> <span class="greek cases-game-stem">${escapeHtml(displayWord)}</span>`;
-        promptEl.classList.add('greek');
-      }
+      setRuContext(q.ruContext);
+      setPhrasePrompt(q.greekBlank);
       const options = articleOptions(q.unit, q.correct);
       optionsEl.innerHTML = options
         .map(
@@ -619,9 +795,11 @@
         )
         .join('');
     } else if (q.type === 'translate-el-ru') {
+      setRuContext(null);
       if (promptEl) {
         promptEl.innerHTML = `<span class="greek">${escapeHtml(q.greek)}</span>`;
         promptEl.classList.add('greek');
+        promptEl.classList.remove('cases-context-el');
       }
       const options = shuffle([q.correct, ...q.wrong.slice(0, 3)]);
       optionsEl.innerHTML = options
@@ -631,9 +809,10 @@
         )
         .join('');
     } else if (q.type === 'translate-ru-el') {
+      setRuContext(null);
       if (promptEl) {
         promptEl.textContent = q.ru;
-        promptEl.classList.remove('greek');
+        promptEl.classList.remove('greek', 'cases-context-el');
       }
       const options = shuffle([q.correct, ...q.wrong.slice(0, 3)]);
       optionsEl.innerHTML = options
@@ -653,12 +832,12 @@
 
     if (q.type === 'ending') {
       feedbackEl.innerHTML = correct
-        ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.answer)}</span>`
-        : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.answer)}</span>`;
+        ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.greekFull)}</span>`
+        : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.greekFull)}</span>`;
     } else if (q.type === 'article') {
       feedbackEl.innerHTML = correct
-        ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.word)}</span>`
-        : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.word)}</span>`;
+        ? `<strong>Верно!</strong> <span class="greek">${escapeHtml(q.greekFull)}</span>`
+        : `<strong>Не совсем.</strong> Правильно: <span class="greek">${escapeHtml(q.greekFull)}</span>`;
     } else if (q.type === 'translate-el-ru') {
       feedbackEl.innerHTML = correct
         ? `<strong>Верно!</strong> ${escapeHtml(q.correct)}`
@@ -699,6 +878,7 @@
 
   function showSessionComplete() {
     showQuizUI();
+    setRuContext(null);
     currentCellId = null;
     renderProgress();
     if (labelEl) labelEl.textContent = 'Раунд завершён';
