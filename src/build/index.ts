@@ -26,6 +26,7 @@ import {
   writeCatalog,
 } from './catalog-build';
 import { breadcrumbsForWord, breadcrumbsForIndex } from './breadcrumbs';
+import { BUILD_VERSION } from './build-version';
 import {
   DIST_DIR,
   SITE_DIR,
@@ -38,7 +39,7 @@ import {
 } from './fs';
 
 function main(): void {
-  console.log('🏗  Building Greek3 site...');
+  console.log(`🏗  Building Greek3 site… ${BUILD_VERSION}`);
 
   buildMainCss();
 
