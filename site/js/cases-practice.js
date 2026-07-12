@@ -192,6 +192,70 @@
       .trim();
   }
 
+  function stemFromPrompt(prompt) {
+    const parts = String(prompt ?? '').trim().split(/\s+/);
+    return parts.length > 1 ? parts.slice(1).join('') : parts[0] ?? '';
+  }
+
+  function dedupeMatchItems(items) {
+    const seen = new Set();
+    const result = [];
+    for (const item of items) {
+      const key = `${item.ru}\0${item.greek}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(item);
+    }
+    return result;
+  }
+
+  function stemAppearsInGreek(greek, stem) {
+    return normalizeGreek(greek).includes(normalizeGreek(stem));
+  }
+
+  function buildMatchRoots() {
+    const byRoot = new Map();
+
+    const addItem = (root, entry) => {
+      const key = normalizeGreek(root);
+      if (!key) return;
+      if (!byRoot.has(key)) byRoot.set(key, []);
+      byRoot.get(key).push(entry);
+    };
+
+    for (const unit of units) {
+      for (const item of unit.endings ?? []) {
+        const root = stemFromPrompt(item.prompt);
+        const answer = item.answer ?? `${item.prompt}${item.correct}`;
+        const context = resolvePhraseContext(unit, item, answer);
+        if (!context?.greek || !context?.ru) continue;
+        addItem(root, {
+          greek: context.greek,
+          ru: context.ru,
+          unit,
+          root: normalizeGreek(root),
+        });
+      }
+    }
+
+    const knownRoots = [...byRoot.keys()];
+    for (const unit of units) {
+      for (const item of unit.words ?? []) {
+        if (!item.correct || !item.ru) continue;
+        const root = knownRoots.find((r) => stemAppearsInGreek(item.correct, r));
+        if (!root) continue;
+        addItem(root, { greek: item.correct, ru: item.ru, unit, root });
+      }
+    }
+
+    const groups = [];
+    for (const [root, items] of byRoot) {
+      const unique = dedupeMatchItems(items);
+      if (unique.length >= 3) groups.push({ root, items: unique });
+    }
+    return groups;
+  }
+
   function getNounFromForm(wordForm) {
     const parts = String(wordForm ?? '').trim().split(/\s+/);
     return parts.length > 1 ? parts.slice(1).join(' ') : parts[0] ?? '';
@@ -495,6 +559,7 @@
       translateRuEl: [],
       matchForms: [],
       matchMulti: [],
+      matchRoots: [],
       formsId: [],
     };
 
@@ -606,6 +671,8 @@
       }
     }
 
+    pool.matchRoots = buildMatchRoots();
+
     return pool;
   }
 
@@ -624,13 +691,13 @@
     return weighted[weighted.length - 1]?.item ?? poolItems[0];
   }
 
-  function buildMatchMulti(pool, used) {
-    const sources = shuffle(pool.matchMulti.filter((p) => p.greek && p.ru && !used.has(p.greek)));
+  function pickMatchPairsFromSources(sources, used) {
+    const candidates = shuffle(sources.filter((p) => p.greek && p.ru && !used.has(p.greek)));
     const pairs = [];
     const seenGreek = new Set();
     const seenRu = new Set();
 
-    for (const item of sources) {
+    for (const item of candidates) {
       if (pairs.length >= MATCH_PAIR_COUNT) break;
       if (seenGreek.has(item.greek) || seenRu.has(item.ru)) continue;
       pairs.push(item);
@@ -640,10 +707,26 @@
 
     if (pairs.length < 3) return null;
     pairs.forEach((p) => used.add(p.greek));
-    const unit = pairs[0].unit;
+    return pairs;
+  }
+
+  function buildMatchMulti(pool, used) {
+    for (const group of shuffle(pool.matchRoots ?? [])) {
+      const pairs = pickMatchPairsFromSources(group.items, used);
+      if (!pairs) continue;
+      return {
+        type: 'match-multi',
+        cellId: cellId(pairs[0].unit.id, 'el-ru'),
+        pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
+        matchRoot: group.root,
+      };
+    }
+
+    const pairs = pickMatchPairsFromSources(pool.matchMulti, used);
+    if (!pairs) return null;
     return {
       type: 'match-multi',
-      cellId: cellId(unit.id, 'el-ru'),
+      cellId: cellId(pairs[0].unit.id, 'el-ru'),
       pairs: pairs.map((p, i) => ({ id: i, greek: p.greek, ru: p.ru })),
     };
   }
@@ -808,7 +891,9 @@
         promptEl.textContent =
           q.type === 'forms-id'
             ? 'Нажмите греческую форму, затем описание падежа, рода и числа.'
-            : 'Нажмите русскую фразу, затем греческий перевод.';
+            : q.matchRoot
+              ? 'Нажмите русскую фразу, затем греческий перевод. Все пары — разные формы одного слова.'
+              : 'Нажмите русскую фразу, затем греческий перевод.';
         promptEl.classList.remove('greek');
       }
       if (q.type === 'forms-id') {
