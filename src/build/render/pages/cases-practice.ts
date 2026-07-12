@@ -45,6 +45,7 @@ export function renderCasesPractice(
 
       <div class="cases-practice-card fade-in">
         <p class="cases-game-prompt-label" id="cases-task-label">—</p>
+        <p class="cases-context-ru hidden" id="cases-task-ru" hidden></p>
         <p class="cases-game-prompt" id="cases-task-prompt">—</p>
         <div class="cases-game-options" id="cases-task-options"></div>
 
