@@ -790,8 +790,8 @@
         `В группе ${inProgress} из ${total} в работе · всего ${scopeLabel} ${scopeTotal}`;
     } else if (total > 0) {
       continueHint.textContent = favoritesMode
-        ? `Группа из ${total} избранных слов · свайп вправо «Помню» после переворота`
-        : `Группа из ${total} слов · свайп вправо «Помню» после переворота`;
+        ? `Группа из ${total} избранных слов`
+        : `Группа из ${total} слов`;
     }
   }
 
