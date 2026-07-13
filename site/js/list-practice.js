@@ -130,49 +130,21 @@
       srs.applyProgressBar(el, st);
     });
 
-    sortWordLinks(stats, cards);
   }
 
-  /** Lower rank = higher in list (unknown first, mastered last). */
-  function wordSortRank(slug, stats, cards) {
-    const st = stats[slug] ?? { wordPct: 0, formsPct: 0 };
-    const combined = (st.wordPct + st.formsPct) / 2;
-    const elRu = cards.find(
-      (c) =>
-        c.wordSlug === slug &&
-        c.type === 'summary' &&
-        (c.direction ?? 'el-ru') === 'el-ru',
-    );
-    const ruEl = cards.find(
-      (c) => c.wordSlug === slug && c.type === 'summary' && c.direction === 'ru-el',
-    );
-    const hasAny = (elRu?.repetitions ?? 0) > 0 || (ruEl?.repetitions ?? 0) > 0;
-
-    if (!elRu && !ruEl) return combined;
-    if (!hasAny) return combined;
-    if (elRu && ruEl && srs.isMastered(elRu) && srs.isMastered(ruEl)) {
-      return 20000 + combined;
-    }
-    return 1000 + combined;
-  }
-
-  function sortWordLinks(stats, cards) {
+  function sortWordLinksAlphabetically() {
     document.querySelectorAll('.links-group-items').forEach((container) => {
       const links = [...container.querySelectorAll('.word-link[data-word-slug]')].filter(
         (el) => el.getAttribute('data-word-slug'),
       );
       if (links.length < 2) return;
 
-      links.sort((a, b) => {
-        const slugA = a.getAttribute('data-word-slug');
-        const slugB = b.getAttribute('data-word-slug');
-        const diff = wordSortRank(slugA, stats, cards) - wordSortRank(slugB, stats, cards);
-        if (diff !== 0) return diff;
-        return (a.querySelector('.word-link-label')?.textContent ?? '').localeCompare(
+      links.sort((a, b) =>
+        (a.querySelector('.word-link-label')?.textContent ?? '').localeCompare(
           b.querySelector('.word-link-label')?.textContent ?? '',
           'ru',
-        );
-      });
+        ),
+      );
 
       links.forEach((link) => container.appendChild(link));
     });
@@ -319,6 +291,7 @@
   });
 
   db.init().then(() => {
+    sortWordLinksAlphabetically();
     loadSettingsUI();
     updateProgressUI();
   });
