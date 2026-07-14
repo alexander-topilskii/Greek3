@@ -63,6 +63,26 @@
   line-height: 1.35;
 }
 
+.cases-cheatsheet--genitive {
+  margin-top: 1.25rem;
+}
+
+.cases-cheatsheet--genitive h2 {
+  font-size: 1rem;
+  color: #b45309;
+}
+
+.cases-cheatsheet-note {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.cases-cheatsheet-table--genitive {
+  min-width: 22rem;
+}
+
 .cases-game {
   margin-top: 2rem;
 }
