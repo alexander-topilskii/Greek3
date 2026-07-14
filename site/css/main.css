@@ -2176,6 +2176,26 @@ body.practice-immersive-open {
   line-height: 1.35;
 }
 
+.cases-cheatsheet--genitive {
+  margin-top: 1.25rem;
+}
+
+.cases-cheatsheet--genitive h2 {
+  font-size: 1rem;
+  color: #b45309;
+}
+
+.cases-cheatsheet-note {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.cases-cheatsheet-table--genitive {
+  min-width: 22rem;
+}
+
 .cases-game {
   margin-top: 2rem;
 }
@@ -3154,6 +3174,101 @@ body.cases-progress-open {
 
 .learn-step-card--match {
   padding: 1rem 0.75rem;
+}
+
+.learn-step-card--spell {
+  padding: 1rem 0.75rem;
+}
+
+.learn-spell-assembly {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 3.25rem;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.learn-spell-assembly-placeholder {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.learn-spell-bank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: auto;
+}
+
+.learn-spell-letter {
+  min-width: 2.65rem;
+  min-height: 2.65rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.learn-spell-letter--bank:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: scale(1.04);
+}
+
+.learn-spell-letter--placed {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.learn-spell-letter--placed:hover:not(:disabled) {
+  border-color: var(--error);
+  background: #fef2f2;
+}
+
+.learn-spell-letter--used {
+  opacity: 0.28;
+  transform: scale(0.92);
+  cursor: default;
+}
+
+.learn-spell-feedback {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.learn-spell-feedback--bad {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.learn-spell-dismiss {
+  min-width: 9rem;
+}
+
+.learn-spell--shake {
+  animation: learn-match-shake 0.4s ease;
 }
 
 .learn-match-board {
