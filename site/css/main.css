@@ -2185,6 +2185,15 @@ body.practice-immersive-open {
   color: #b45309;
 }
 
+.cases-cheatsheet--accusative {
+  margin-top: 1.25rem;
+}
+
+.cases-cheatsheet--accusative h2 {
+  font-size: 1rem;
+  color: #15803d;
+}
+
 .cases-cheatsheet-note {
   margin: 0 0 0.625rem;
   font-size: 0.8125rem;
@@ -2192,7 +2201,7 @@ body.practice-immersive-open {
   color: var(--text-muted);
 }
 
-.cases-cheatsheet-table--genitive {
+.cases-cheatsheet-table--detail {
   min-width: 22rem;
 }
 
