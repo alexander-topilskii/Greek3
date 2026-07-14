@@ -140,11 +140,11 @@ export function casesCheatSheetRow(
             </tr>`;
 }
 
-export function casesGenitiveExampleRow(
+export function casesDetailExampleRow(
   gender: string,
-  nom: string,
-  gen: string,
-  genPl: string,
+  col1: string,
+  col2: string,
+  col3: string,
   options?: { genderRowspan?: number; hideGender?: boolean },
 ): string {
   const genderCell = options?.hideGender
@@ -153,22 +153,22 @@ export function casesGenitiveExampleRow(
   return `
             <tr>
               ${genderCell}
-              ${casesCheatSheetCell(nom)}
-              ${casesCheatSheetCell(gen)}
-              ${casesCheatSheetCell(genPl)}
+              ${casesCheatSheetCell(col1)}
+              ${casesCheatSheetCell(col2)}
+              ${casesCheatSheetCell(col3)}
             </tr>`;
 }
 
 export function casesGenitiveCheatsheetMarkup(): string {
   const rows = [
-    casesGenitiveExampleRow('м.р.', 'ο φίλος', 'του φίλου', 'των φίλων', { genderRowspan: 3 }),
-    casesGenitiveExampleRow('', 'ο γείτονας', 'του γείτονα', 'των γειτόνων', { hideGender: true }),
-    casesGenitiveExampleRow('', 'ο φοιτητής', 'του φοιτητή', 'των φοιτητών', { hideGender: true }),
-    casesGenitiveExampleRow('ж.р.', 'η γυναίκα', 'της γυναίκας', 'των γυναικών', { genderRowspan: 2 }),
-    casesGenitiveExampleRow('', 'η αδερφή', 'της αδερφής', 'των αδερφών', { hideGender: true }),
-    casesGenitiveExampleRow('с.р.', 'το μωρό', 'του μωρού', 'των μωρών', { genderRowspan: 3 }),
-    casesGenitiveExampleRow('', 'το παιδί', 'του παιδιού', 'των παιδιών', { hideGender: true }),
-    casesGenitiveExampleRow('', 'το διαμέρισμα', 'του διαμερίσματος', 'των διαμερισμάτων', { hideGender: true }),
+    casesDetailExampleRow('м.р.', 'ο φίλος', 'του φίλου', 'των φίλων', { genderRowspan: 3 }),
+    casesDetailExampleRow('', 'ο γείτονας', 'του γείτονα', 'των γειτόνων', { hideGender: true }),
+    casesDetailExampleRow('', 'ο φοιτητής', 'του φοιτητή', 'των φοιτητών', { hideGender: true }),
+    casesDetailExampleRow('ж.р.', 'η γυναίκα', 'της γυναίκας', 'των γυναικών', { genderRowspan: 2 }),
+    casesDetailExampleRow('', 'η αδερφή', 'της αδερφής', 'των αδερφών', { hideGender: true }),
+    casesDetailExampleRow('с.р.', 'το μωρό', 'του μωρού', 'των μωρών', { genderRowspan: 3 }),
+    casesDetailExampleRow('', 'το παιδί', 'του παιδιού', 'των παιδιών', { hideGender: true }),
+    casesDetailExampleRow('', 'το διαμέρισμα', 'του διαμερίσματος', 'των διαμερισμάτων', { hideGender: true }),
   ].join('');
 
   return `
@@ -176,13 +176,45 @@ export function casesGenitiveCheatsheetMarkup(): string {
       <h2>Родительный — окончания</h2>
       <p class="cases-cheatsheet-note">Типичные изменения: <strong>−ος → −ου</strong>, <strong>−ας → −α</strong>, <strong>−ης → −ή</strong>; <strong>−α → −ας</strong>, <strong>−η → −ης</strong>; <strong>−ο → −ου</strong>, <strong>−ι → −ιού</strong>, <strong>−μα → −ματος</strong>. Во мн. числе артикль <strong>των</strong>, ударение часто на <strong>−ών</strong>.</p>
       <div class="cases-cheatsheet-scroll">
-        <table class="cases-cheatsheet-table cases-cheatsheet-table--genitive">
+        <table class="cases-cheatsheet-table cases-cheatsheet-table--detail">
           <thead>
             <tr>
               <th></th>
               <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ. ед.<span>кто? что?</span></th>
               <th class="cases-cheatsheet-th cases-cheatsheet-th--gen">Γεν. ед.<span>кого? чего?</span></th>
               <th class="cases-cheatsheet-th cases-cheatsheet-th--gen">Γεν. мн.<span>кого? чего?</span></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
+export function casesAccusativeCheatsheetMarkup(): string {
+  const rows = [
+    casesDetailExampleRow('м.р.', 'ο φίλος', 'τον φίλο', 'τους φίλους', { genderRowspan: 3 }),
+    casesDetailExampleRow('', 'ο γείτονας', 'τον γείτονα', 'τους γείτονες', { hideGender: true }),
+    casesDetailExampleRow('', 'ο φοιτητής', 'τον φοιτητή', 'τους φοιτητές', { hideGender: true }),
+    casesDetailExampleRow('ж.р.', 'η γυναίκα', 'την γυναίκα', 'τις γυναίκες', { genderRowspan: 2 }),
+    casesDetailExampleRow('', 'η αδερφή', 'την αδερφή', 'τις αδερφές', { hideGender: true }),
+    casesDetailExampleRow('с.р.', 'το μωρό', 'το μωρό', 'τα μωρά', { genderRowspan: 3 }),
+    casesDetailExampleRow('', 'το παιδί', 'το παιδί', 'τα παιδιά', { hideGender: true }),
+    casesDetailExampleRow('', 'το διαμέρισμα', 'το διαμέρισμα', 'τα διαμερίσματα', { hideGender: true }),
+  ].join('');
+
+  return `
+    <section class="cases-cheatsheet cases-cheatsheet--accusative fade-in" aria-label="Винительный падеж — окончания">
+      <h2>Винительный — окончания</h2>
+      <p class="cases-cheatsheet-note">М.р. меняется: <strong>−ος → −ο</strong>, <strong>−ας → −α</strong>, <strong>−ης → −η</strong>. Ж.р. и с.р. в ед. числе часто <strong>совпадают с именительным</strong>. Во мн. числе: <strong>τους</strong> …−ους / −ες (м.), <strong>τις</strong> …−ες (ж.), <strong>τα</strong> …−α / −ια / −ματα (ср.).</p>
+      <div class="cases-cheatsheet-scroll">
+        <table class="cases-cheatsheet-table cases-cheatsheet-table--detail">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ. ед.<span>кто? что?</span></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--acc">Αιτ. ед.<span>кого? что?</span></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--acc">Αιτ. мн.<span>кого? что?</span></th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -220,6 +252,7 @@ export function casesCheatSheetMarkup(): string {
         </table>
       </div>
       ${casesGenitiveCheatsheetMarkup()}
+      ${casesAccusativeCheatsheetMarkup()}
     </section>`;
 }
 
