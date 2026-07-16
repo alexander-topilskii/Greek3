@@ -402,6 +402,35 @@
   color: var(--accent);
 }
 
+.forms-table th.forms-table-actions-col,
+.forms-table td.form-row-link {
+  width: 2.75rem;
+  padding-left: 0.25rem;
+  padding-right: 0.5rem;
+  text-align: center;
+}
+
+.forms-table td.form-row-link:empty {
+  width: 0;
+  padding: 0;
+}
+
+.form-row-goto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.form-row-goto:hover {
+  background: var(--accent-soft);
+}
+
 /* Extra sections */
 .extra-section {
   margin-top: 1.5rem;
