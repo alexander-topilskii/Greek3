@@ -1,4 +1,5 @@
 import type { WordEntry } from '../../types';
+import { baseFormLabels } from '../../base-form-labels';
 import { getSpecialSection } from '../../parse-word';
 import { renderMarkdown } from '../../markdown';
 import { resolveGreekFormLink, type GreekFormTarget } from '../../greek-lookup';
@@ -33,12 +34,7 @@ export function renderWord(
   greekFormLookup?: Map<string, GreekFormTarget[]>,
 ): string {
   const isPhrase = word.meta.recordType === 'phrase' || word.category === 'phrases';
-  const tenseLabels =
-    word.category === 'cases'
-      ? ['название', 'роль', 'артикли']
-      : isPhrase
-        ? ['вариант', 'форма', '']
-        : ['прош.', 'наст.', 'буд.'];
+  const formLabels = baseFormLabels(word, isPhrase);
   const translation = word.translation || word.title;
   const deckId = word.category || 'default';
   const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers' && !isPhrase;
@@ -58,7 +54,7 @@ export function renderWord(
             .map(
               (form, i) => `
             <div class="verb-summary-cell">
-              <span class="verb-summary-tense">${tenseLabels[i] ?? ''}</span>
+              <span class="verb-summary-tense">${formLabels[i] ?? ''}</span>
               <span class="verb-summary-form greek">${escapeHtml(form)}</span>
             </div>`,
             )
