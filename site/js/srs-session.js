@@ -5,6 +5,8 @@
   let sessionActive = false;
   /** @type {Map<string, number>} */
   const sessionCorrect = new Map();
+  /** @type {Map<string, number>} */
+  const sessionWordShows = new Map();
   let sessionCardsSinceReview = 0;
   /** @type {{ slug: string, direction: string }[]} */
   const recentPicks = [];
@@ -20,6 +22,7 @@
   function beginSession() {
     sessionActive = true;
     sessionCorrect.clear();
+    sessionWordShows.clear();
     sessionCardsSinceReview = 0;
   }
 
@@ -49,6 +52,7 @@
   function endSession(db) {
     sessionActive = false;
     sessionCorrect.clear();
+    sessionWordShows.clear();
     sessionCardsSinceReview = 0;
     if (db) {
       persistRecentPicks(db).catch((err) => {
@@ -99,6 +103,20 @@
 
   function getSessionCorrect(slug, direction) {
     return sessionCorrect.get(sessionKey(slug, direction)) ?? 0;
+  }
+
+  function recordWordSessionShow(slug) {
+    if (!sessionActive || !slug) return;
+    sessionWordShows.set(slug, (sessionWordShows.get(slug) ?? 0) + 1);
+  }
+
+  function getWordSessionShows(slug) {
+    return sessionWordShows.get(slug) ?? 0;
+  }
+
+  /** Word was shown earlier in this session (before the current pick). */
+  function hasPriorSessionShow(slug) {
+    return getWordSessionShows(slug) >= 2;
   }
 
   function isSessionSatisfied(slug, direction, cards, db, now = Date.now()) {
@@ -157,6 +175,9 @@
     recordRecentPick,
     isPickTooSoon,
     getSessionCorrect,
+    recordWordSessionShow,
+    getWordSessionShows,
+    hasPriorSessionShow,
     isSessionSatisfied,
     poolSessionSatisfiedInDirection,
     isWordDoneForPool,

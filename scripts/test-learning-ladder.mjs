@@ -46,10 +46,45 @@ const options = ladder.buildQuizOptions(
 if (options.length !== 4) throw new Error(`Expected 4 quiz options, got ${options.length}`);
 if (!options.includes('я спал')) throw new Error('Correct answer missing from options');
 
-const learningPath = ladder.buildLearningPath(verb);
+const learningPath = ladder.buildLearningPath(verb, { spellEligible: true });
 if (learningPath.length < 3) throw new Error('Expected quiz, spell and match in learning path');
 if (learningPath[0] !== 'quiz' || learningPath[1] !== 'spell' || learningPath[2] !== 'match') {
   throw new Error(`Expected quiz, spell, match, got ${learningPath.join(',')}`);
+}
+
+const pathWithoutSpell = ladder.buildLearningPath(verb);
+if (pathWithoutSpell.includes('spell')) {
+  throw new Error('Spell should be excluded when not eligible');
+}
+if (pathWithoutSpell.join(',') !== 'quiz,match') {
+  throw new Error(`Expected quiz, match without spell, got ${pathWithoutSpell.join(',')}`);
+}
+
+const masteredCard = { wordSlug: 'verbs/test', repetitions: 2, spellPerfect: false };
+const sessionNoPrior = {
+  isMastered: (card) => (card.repetitions ?? 0) >= 2,
+  hasPriorSessionShow: () => false,
+};
+const sessionWithPrior = {
+  isMastered: (card) => (card.repetitions ?? 0) >= 2,
+  hasPriorSessionShow: () => true,
+};
+if (ladder.isSpellEligible(verb, masteredCard, sessionNoPrior)) {
+  throw new Error('Spell should require prior session show');
+}
+if (!ladder.isSpellEligible(verb, masteredCard, sessionWithPrior)) {
+  throw new Error('Spell should be eligible with prior session show');
+}
+if (!ladder.isSpellEligible(verb, { ...masteredCard, spellPerfect: true }, sessionNoPrior)) {
+  throw new Error('Spell should be eligible with spellPerfect history');
+}
+if (ladder.isSpellEligible(verb, { ...masteredCard, repetitions: 1 }, sessionWithPrior)) {
+  throw new Error('Spell should require mastery');
+}
+
+const filtered = ladder.filterSpellFromPath(learningPath);
+if (filtered.includes('spell') || filtered.join(',') !== 'quiz,match') {
+  throw new Error('filterSpellFromPath should remove spell');
 }
 
 const spellPairs = ladder.getSpellablePairs(verb);
@@ -111,6 +146,7 @@ if (new Set(dupGreek.map((p) => p.translation)).size < 2) {
 console.log('✓ learning ladder base pairs');
 console.log('✓ learning ladder match pairs');
 console.log('✓ learning ladder quiz options');
+console.log('✓ learning ladder spell eligibility');
 console.log('✓ learning ladder fixed path order');
 console.log('✓ learning ladder spell pairs and letter bank');
 console.log('✓ learning ladder last game detection');

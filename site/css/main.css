@@ -3217,6 +3217,16 @@ body.cases-progress-open {
   margin-top: auto;
 }
 
+.learn-spell-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.85rem;
+}
+
+.learn-spell-skip {
+  min-width: 9rem;
+}
+
 .learn-spell-letter {
   min-width: 2.65rem;
   min-height: 2.65rem;

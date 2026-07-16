@@ -203,12 +203,32 @@
     await db.putCard({ ...card, learningStep: 0, learningPath: undefined });
   }
 
+  async function spellSessionContext() {
+    return {
+      isMastered: (card) => srs.isMastered(card),
+      hasPriorSessionShow: (slug) => srs.hasPriorSessionShow(slug),
+    };
+  }
+
+  async function isSpellEligibleForPick(pick) {
+    const card = await ensurePickCard(pick);
+    return ladder.isSpellEligible(pick.word, card, await spellSessionContext());
+  }
+
   async function ensureLearningPath(pick) {
     const card = await ensurePickCard(pick);
     if (Array.isArray(card.learningPath) && card.learningPath.length) {
-      return card.learningPath;
+      const spellEligible = await isSpellEligibleForPick(pick);
+      const path = spellEligible
+        ? card.learningPath
+        : ladder.filterSpellFromPath(card.learningPath);
+      if (path.length !== card.learningPath.length) {
+        await setLearningStep(pick, card.learningStep ?? 0, { learningPath: path });
+      }
+      return path;
     }
-    const path = ladder.buildLearningPath(pick.word);
+    const spellEligible = await isSpellEligibleForPick(pick);
+    const path = ladder.buildLearningPath(pick.word, { spellEligible });
     await setLearningStep(pick, card.learningStep ?? 0, { learningPath: path });
     return path;
   }
@@ -249,6 +269,10 @@
     const stepName = ladder.learningPathStepName(path, pathIndex);
 
     if (stepName === ladder.STEPS.SPELL) {
+      if (!(await isSpellEligibleForPick(pick))) {
+        await advanceLadderOrFinish(pick);
+        return true;
+      }
       const spellPair = ladder.pickSpellPair(pick.word);
       if (!spellPair) {
         await advanceLadderOrFinish(pick);
@@ -312,6 +336,11 @@
 
   async function showSpellForPick(pick) {
     const word = pick.word;
+    if (!(await isSpellEligibleForPick(pick))) {
+      if (await skipUnavailableLadderGame(pick)) return;
+      await advanceLadderOrFinish(pick);
+      return;
+    }
     const pair = ladder.pickSpellPair(word);
     if (!pair) {
       if (await skipUnavailableLadderGame(pick)) return;
@@ -322,9 +351,17 @@
     if (!spellUi && learnViewSpell && spellStep) {
       spellUi = spellStep.init({
         root: learnViewSpell,
-        onResult: (correct) => {
-          if (correct) onLearningGamePassed();
-          else failLearningLadder();
+        onResult: async (correct) => {
+          if (!currentPick) return;
+          if (correct) {
+            const card = await ensurePickCard(currentPick);
+            if (!card.spellPerfect) {
+              await db.putCard({ ...card, spellPerfect: true });
+            }
+            await onLearningGamePassed();
+          } else {
+            await failLearningLadder();
+          }
         },
       });
     }
@@ -393,6 +430,10 @@
       return;
     }
     if (stepName === ladder.STEPS.SPELL) {
+      if (!(await isSpellEligibleForPick(pick))) {
+        await advanceLadderOrFinish(pick);
+        return;
+      }
       const spellPair = ladder.pickSpellPair(pick.word);
       if (!spellPair) {
         await advanceLadderOrFinish(pick);
@@ -986,6 +1027,8 @@
       return;
     }
 
+    srs.recordWordSessionShow(currentPick.word.slug);
+
     await resumeLearningStep(currentPick);
     await syncSessionInfo(settings, cards);
     saveSessionState();
@@ -1023,6 +1066,7 @@
 
     if (resumePick) {
       currentPick = resumePick;
+      srs.recordWordSessionShow(currentPick.word.slug);
       const settings = await srs.loadDeckSettings(deckId, db);
       const cards = await db.getCardsForSlugs(catalogSlugs);
       await resumeLearningStep(currentPick);

@@ -239,15 +239,35 @@
   }
 
   /**
-   * Random order of mini-games after summary (quiz / match).
+   * Spell step: word mastered + (seen earlier in session OR spell done perfectly before).
    * @param {import('./types').CatalogWord} word
+   * @param {*} card
+   * @param {{ isMastered: (card: *) => boolean, hasPriorSessionShow: (slug: string) => boolean }} session
    */
-  function buildLearningPath(word) {
+  function isSpellEligible(word, card, session) {
+    if (!word || !getSpellablePairs(word).length) return false;
+    if (!card || !session?.isMastered?.(card)) return false;
+    if (card.spellPerfect) return true;
+    return Boolean(session?.hasPriorSessionShow?.(card.wordSlug));
+  }
+
+  /**
+   * Mini-games after summary (quiz / spell / match).
+   * @param {import('./types').CatalogWord} word
+   * @param {{ spellEligible?: boolean }} [options]
+   */
+  function buildLearningPath(word, options = {}) {
+    const { spellEligible = false } = options;
     const steps = [];
     if (getBaseFormPairs(word).length) steps.push(STEPS.QUIZ);
-    if (getSpellablePairs(word).length) steps.push(STEPS.SPELL);
+    if (spellEligible && getSpellablePairs(word).length) steps.push(STEPS.SPELL);
     if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
     return steps;
+  }
+
+  function filterSpellFromPath(path) {
+    if (!Array.isArray(path)) return [];
+    return path.filter((step) => step !== STEPS.SPELL);
   }
 
   function isLastLadderGame(learningStep, path) {
@@ -292,7 +312,9 @@
     stepFromIndex,
     learningStepToName,
     nameToLearningStep,
+    isSpellEligible,
     buildLearningPath,
+    filterSpellFromPath,
     isLastLadderGame,
     learningPathStepName,
     isSummaryLearningStep,
