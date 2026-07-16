@@ -14,6 +14,7 @@
     const promptEl = root.querySelector('[data-spell-prompt]');
     const assemblyEl = root.querySelector('[data-spell-assembly]');
     const bankEl = root.querySelector('[data-spell-bank]');
+    const skipBtn = root.querySelector('[data-spell-skip]');
     const feedbackEl = root.querySelector('[data-spell-feedback]');
     const speak = global.GreekSpeak;
     const utils = global.GreekUtils;
@@ -35,6 +36,17 @@
       feedbackEl.hidden = true;
       feedbackEl.className = 'learn-spell-feedback';
       feedbackEl.textContent = '';
+    }
+
+    function setInteractiveEnabled(enabled) {
+      if (skipBtn) skipBtn.disabled = !enabled;
+      assemblyEl?.querySelectorAll('button').forEach((btn) => {
+        btn.disabled = !enabled;
+      });
+      bankEl?.querySelectorAll('button').forEach((btn) => {
+        if (btn.classList.contains('learn-spell-letter--used')) return;
+        btn.disabled = !enabled;
+      });
     }
 
     function formatRuLabel(text) {
@@ -72,6 +84,7 @@
         btn.dataset.spellId = String(id);
         btn.dataset.spellZone = 'assembly';
         btn.textContent = item.char;
+        if (locked) btn.disabled = true;
         assemblyEl.appendChild(btn);
       }
     }
@@ -88,7 +101,7 @@
         btn.dataset.spellId = String(item.id);
         btn.dataset.spellZone = 'bank';
         btn.textContent = item.char;
-        if (used.has(item.id)) {
+        if (used.has(item.id) || locked) {
           btn.classList.add('learn-spell-letter--used');
           btn.disabled = true;
         }
@@ -101,18 +114,21 @@
       renderBank();
     }
 
-    function failStep() {
+    function showIncorrectFeedback({ shake = true } = {}) {
       locked = true;
+      setInteractiveEnabled(false);
       cardEl?.classList.add('learn-step-card--error');
-      root.classList.add('learn-spell--shake');
-      global.setTimeout(() => root.classList.remove('learn-spell--shake'), 450);
+      if (shake) {
+        root.classList.add('learn-spell--shake');
+        global.setTimeout(() => root.classList.remove('learn-spell--shake'), 450);
+      }
 
       if (feedbackEl) {
         feedbackEl.hidden = false;
         feedbackEl.className = 'learn-spell-feedback learn-spell-feedback--bad';
         feedbackEl.innerHTML =
           `<span class="learn-spell-feedback-text">Правильно: <strong class="greek">${ladder().escapeHtml(target)}</strong></span>` +
-          '<button type="button" class="btn btn-secondary learn-spell-dismiss">Продолжить</button>';
+          '<button type="button" class="btn btn-secondary learn-spell-dismiss">Дальше</button>';
         feedbackEl.querySelector('.learn-spell-dismiss')?.addEventListener(
           'click',
           () => {
@@ -123,8 +139,17 @@
       }
     }
 
+    function failStep() {
+      showIncorrectFeedback({ shake: true });
+    }
+
+    function skipStep() {
+      showIncorrectFeedback({ shake: false });
+    }
+
     function succeedStep() {
       locked = true;
+      setInteractiveEnabled(false);
       cardEl?.classList.add('learn-step-card--success');
       if (speak?.isSupported?.()) speak.speakGreek(target);
       global.setTimeout(() => {
@@ -169,6 +194,10 @@
 
     assemblyEl?.addEventListener('click', onLetterClick);
     bankEl?.addEventListener('click', onLetterClick);
+    skipBtn?.addEventListener('click', () => {
+      if (locked) return;
+      skipStep();
+    });
 
     function show({ translation, greek, ruFormLabels, letterBank }) {
       locked = false;
@@ -178,6 +207,7 @@
       assembly = [];
       clearCardState();
       hideFeedback();
+      setInteractiveEnabled(true);
 
       if (labelEl) labelEl.textContent = 'Соберите греческое слово';
       if (promptEl) promptEl.textContent = formatRuLabel(translation) ?? '—';

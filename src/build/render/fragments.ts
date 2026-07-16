@@ -86,6 +86,9 @@ export function homePracticePanelMarkup(flashcardRootId = 'home-flashcard-root')
                 <p class="learn-step-prompt" data-spell-prompt>—</p>
                 <div class="learn-spell-assembly" data-spell-assembly aria-live="polite"></div>
                 <div class="learn-spell-bank" data-spell-bank></div>
+                <div class="learn-spell-actions">
+                  <button type="button" class="btn btn-secondary learn-spell-skip" data-spell-skip>Пропустить</button>
+                </div>
                 <p class="learn-spell-feedback" data-spell-feedback hidden></p>
               </div>
             </div>
