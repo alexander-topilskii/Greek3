@@ -1743,6 +1743,7 @@ body.progress-fullscreen-open {
 }
 
 .form-row {
+  cursor: pointer;
   transition: background var(--transition);
 }
 

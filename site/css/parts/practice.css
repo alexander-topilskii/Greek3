@@ -385,6 +385,7 @@
 }
 
 .form-row {
+  cursor: pointer;
   transition: background var(--transition);
 }
 
