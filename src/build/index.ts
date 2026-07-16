@@ -27,6 +27,7 @@ import {
 } from './catalog-build';
 import { breadcrumbsForWord, breadcrumbsForIndex } from './breadcrumbs';
 import { BUILD_VERSION } from './build-version';
+import { buildGreekFormLookup } from './greek-lookup';
 import {
   DIST_DIR,
   SITE_DIR,
@@ -57,6 +58,7 @@ function main(): void {
 
   const mdFiles = walkMdFiles(WORDS_DIR);
   const words: WordEntry[] = [];
+  const wordRenderQueue: WordEntry[] = [];
   const wordsByHref = new Map<string, WordEntry>();
   const wordsBySlug = new Map<string, WordEntry>();
 
@@ -84,13 +86,18 @@ function main(): void {
       const inferredTopics = slugTopicMap.get(slugKey) ?? [];
       const word = enrichWordEntry(parsed, inferredTopics);
       words.push(word);
+      wordRenderQueue.push(word);
       wordsBySlug.set(word.slug, word);
       const href = `${path.basename(file).replace(/\.md$/i, '')}.html`;
       wordsByHref.set(href, word);
-      const out = wordOutputPath(word.slug);
-      writeHtml(out, renderWord(word, breadcrumbsForWord(word)));
-      console.log(`  📘 ${out}`);
     }
+  }
+
+  const greekFormLookup = buildGreekFormLookup(words);
+  for (const word of wordRenderQueue) {
+    const out = wordOutputPath(word.slug);
+    writeHtml(out, renderWord(word, breadcrumbsForWord(word), greekFormLookup));
+    console.log(`  📘 ${out}`);
   }
 
   for (const file of mdFiles) {

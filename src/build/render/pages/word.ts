@@ -1,15 +1,36 @@
 import type { WordEntry } from '../../types';
 import { getSpecialSection } from '../../parse-word';
 import { renderMarkdown } from '../../markdown';
+import { resolveGreekFormLink, type GreekFormTarget } from '../../greek-lookup';
+import { sitePath } from '../../site-path';
 import { escapeHtml } from '../html';
 import { layout } from '../layout';
 import { renderMetaBadges } from '../badges';
 import { renderContextSection } from '../context';
 import { flashcardMarkup, progressBarMarkup, wordSettingsDialogMarkup, favoriteButtonMarkup } from '../fragments';
+import { wordOutputPath } from '../paths-catalog';
+
+function formRowLinkMarkup(
+  greek: string,
+  word: WordEntry,
+  greekFormLookup: Map<string, GreekFormTarget[]>,
+): string {
+  const target = resolveGreekFormLink(greekFormLookup, greek, word.slug);
+  if (!target) return '<td class="form-row-link"></td>';
+
+  const href = sitePath(wordOutputPath(target.slug));
+  const label = `Перейти: ${target.label}`;
+  return `<td class="form-row-link">
+        <a href="${escapeHtml(href)}" class="form-row-goto" aria-label="${escapeHtml(label)}" title="${escapeHtml(target.label)}">
+          <span aria-hidden="true">→</span>
+        </a>
+      </td>`;
+}
 
 export function renderWord(
   word: WordEntry,
   breadcrumbs: { label: string; href?: string }[],
+  greekFormLookup?: Map<string, GreekFormTarget[]>,
 ): string {
   const isPhrase = word.meta.recordType === 'phrase' || word.category === 'phrases';
   const tenseLabels =
@@ -66,6 +87,7 @@ export function renderWord(
       <tr class="form-row" data-index="${i}">
         <td class="greek">${escapeHtml(f.greek)}</td>
         <td class="translation">${escapeHtml(f.translation)}</td>
+        ${greekFormLookup ? formRowLinkMarkup(f.greek, word, greekFormLookup) : ''}
       </tr>`,
     )
     .join('');
@@ -126,7 +148,11 @@ export function renderWord(
         <div class="table-wrap">
           <table class="forms-table">
             <thead>
-              <tr><th>Греческий</th><th>Перевод</th></tr>
+              <tr>
+                <th>Греческий</th>
+                <th>Перевод</th>
+                ${greekFormLookup ? '<th class="forms-table-actions-col" aria-hidden="true"></th>' : ''}
+              </tr>
             </thead>
             <tbody>${formsRows}</tbody>
           </table>

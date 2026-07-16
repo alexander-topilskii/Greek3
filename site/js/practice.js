@@ -145,7 +145,8 @@
   }
 
   formRows.forEach((row) => {
-    row.addEventListener('click', () => {
+    row.addEventListener('click', (event) => {
+      if (event.target.closest('.form-row-goto')) return;
       const index = Number(row.getAttribute('data-index'));
       if (!Number.isFinite(index)) return;
       const form = forms[index];
