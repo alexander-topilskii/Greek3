@@ -32,6 +32,7 @@
   const settingsDialog = document.getElementById('word-settings-dialog');
   const btnReset = document.getElementById('btn-reset-word');
   const formRows = document.querySelectorAll('.form-row');
+  const speak = window.GreekSpeak;
 
   const common = window.GreekPracticeCommon;
 
@@ -142,6 +143,17 @@
     const bar = document.querySelector('.word-header [data-progress-slug]');
     srs.applyProgressBar(bar, st);
   }
+
+  formRows.forEach((row) => {
+    row.addEventListener('click', () => {
+      const index = Number(row.getAttribute('data-index'));
+      if (!Number.isFinite(index)) return;
+      const form = forms[index];
+      if (!form) return;
+      showForm(index);
+      if (form.greek && speak?.isSupported?.()) speak.speakGreek(form.greek);
+    });
+  });
 
   btnRandom?.addEventListener('click', () => {
     randomMixed();
