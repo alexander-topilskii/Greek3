@@ -93,6 +93,31 @@ export interface SiteConfig {
   baseUrl: string;
 }
 
+/** Пара «греческий — перевод» на странице сочинения. */
+export interface EssayPair {
+  greek: string;
+  translation: string;
+}
+
+/** Пример сочинения для конкретного уровня (A1, A2, …). */
+export interface EssayExample {
+  level: string;
+  body: string;
+}
+
+/** Тема раздела «Сочинения». */
+export interface EssayTopic {
+  slug: string;
+  title: string;
+  intro: string;
+  level: string;
+  questions: EssayPair[];
+  vocab: EssayPair[];
+  phrases: EssayPair[];
+  examples: EssayExample[];
+  sourcePath: string;
+}
+
 export interface TopicAggregate {
   slug: string;
   title: string;
