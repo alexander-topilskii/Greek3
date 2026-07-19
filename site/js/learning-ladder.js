@@ -368,8 +368,32 @@
     return items;
   }
 
+  /** true, если строка начинается с заглавной буквы (начало предложения). */
+  function startsUppercase(text) {
+    const first = String(text ?? '').charAt(0);
+    if (!first) return false;
+    return (
+      first === first.toLocaleUpperCase('el') &&
+      first !== first.toLocaleLowerCase('el')
+    );
+  }
+
+  /** Приводит первую букву варианта к нужному регистру. */
+  function matchFirstLetterCase(text, capitalize) {
+    const value = String(text ?? '');
+    if (!value) return value;
+    const first = value.charAt(0);
+    const normalized = capitalize
+      ? first.toLocaleUpperCase('el')
+      : first.toLocaleLowerCase('el');
+    return normalized + value.slice(1);
+  }
+
   /**
    * 4 варианта для cloze: правильная форма + греческие формы других слов.
+   * Регистр всех вариантов подгоняется под правильный ответ: если пропуск в
+   * начале предложения (ответ с заглавной) — все варианты с заглавной, если в
+   * середине (ответ строчный) — все со строчной.
    * @param {import('./types').CatalogWord[]} poolWords
    * @param {import('./types').CatalogWord} word
    * @param {string} answer
@@ -402,7 +426,11 @@
       }
     }
 
-    return shuffle([answer, ...distractors.slice(0, 3)]);
+    const capitalize = startsUppercase(answer);
+    const normalizedDistractors = distractors
+      .slice(0, 3)
+      .map((text) => matchFirstLetterCase(text, capitalize));
+    return shuffle([answer, ...normalizedDistractors]);
   }
 
   /** Убирает завершающую пунктуацию предложения (. ! ; · …). */

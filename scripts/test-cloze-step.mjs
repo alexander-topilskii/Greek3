@@ -78,6 +78,37 @@ if (options.length !== 4) {
   throw new Error(`Expected 4 cloze options, got ${options.length}`);
 }
 
+// All options share the answer's leading case: lowercase answer (mid-sentence)
+// keeps every option lowercase.
+const isUpper = (s) =>
+  s.charAt(0) === s.charAt(0).toLocaleUpperCase('el') &&
+  s.charAt(0) !== s.charAt(0).toLocaleLowerCase('el');
+if (isUpper(first.answer)) {
+  throw new Error('Test setup expects a lowercase mid-sentence answer');
+}
+if (options.some(isUpper)) {
+  throw new Error(`Mid-sentence options must all be lowercase, got ${options.join(',')}`);
+}
+
+// Sentence-initial (capitalized) answer capitalizes every option, including
+// distractors that come from lowercase dictionary forms.
+const startOptions = ladder.buildClozeOptions(
+  [
+    verb,
+    { slug: 'a', translation: 'бегу', baseForms: ['τρέχω'], forms: [] },
+    { slug: 'b', translation: 'ем', baseForms: ['τρώω'], forms: [] },
+    { slug: 'c', translation: 'пью', baseForms: ['πίνω'], forms: [] },
+  ],
+  verb,
+  second.answer, // 'Φεύγω' — sentence-initial, capitalized
+);
+if (!startOptions.includes(second.answer)) {
+  throw new Error('Cloze options must include the capitalized answer verbatim');
+}
+if (!startOptions.every(isUpper)) {
+  throw new Error(`Sentence-initial options must all be capitalized, got ${startOptions.join(',')}`);
+}
+
 // Cloze is added to the learning path (after match, before build) when supported.
 const pathFull = ladder.buildLearningPath(verb, { spellEligible: true });
 if (!pathFull.includes('cloze')) {
