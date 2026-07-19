@@ -109,6 +109,15 @@ export function homePracticePanelMarkup(flashcardRootId = 'home-flashcard-root')
                 <p class="learn-match-feedback" data-match-feedback hidden></p>
               </div>
             </div>
+            <div class="learn-step learn-step--cloze hidden" id="learn-view-cloze" hidden>
+              <div class="learn-step-card learn-step-card--cloze">
+                <span class="learn-step-label" data-cloze-label>Вставьте пропущенное слово</span>
+                <p class="learn-cloze-sentence" data-cloze-sentence aria-live="polite"></p>
+                <p class="learn-cloze-hint" data-cloze-hint></p>
+                <div class="learn-quiz-options" data-cloze-options></div>
+                <p class="learn-quiz-feedback" data-cloze-feedback hidden></p>
+              </div>
+            </div>
           </div>
         </div>
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>

@@ -12,6 +12,7 @@
   const quizStep = window.GreekQuizStep;
   const matchStep = window.GreekMatchStep;
   const spellStep = window.GreekSpellStep;
+  const clozeStep = window.GreekClozeStep;
   const common = window.GreekPracticeCommon;
   if (!db || !srs || !flash || !ladder || !common) return;
 
@@ -135,10 +136,12 @@
   const learnViewQuiz = document.getElementById('learn-view-quiz');
   const learnViewMatch = document.getElementById('learn-view-match');
   const learnViewSpell = document.getElementById('learn-view-spell');
+  const learnViewCloze = document.getElementById('learn-view-cloze');
   let currentLearningStep = ladder.STEPS.SUMMARY;
   let quizUi = null;
   let matchUi = null;
   let spellUi = null;
+  let clozeUi = null;
 
   window.addEventListener('resize', () => {
     if (!poolDotsEl?.dataset.gridCount) return;
@@ -160,6 +163,7 @@
     const isQuiz = step === ladder.STEPS.QUIZ;
     const isSpell = step === ladder.STEPS.SPELL;
     const isMatch = step === ladder.STEPS.MATCH;
+    const isCloze = step === ladder.STEPS.CLOZE;
 
     learnViewFlashcard?.classList.toggle('hidden', !isSummary);
     learnViewFlashcard?.toggleAttribute('hidden', !isSummary);
@@ -169,6 +173,8 @@
     learnViewSpell?.toggleAttribute('hidden', !isSpell);
     learnViewMatch?.classList.toggle('hidden', !isMatch);
     learnViewMatch?.toggleAttribute('hidden', !isMatch);
+    learnViewCloze?.classList.toggle('hidden', !isCloze);
+    learnViewCloze?.toggleAttribute('hidden', !isCloze);
 
     practiceControls?.classList.toggle('hidden', !isSummary);
     practiceControls?.toggleAttribute('hidden', !isSummary);
@@ -184,6 +190,10 @@
     if (isMatch) {
       learnViewMatch?.classList.remove('learn-step--visible');
       requestAnimationFrame(() => learnViewMatch?.classList.add('learn-step--enter'));
+    }
+    if (isCloze) {
+      learnViewCloze?.classList.remove('learn-step--visible');
+      requestAnimationFrame(() => learnViewCloze?.classList.add('learn-step--enter'));
     }
   }
 
@@ -282,6 +292,12 @@
     if (stepName === ladder.STEPS.MATCH) {
       const matchPairs = ladder.getMatchPairs(pick.word);
       if (matchPairs.length < 2) {
+        await advanceLadderOrFinish(pick);
+        return true;
+      }
+    }
+    if (stepName === ladder.STEPS.CLOZE) {
+      if (!ladder.getClozeItems(pick.word).length) {
         await advanceLadderOrFinish(pick);
         return true;
       }
@@ -401,6 +417,48 @@
     matchUi?.show({ matchPairs });
   }
 
+  async function showClozeForPick(pick) {
+    const word = pick.word;
+    const items = ladder.getClozeItems(word);
+    const item = items.length
+      ? items[Math.floor(Math.random() * items.length)]
+      : null;
+    if (!item) {
+      if (await skipUnavailableLadderGame(pick)) return;
+      await advanceLadderOrFinish(pick);
+      return;
+    }
+
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+    const pool = srs.getActivePoolWords(catalog, cards, db, settings);
+    const optionPool = pool.length >= 4 ? pool : catalog.words;
+    const options = ladder.buildClozeOptions(optionPool, word, item.answer);
+
+    if (!clozeUi && learnViewCloze && clozeStep) {
+      clozeUi = clozeStep.init({
+        root: learnViewCloze,
+        onResult: (correct) => {
+          if (correct) onLearningGamePassed();
+          else failLearningLadder();
+        },
+      });
+    }
+
+    showLearningView(ladder.STEPS.CLOZE);
+    setWordSource(word, pick.direction ?? 'el-ru');
+    syncWordLink(pick);
+    syncExamplesButton(word);
+
+    clozeUi?.show({
+      before: item.before,
+      after: item.after,
+      answer: item.answer,
+      translation: item.translation,
+      options,
+    });
+  }
+
   async function failLearningLadder() {
     if (currentPick) await clearLearningLadderState(currentPick);
     showLearningView(ladder.STEPS.SUMMARY);
@@ -449,6 +507,14 @@
         return;
       }
       await showMatchForPick(pick);
+      return;
+    }
+    if (stepName === ladder.STEPS.CLOZE) {
+      if (!ladder.getClozeItems(pick.word).length) {
+        await advanceLadderOrFinish(pick);
+        return;
+      }
+      await showClozeForPick(pick);
       return;
     }
 

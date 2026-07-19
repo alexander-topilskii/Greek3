@@ -80,6 +80,7 @@ export function renderHome(
         'assets/js/quiz-step.js',
         'assets/js/spell-step.js',
         'assets/js/match-step.js',
+        'assets/js/cloze-step.js',
         'assets/js/home-favorites.js',
         'assets/js/home-practice.js',
       ]

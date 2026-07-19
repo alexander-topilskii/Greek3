@@ -5,13 +5,18 @@
     QUIZ: 'quiz',
     SPELL: 'spell',
     MATCH: 'match',
+    CLOZE: 'cloze',
   };
 
-  const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.SPELL, STEPS.MATCH];
+  const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.SPELL, STEPS.MATCH, STEPS.CLOZE];
 
   const SPELL_EXTRA_LETTERS = 2;
   const SPELL_MAX_LENGTH = 18;
   const GREEK_DECOY_LETTERS = 'αβγδεζηθικλμνξοπρστυφχψωάέήίόύώ';
+
+  /** Диапазоны греческих букв (для границ слова в примерах). */
+  const GREEK_LETTER_RANGE = '\\u0370-\\u03FF\\u1F00-\\u1FFF';
+  const CLOZE_MAX_ITEMS = 3;
 
   function shuffle(arr) {
     return utils ? utils.shuffle(arr) : arr.slice();
@@ -251,8 +256,118 @@
     return Boolean(session?.hasPriorSessionShow?.(card.wordSlug));
   }
 
+  function escapeRegExp(text) {
+    return String(text ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /** Уникальные греческие формы слова (для поиска в примере), длинные первыми. */
+  function getClozeForms(word) {
+    const set = new Set();
+    (word.baseForms ?? []).forEach((g) => {
+      if (g) set.add(String(g).trim());
+    });
+    (word.forms ?? []).forEach((f) => {
+      if (f?.greek) set.add(String(f.greek).trim());
+    });
+    return [...set].filter(Boolean).sort((a, b) => b.length - a.length);
+  }
+
+  /** Находит форму как отдельное слово в предложении (без учёта регистра). */
+  function findFormInSentence(sentence, form) {
+    const text = String(sentence ?? '');
+    const target = String(form ?? '').trim();
+    if (!text || !target) return null;
+    const pattern = new RegExp(
+      `(^|[^${GREEK_LETTER_RANGE}])(${escapeRegExp(target)})(?![${GREEK_LETTER_RANGE}])`,
+      'iu',
+    );
+    const match = pattern.exec(text);
+    if (!match) return null;
+    const start = match.index + match[1].length;
+    return { start, end: start + match[2].length, text: match[2] };
+  }
+
   /**
-   * Mini-games after summary (quiz / spell / match).
+   * Cloze-задания: предложение из «Контекста» с пропущенной формой слова.
+   * @param {import('./types').CatalogWord} word
+   * @param {number} maxItems
+   */
+  function getClozeItems(word, maxItems = CLOZE_MAX_ITEMS) {
+    const examples = word?.examples ?? [];
+    if (!examples.length) return [];
+    const forms = getClozeForms(word);
+    if (!forms.length) return [];
+
+    const items = [];
+    const seen = new Set();
+
+    for (const example of examples) {
+      const sentence = String(example?.greek ?? '').trim();
+      if (!sentence) continue;
+
+      let hit = null;
+      for (const form of forms) {
+        hit = findFormInSentence(sentence, form);
+        if (hit) break;
+      }
+      if (!hit) continue;
+
+      const key = `${sentence}::${hit.start}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      items.push({
+        sentence,
+        before: sentence.slice(0, hit.start),
+        after: sentence.slice(hit.end),
+        answer: hit.text,
+        translation: String(example?.translation ?? '').trim(),
+      });
+      if (items.length >= maxItems) break;
+    }
+
+    return items;
+  }
+
+  /**
+   * 4 варианта для cloze: правильная форма + греческие формы других слов.
+   * @param {import('./types').CatalogWord[]} poolWords
+   * @param {import('./types').CatalogWord} word
+   * @param {string} answer
+   */
+  function buildClozeOptions(poolWords, word, answer) {
+    const used = new Set([answer]);
+    const distractors = [];
+
+    const shuffledPool = shuffle(
+      (poolWords ?? []).filter((w) => w.slug !== word.slug),
+    );
+
+    for (const other of shuffledPool) {
+      if (distractors.length >= 3) break;
+      const pairs = getBaseFormPairs(other);
+      const greek =
+        pairs[0]?.greek ?? other.primaryGreek ?? other.forms?.[0]?.greek ?? '';
+      if (!greek || used.has(greek)) continue;
+      used.add(greek);
+      distractors.push(greek);
+    }
+
+    if (distractors.length < 3) {
+      for (const form of word.forms ?? []) {
+        if (distractors.length >= 3) break;
+        const greek = form?.greek ?? '';
+        if (!greek || used.has(greek)) continue;
+        used.add(greek);
+        distractors.push(greek);
+      }
+    }
+
+    return shuffle([answer, ...distractors.slice(0, 3)]);
+  }
+
+  /**
+   * Mini-games after summary (quiz / spell / match / cloze).
    * @param {import('./types').CatalogWord} word
    * @param {{ spellEligible?: boolean }} [options]
    */
@@ -262,6 +377,7 @@
     if (getBaseFormPairs(word).length) steps.push(STEPS.QUIZ);
     if (spellEligible && getSpellablePairs(word).length) steps.push(STEPS.SPELL);
     if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
+    if (getClozeItems(word).length) steps.push(STEPS.CLOZE);
     return steps;
   }
 
@@ -307,6 +423,8 @@
     buildSpellLetterBank,
     pickRandomPair,
     buildQuizOptions,
+    getClozeItems,
+    buildClozeOptions,
     shouldUseLadder,
     stepIndex,
     stepFromIndex,

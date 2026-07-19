@@ -3219,6 +3219,42 @@ body.cases-progress-open {
   padding: 1rem 0.75rem;
 }
 
+.learn-step-card--cloze {
+  padding: 1rem 0.75rem;
+}
+
+.learn-cloze-sentence {
+  font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.7;
+  margin: 0.5rem 0 0.5rem;
+}
+
+.learn-cloze-blank {
+  display: inline-block;
+  min-width: 3rem;
+  margin: 0 0.15rem;
+  padding: 0 0.35rem;
+  border-bottom: 2px dashed var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  vertical-align: baseline;
+}
+
+.learn-cloze-blank--filled {
+  border-bottom-color: var(--success);
+  color: #065f46;
+}
+
+.learn-cloze-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0 0 1.25rem;
+}
+
 .learn-spell-assembly {
   display: flex;
   flex-wrap: wrap;
