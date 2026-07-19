@@ -118,6 +118,19 @@ export function homePracticePanelMarkup(flashcardRootId = 'home-flashcard-root')
                 <p class="learn-quiz-feedback" data-cloze-feedback hidden></p>
               </div>
             </div>
+            <div class="learn-step learn-step--build hidden" id="learn-view-build" hidden>
+              <div class="learn-step-card learn-step-card--build">
+                <span class="learn-step-label" data-build-label>Составьте предложение по-гречески</span>
+                <p class="learn-build-prompt" data-build-prompt>—</p>
+                <div class="learn-build-assembly" data-build-assembly aria-live="polite"></div>
+                <div class="learn-build-bank" data-build-bank></div>
+                <div class="learn-build-actions">
+                  <button type="button" class="btn btn-secondary learn-build-skip" data-build-skip>Пропустить</button>
+                  <button type="button" class="btn btn-primary learn-build-check" data-build-check disabled>Проверить</button>
+                </div>
+                <p class="learn-build-feedback" data-build-feedback hidden></p>
+              </div>
+            </div>
           </div>
         </div>
         <p class="practice-word-source hidden" id="practice-word-source" hidden></p>

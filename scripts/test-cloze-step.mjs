@@ -78,10 +78,13 @@ if (options.length !== 4) {
   throw new Error(`Expected 4 cloze options, got ${options.length}`);
 }
 
-// Cloze is appended to the learning path when examples support it.
+// Cloze is added to the learning path (after match, before build) when supported.
 const pathFull = ladder.buildLearningPath(verb, { spellEligible: true });
-if (pathFull[pathFull.length - 1] !== 'cloze') {
-  throw new Error(`Expected cloze as last step, got ${pathFull.join(',')}`);
+if (!pathFull.includes('cloze')) {
+  throw new Error(`Expected cloze in path, got ${pathFull.join(',')}`);
+}
+if (pathFull.indexOf('cloze') <= pathFull.indexOf('match')) {
+  throw new Error(`Cloze should follow match, got ${pathFull.join(',')}`);
 }
 
 const pathNoCloze = ladder.buildLearningPath({ ...verb, examples: [] });

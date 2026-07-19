@@ -6,9 +6,17 @@
     SPELL: 'spell',
     MATCH: 'match',
     CLOZE: 'cloze',
+    BUILD: 'build',
   };
 
-  const STEP_ORDER = [STEPS.SUMMARY, STEPS.QUIZ, STEPS.SPELL, STEPS.MATCH, STEPS.CLOZE];
+  const STEP_ORDER = [
+    STEPS.SUMMARY,
+    STEPS.QUIZ,
+    STEPS.SPELL,
+    STEPS.MATCH,
+    STEPS.CLOZE,
+    STEPS.BUILD,
+  ];
 
   const SPELL_EXTRA_LETTERS = 2;
   const SPELL_MAX_LENGTH = 18;
@@ -17,6 +25,16 @@
   /** Диапазоны греческих букв (для границ слова в примерах). */
   const GREEK_LETTER_RANGE = '\\u0370-\\u03FF\\u1F00-\\u1FFF';
   const CLOZE_MAX_ITEMS = 3;
+
+  const BUILD_MAX_ITEMS = 3;
+  const BUILD_MIN_TOKENS = 3;
+  const BUILD_MAX_TOKENS = 8;
+  const BUILD_EXTRA_WORDS = 2;
+  /** Запасные слова-помехи, если в пуле мало кандидатов. */
+  const BUILD_FALLBACK_DECOYS = [
+    'και', 'να', 'με', 'σε', 'για', 'το', 'η', 'ο', 'ένα', 'μια',
+    'πολύ', 'εδώ', 'τώρα', 'αλλά', 'όχι', 'ναι', 'μου', 'σου',
+  ];
 
   function shuffle(arr) {
     return utils ? utils.shuffle(arr) : arr.slice();
@@ -366,8 +384,111 @@
     return shuffle([answer, ...distractors.slice(0, 3)]);
   }
 
+  /** Убирает завершающую пунктуацию предложения (. ! ; · …). */
+  function stripSentencePunctuation(sentence) {
+    return String(sentence ?? '')
+      .trim()
+      .replace(/[.!;·…]+$/u, '')
+      .trim();
+  }
+
+  /** Токен без пунктуации и регистра — для сравнения слов между собой. */
+  function wordKey(token) {
+    return String(token ?? '')
+      .normalize('NFC')
+      .toLocaleLowerCase('el')
+      .replace(/[.,;!·:»«"'()]/gu, '')
+      .trim();
+  }
+
   /**
-   * Mini-games after summary (quiz / spell / match / cloze).
+   * Задания «собери предложение»: слова примера вперемешку → собрать по-гречески.
+   * Направление всегда Ру → Ελ (показываем перевод, собираем греческий).
+   * @param {import('./types').CatalogWord} word
+   * @param {number} maxItems
+   */
+  function getSentenceBuildItems(word, maxItems = BUILD_MAX_ITEMS) {
+    const examples = word?.examples ?? [];
+    if (!examples.length) return [];
+
+    const items = [];
+    const seen = new Set();
+
+    for (const example of examples) {
+      const translation = String(example?.translation ?? '').trim();
+      const core = stripSentencePunctuation(example?.greek);
+      if (!translation || !core) continue;
+
+      const tokens = core.split(/\s+/u).filter(Boolean);
+      if (tokens.length < BUILD_MIN_TOKENS || tokens.length > BUILD_MAX_TOKENS) {
+        continue;
+      }
+
+      const key = tokens.join('|').toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      items.push({
+        sentence: String(example?.greek ?? '').trim(),
+        translation,
+        tokens,
+      });
+      if (items.length >= maxItems) break;
+    }
+
+    return items;
+  }
+
+  /**
+   * Банк слов для сборки: токены предложения + несколько слов-помех.
+   * @param {import('./types').CatalogWord[]} poolWords
+   * @param {import('./types').CatalogWord} word
+   * @param {string[]} tokens
+   * @param {number} extraCount
+   */
+  function buildSentenceOptions(poolWords, word, tokens, extraCount = BUILD_EXTRA_WORDS) {
+    const answerKeys = new Set(tokens.map(wordKey));
+    const usedKeys = new Set(answerKeys);
+    const decoys = [];
+
+    function tryDecoy(candidate) {
+      const text = String(candidate ?? '').trim();
+      if (!text || text.includes(' ')) return;
+      const key = wordKey(text);
+      if (!key || usedKeys.has(key)) return;
+      usedKeys.add(key);
+      decoys.push(text);
+    }
+
+    const shuffledPool = shuffle(
+      (poolWords ?? []).filter((w) => w.slug !== word.slug),
+    );
+    for (const other of shuffledPool) {
+      if (decoys.length >= extraCount) break;
+      const pairs = getBaseFormPairs(other);
+      tryDecoy(pairs[0]?.greek ?? other.primaryGreek ?? other.forms?.[0]?.greek);
+    }
+
+    if (decoys.length < extraCount) {
+      for (const fallback of shuffle(BUILD_FALLBACK_DECOYS)) {
+        if (decoys.length >= extraCount) break;
+        tryDecoy(fallback);
+      }
+    }
+
+    const bank = tokens
+      .map((text, index) => ({ id: index, text, decoy: false }))
+      .concat(
+        decoys
+          .slice(0, extraCount)
+          .map((text, index) => ({ id: tokens.length + index, text, decoy: true })),
+      );
+
+    return { bank: shuffle(bank), decoys: decoys.slice(0, extraCount) };
+  }
+
+  /**
+   * Mini-games after summary (quiz / spell / match / cloze / build).
    * @param {import('./types').CatalogWord} word
    * @param {{ spellEligible?: boolean }} [options]
    */
@@ -378,6 +499,7 @@
     if (spellEligible && getSpellablePairs(word).length) steps.push(STEPS.SPELL);
     if (getMatchPairs(word).length >= 2) steps.push(STEPS.MATCH);
     if (getClozeItems(word).length) steps.push(STEPS.CLOZE);
+    if (getSentenceBuildItems(word).length) steps.push(STEPS.BUILD);
     return steps;
   }
 
@@ -425,6 +547,8 @@
     buildQuizOptions,
     getClozeItems,
     buildClozeOptions,
+    getSentenceBuildItems,
+    buildSentenceOptions,
     shouldUseLadder,
     stepIndex,
     stepFromIndex,

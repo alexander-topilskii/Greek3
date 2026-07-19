@@ -105,6 +105,7 @@ export function renderIndex(
                 'assets/js/spell-step.js',
                 'assets/js/match-step.js',
                 'assets/js/cloze-step.js',
+                'assets/js/build-step.js',
                 'assets/js/home-practice.js',
               ]
             : []),

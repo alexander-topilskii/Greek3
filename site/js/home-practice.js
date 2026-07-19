@@ -13,6 +13,7 @@
   const matchStep = window.GreekMatchStep;
   const spellStep = window.GreekSpellStep;
   const clozeStep = window.GreekClozeStep;
+  const buildStep = window.GreekBuildStep;
   const common = window.GreekPracticeCommon;
   if (!db || !srs || !flash || !ladder || !common) return;
 
@@ -137,11 +138,13 @@
   const learnViewMatch = document.getElementById('learn-view-match');
   const learnViewSpell = document.getElementById('learn-view-spell');
   const learnViewCloze = document.getElementById('learn-view-cloze');
+  const learnViewBuild = document.getElementById('learn-view-build');
   let currentLearningStep = ladder.STEPS.SUMMARY;
   let quizUi = null;
   let matchUi = null;
   let spellUi = null;
   let clozeUi = null;
+  let buildUi = null;
 
   window.addEventListener('resize', () => {
     if (!poolDotsEl?.dataset.gridCount) return;
@@ -164,6 +167,7 @@
     const isSpell = step === ladder.STEPS.SPELL;
     const isMatch = step === ladder.STEPS.MATCH;
     const isCloze = step === ladder.STEPS.CLOZE;
+    const isBuild = step === ladder.STEPS.BUILD;
 
     learnViewFlashcard?.classList.toggle('hidden', !isSummary);
     learnViewFlashcard?.toggleAttribute('hidden', !isSummary);
@@ -175,6 +179,8 @@
     learnViewMatch?.toggleAttribute('hidden', !isMatch);
     learnViewCloze?.classList.toggle('hidden', !isCloze);
     learnViewCloze?.toggleAttribute('hidden', !isCloze);
+    learnViewBuild?.classList.toggle('hidden', !isBuild);
+    learnViewBuild?.toggleAttribute('hidden', !isBuild);
 
     practiceControls?.classList.toggle('hidden', !isSummary);
     practiceControls?.toggleAttribute('hidden', !isSummary);
@@ -194,6 +200,10 @@
     if (isCloze) {
       learnViewCloze?.classList.remove('learn-step--visible');
       requestAnimationFrame(() => learnViewCloze?.classList.add('learn-step--enter'));
+    }
+    if (isBuild) {
+      learnViewBuild?.classList.remove('learn-step--visible');
+      requestAnimationFrame(() => learnViewBuild?.classList.add('learn-step--enter'));
     }
   }
 
@@ -298,6 +308,12 @@
     }
     if (stepName === ladder.STEPS.CLOZE) {
       if (!ladder.getClozeItems(pick.word).length) {
+        await advanceLadderOrFinish(pick);
+        return true;
+      }
+    }
+    if (stepName === ladder.STEPS.BUILD) {
+      if (!ladder.getSentenceBuildItems(pick.word).length) {
         await advanceLadderOrFinish(pick);
         return true;
       }
@@ -459,6 +475,48 @@
     });
   }
 
+  async function showBuildForPick(pick) {
+    const word = pick.word;
+    const items = ladder.getSentenceBuildItems(word);
+    const item = items.length
+      ? items[Math.floor(Math.random() * items.length)]
+      : null;
+    if (!item) {
+      if (await skipUnavailableLadderGame(pick)) return;
+      await advanceLadderOrFinish(pick);
+      return;
+    }
+
+    const settings = await srs.loadDeckSettings(deckId, db);
+    const cards = await db.getCardsForSlugs(catalogSlugs);
+    const pool = srs.getActivePoolWords(catalog, cards, db, settings);
+    const optionPool = pool.length >= 4 ? pool : catalog.words;
+    const { bank } = ladder.buildSentenceOptions(optionPool, word, item.tokens);
+
+    if (!buildUi && learnViewBuild && buildStep) {
+      buildUi = buildStep.init({
+        root: learnViewBuild,
+        onResult: (correct) => {
+          if (correct) onLearningGamePassed();
+          else failLearningLadder();
+        },
+      });
+    }
+
+    // Всегда Ру → Ελ: показываем перевод, собираем греческое предложение.
+    showLearningView(ladder.STEPS.BUILD);
+    setWordSource(word, 'ru-el');
+    syncWordLink(pick);
+    syncExamplesButton(word);
+
+    buildUi?.show({
+      translation: item.translation,
+      sentence: item.sentence,
+      tokens: item.tokens,
+      bank,
+    });
+  }
+
   async function failLearningLadder() {
     if (currentPick) await clearLearningLadderState(currentPick);
     showLearningView(ladder.STEPS.SUMMARY);
@@ -515,6 +573,14 @@
         return;
       }
       await showClozeForPick(pick);
+      return;
+    }
+    if (stepName === ladder.STEPS.BUILD) {
+      if (!ladder.getSentenceBuildItems(pick.word).length) {
+        await advanceLadderOrFinish(pick);
+        return;
+      }
+      await showBuildForPick(pick);
       return;
     }
 
