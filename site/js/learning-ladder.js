@@ -473,6 +473,11 @@
         continue;
       }
 
+      // Слова-плитки всегда с маленькой буквы: первое слово предложения
+      // теряет заглавную (артефакт начала предложения), чтобы плитки были
+      // единообразными и не подсказывали порядок слов.
+      if (tokens.length) tokens[0] = matchFirstLetterCase(tokens[0], false);
+
       const key = tokens.join('|').toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
