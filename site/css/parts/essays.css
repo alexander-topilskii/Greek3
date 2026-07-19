@@ -1,0 +1,175 @@
+/* Раздел «Сочинения» */
+
+.essay-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.essay-page .page-head {
+  margin-bottom: 0;
+}
+
+.essay-page .page-head h1 {
+  margin-bottom: 0.5rem;
+}
+
+.essay-section h2 {
+  font-size: 1.0625rem;
+  margin: 0 0 0.35rem;
+}
+
+.essay-section-note {
+  margin: 0 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.essay-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.essay-pairs--grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+.essay-pair {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  box-shadow: var(--shadow);
+}
+
+.essay-pair--question {
+  border-left: 3px solid var(--accent);
+}
+
+.essay-pair-greek {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.essay-pair-greek .greek {
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.essay-pair-ru {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.essay-pairs--questions {
+  counter-reset: essay-q;
+}
+
+.essay-pairs--questions .essay-pair {
+  position: relative;
+  padding-left: 2.6rem;
+  counter-increment: essay-q;
+}
+
+.essay-pairs--questions .essay-pair::before {
+  content: counter(essay-q);
+  position: absolute;
+  left: 0.85rem;
+  top: 0.7rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Кнопка озвучки */
+.essay-speak {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8125rem;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1.4;
+}
+
+.essay-speak:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.essay-speak.is-speaking {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Примеры сочинений */
+.essay-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.essay-sample {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.125rem;
+  box-shadow: var(--shadow);
+}
+
+.essay-sample-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.essay-sample-speak {
+  padding: 0.2rem 0.65rem;
+}
+
+.essay-sample-body {
+  line-height: 1.75;
+  color: var(--text);
+}
+
+.essay-sample-body p {
+  margin: 0.6rem 0;
+}
+
+.essay-sample-body :first-child {
+  margin-top: 0;
+}
+
+.essay-sample-body :last-child {
+  margin-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .essay-pairs--grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
