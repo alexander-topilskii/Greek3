@@ -18,6 +18,8 @@
 
     let locked = false;
     let answer = '';
+    let phraseBefore = '';
+    let phraseAfter = '';
 
     function esc(text) {
       return ladder().escapeHtml(text);
@@ -46,6 +48,8 @@
     function show({ before, after, answer: ans, translation, options }) {
       locked = false;
       answer = String(ans ?? '');
+      phraseBefore = String(before ?? '');
+      phraseAfter = String(after ?? '');
       clearCardState();
       hideFeedback();
 
@@ -82,7 +86,7 @@
           slot.classList.add('learn-cloze-blank--filled');
         }
         cardEl?.classList.add('learn-step-card--success');
-        if (speak?.isSupported?.()) speak.speakGreek(answer);
+        if (speak?.isSupported?.()) speak.speakGreek(`${phraseBefore}${answer}${phraseAfter}`);
         global.setTimeout(() => {
           opts.onResult?.(true);
         }, 620);
