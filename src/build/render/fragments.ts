@@ -330,6 +330,10 @@ export function homeSettingsDialogMarkup(): string {
   </dialog>`;
 }
 
+export function copyWordsListButtonMarkup(): string {
+  return `<button type="button" class="btn btn-secondary list-practice-btn btn-copy-words" data-copy-mode="all" title="Скопировать все слова раздела">Копировать</button>`;
+}
+
 export function copyWordsSettingsSectionMarkup(): string {
   return `
         <hr class="settings-divider">

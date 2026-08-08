@@ -76,7 +76,13 @@
 
   function flashButton(btn) {
     btn.classList.add('is-copied');
-    setTimeout(() => btn.classList.remove('is-copied'), 1200);
+    const isListBtn = btn.classList.contains('list-practice-btn');
+    const originalLabel = btn.textContent;
+    if (isListBtn) btn.textContent = 'Скопировано';
+    setTimeout(() => {
+      btn.classList.remove('is-copied');
+      if (isListBtn) btn.textContent = originalLabel;
+    }, 1200);
   }
 
   async function handleCopy(mode, btn) {

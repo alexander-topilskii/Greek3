@@ -2677,6 +2677,19 @@ body.practice-immersive-open {
   max-width: 20rem;
 }
 
+.cases-practice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.cases-practice-actions .cases-practice-launch-btn {
+  width: auto;
+  flex: 1 1 12rem;
+  max-width: none;
+}
+
 .cases-practice-launch-hint {
   margin: 0.65rem 0 0;
   font-size: 0.875rem;
