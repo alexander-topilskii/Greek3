@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { buildSlugIndexMap, indexOutputPath, parseIndexFile } from './parse-index';
+import { sortLessonIndexPage } from './catalog-order';
 import { isWordFile, parseWordFile } from './parse-word';
 import { parseEssayFile } from './parse-essay';
 import {
@@ -26,6 +27,7 @@ import {
   buildGlobalCatalog,
   buildPagesMap,
   renderTopicLevelPages,
+  wordFromIndexLink,
   writeCatalog,
 } from './catalog-build';
 import { breadcrumbsForWord, breadcrumbsForIndex } from './breadcrumbs';
@@ -125,7 +127,10 @@ function main(): void {
     const relative = path.relative(WORDS_DIR, file);
     if (!relative.toLowerCase().endsWith('readme.md')) continue;
 
-    const index = parseIndexFile(file, WORDS_DIR);
+    const parsedIndex = parseIndexFile(file, WORDS_DIR);
+    const index = sortLessonIndexPage(parsedIndex, (link) =>
+      wordFromIndexLink(link, wordsBySlug, wordsByHref),
+    );
     const out =
       relative.toLowerCase() === 'readme.md'
         ? 'words/index.html'
