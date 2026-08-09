@@ -1,5 +1,43 @@
 import type { CatalogWord, IndexLink, IndexPage, WordEntry } from './types';
 
+export function isLessonIndexPage(sourcePath: string): boolean {
+  return /^lessons\/\d+\/readme\.md$/i.test(sourcePath.replace(/\\/g, '/'));
+}
+
+export function indexLinkSortLabel(
+  link: IndexLink,
+  wordFromLink: (link: IndexLink) => WordEntry | null,
+): string {
+  const word = wordFromLink(link);
+  return (word?.translation || word?.title || link.label).trim();
+}
+
+/** В уроках: ссылки внутри каждой секции (## Слова, ## Фразы) — по русскому переводу. */
+export function sortLessonIndexPage(
+  page: IndexPage,
+  wordFromLink: (link: IndexLink) => WordEntry | null,
+): IndexPage {
+  if (!isLessonIndexPage(page.sourcePath)) return page;
+
+  const compare = (a: IndexLink, b: IndexLink) =>
+    indexLinkSortLabel(a, wordFromLink).localeCompare(indexLinkSortLabel(b, wordFromLink), 'ru');
+
+  const sections =
+    page.sections.length > 0
+      ? page.sections.map((section) => ({
+          ...section,
+          links: [...section.links].sort(compare),
+        }))
+      : page.sections;
+
+  const links =
+    sections.length > 0
+      ? sections.flatMap((section) => section.links)
+      : [...page.links].sort(compare);
+
+  return { ...page, sections, links };
+}
+
 /** Порядок категорий при чередовании (числа — по уровням, см. numberTierForSlug). */
 export const CATEGORY_ORDER = [
   'verbs',
