@@ -216,66 +216,27 @@ export function searchButtonMarkup(): string {
         </a>`;
 }
 
-export function settingsButtonMarkup(buildVersion: string): string {
+export function settingsButtonHref(params: {
+  deck?: string;
+  word?: string;
+  from: string;
+}): string {
+  const query = new URLSearchParams();
+  if (params.deck) query.set('deck', params.deck);
+  if (params.word) query.set('word', params.word);
+  query.set('from', params.from);
+  return `${sitePath('settings.html')}?${query.toString()}`;
+}
+
+export function settingsButtonMarkup(buildVersion: string, href: string): string {
   return `
-        <button type="button" class="btn-icon btn-header-settings" id="btn-header-settings" aria-label="Настройки" title="Настройки">
+        <a href="${escapeHtml(href)}" class="btn-icon btn-header-settings" aria-label="Настройки" title="Настройки">
           <svg class="icon-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
           </svg>
           <sup class="settings-version" aria-label="Версия ${escapeHtml(buildVersion)}">${escapeHtml(buildVersion)}</sup>
-        </button>`;
-}
-
-export function wordSettingsDialogMarkup(): string {
-  return `
-  <dialog class="settings-dialog" id="word-settings-dialog" aria-labelledby="word-settings-title">
-    <form method="dialog" class="settings-dialog-inner">
-      <header class="settings-dialog-header">
-        <h2 class="settings-dialog-title" id="word-settings-title">Настройки прогресса</h2>
-        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </header>
-      <div class="settings-dialog-body">
-        <button type="button" class="btn btn-secondary btn-reset-word" id="btn-reset-word">Сбросить слово</button>
-      </div>
-    </form>
-  </dialog>`;
-}
-
-export function deckSettingsDialogMarkup(maxWords: number): string {
-  return `
-  <dialog class="settings-dialog" id="deck-settings-dialog" aria-labelledby="deck-settings-title">
-    <form method="dialog" class="settings-dialog-inner">
-      <header class="settings-dialog-header">
-        <h2 class="settings-dialog-title" id="deck-settings-title">Настройки прогресса</h2>
-        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </header>
-      <div class="settings-dialog-body">
-        <label class="settings-field">
-          <span>Начальная группа</span>
-          <input type="number" id="setting-initial-batch" min="1" max="30" value="5">
-        </label>
-        <label class="settings-field">
-          <span>Активных слов</span>
-          <input type="number" id="setting-active-limit" min="1" max="${maxWords}" value="5">
-        </label>
-        <p class="settings-hint">При выучивании слова в набор автоматически добавляется новое. Старые повторяются реже, но по расписанию SRS.</p>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-secondary" id="btn-save-settings">Сохранить</button>
-          <button type="button" class="btn btn-secondary" id="btn-reset-deck">Сбросить прогресс</button>
-        </div>
-        ${copyWordsSettingsSectionMarkup()}
-      </div>
-    </form>
-  </dialog>`;
+        </a>`;
 }
 
 export function examplesDialogMarkup(): string {
@@ -292,41 +253,6 @@ export function examplesDialogMarkup(): string {
       </header>
       <div class="settings-dialog-body examples-dialog-body" id="examples-dialog-body"></div>
     </div>
-  </dialog>`;
-}
-
-export function homeSettingsDialogMarkup(): string {
-  return `
-  <dialog class="settings-dialog" id="home-settings-dialog" aria-labelledby="home-settings-title">
-    <form method="dialog" class="settings-dialog-inner">
-      <header class="settings-dialog-header">
-        <h2 class="settings-dialog-title" id="home-settings-title">Настройки</h2>
-        <button type="submit" class="btn-icon btn-dialog-close" aria-label="Закрыть">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </header>
-      <div class="settings-dialog-body">
-        <label class="settings-field">
-          <span>Слов в группе</span>
-          <input type="number" id="home-setting-group-size" min="1" max="30" value="5">
-        </label>
-        <p class="settings-hint">Сколько слов одновременно в активном наборе. При выучивании слова в набор добавляется новое.</p>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-secondary" id="btn-save-home-settings">Сохранить</button>
-        </div>
-        ${copyWordsSettingsSectionMarkup()}
-        <hr class="settings-divider">
-        <div class="pwa-install-section" id="pwa-install-section" hidden>
-          <button type="button" class="btn btn-secondary" id="btn-install-app">Установить приложение</button>
-          <p class="settings-hint" id="pwa-install-hint">Добавьте Greek3 на главный экран для быстрого доступа и офлайн-режима.</p>
-        </div>
-        <hr class="settings-divider">
-        <button type="button" class="btn btn-secondary btn-reset-all" id="btn-reset-all-progress">Сбросить весь прогресс</button>
-        <p class="settings-hint">Удалит все данные о выученных словах и начнёт обучение сначала.</p>
-      </div>
-    </form>
   </dialog>`;
 }
 

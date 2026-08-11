@@ -14,7 +14,7 @@ export function layout(
   pageTitle: string,
   breadcrumbs?: { label: string; href?: string }[],
   extraScripts: string[] = [],
-  options: { showSettings?: boolean; bodyEnd?: string } = {},
+  options: { showSettings?: boolean; settingsHref?: string; bodyEnd?: string } = {},
 ): string {
   const crumbs = breadcrumbs
     ?.map((c) =>
@@ -67,7 +67,7 @@ export function layout(
       </a>
       <nav class="site-nav">
         ${searchButtonMarkup()}
-        ${options.showSettings ? settingsButtonMarkup(BUILD_VERSION) : ''}
+        ${options.showSettings ? settingsButtonMarkup(BUILD_VERSION, options.settingsHref ?? sitePath('settings.html')) : ''}
       </nav>
     </div>
   </header>
