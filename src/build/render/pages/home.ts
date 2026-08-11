@@ -5,7 +5,7 @@ import { layout } from '../layout';
 import {
   examplesDialogMarkup,
   homePracticePanelMarkup,
-  homeSettingsDialogMarkup,
+  settingsButtonHref,
 } from '../fragments';
 
 export function renderHome(
@@ -89,7 +89,8 @@ export function renderHome(
   const layoutOptions = hasHomePractice
     ? {
         showSettings: true,
-        bodyEnd: `${examplesDialogMarkup()}${homeSettingsDialogMarkup()}`,
+        settingsHref: settingsButtonHref({ deck: 'global', from: 'index.html' }),
+        bodyEnd: examplesDialogMarkup(),
       }
     : {};
 

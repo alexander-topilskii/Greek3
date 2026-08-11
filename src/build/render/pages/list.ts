@@ -4,12 +4,12 @@ import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
   copyWordsListButtonMarkup,
-  deckSettingsDialogMarkup,
   examplesDialogMarkup,
   favoriteButtonMarkup,
   flashcardMarkup,
   homePracticePanelMarkup,
   practiceCompleteMarkup,
+  settingsButtonHref,
 } from '../fragments';
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
@@ -115,10 +115,15 @@ export function renderIndex(
       : [];
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
   const layoutOptions = hasDeckPractice
     ? {
         showSettings: true,
-        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+        settingsHref: settingsButtonHref({
+          deck: catalog?.deckId ?? pageId,
+          from: fromPath,
+        }),
+        bodyEnd: examplesDialogMarkup(),
       }
     : {};
 
@@ -303,10 +308,12 @@ export function renderCasesIndex(
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
   const layoutOptions = hasDeckPractice
     ? {
         showSettings: true,
-        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+        settingsHref: settingsButtonHref({ deck: 'cases', from: fromPath }),
+        bodyEnd: examplesDialogMarkup(),
       }
     : {};
 

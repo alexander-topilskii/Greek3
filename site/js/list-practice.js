@@ -34,12 +34,6 @@
   const btnClose = document.getElementById('btn-close-practice');
   const practiceSection = document.getElementById('list-practice');
   const linksSection = document.getElementById('verbs-links');
-  const btnHeaderSettings = document.getElementById('btn-header-settings');
-  const settingsDialog = document.getElementById('deck-settings-dialog');
-  const btnSaveSettings = document.getElementById('btn-save-settings');
-  const btnResetDeck = document.getElementById('btn-reset-deck');
-  const inputInitial = document.getElementById('setting-initial-batch');
-  const inputActive = document.getElementById('setting-active-limit');
   const practiceComplete = document.getElementById('practice-complete');
   const btnRepeatSession = document.getElementById('btn-repeat-session');
 
@@ -107,12 +101,6 @@
 
   function hideExamplesButton() {
     examples?.hideButton(btnExamples);
-  }
-
-  async function loadSettingsUI() {
-    const s = await srs.loadDeckSettings(deckId, db);
-    if (inputInitial) inputInitial.value = String(s.initialBatchSize);
-    if (inputActive) inputActive.value = String(s.activeLimit);
   }
 
   async function getCatalogCards() {
@@ -192,8 +180,6 @@
         summaryOnly: true,
         direction: practiceDirection,
       });
-      const s = await srs.loadDeckSettings(deckId, db);
-      if (inputActive) inputActive.value = String(s.activeLimit);
     } catch (err) {
       console.error('Practice pick error', err);
       currentPick = catalog.words[0]
@@ -266,33 +252,8 @@
     if (currentPick?.word) examples?.show(currentPick.word);
   });
 
-  btnSaveSettings?.addEventListener('click', async () => {
-    await srs.saveDeckSettings(deckId, db, {
-      initialBatchSize: parseInt(inputInitial?.value ?? '5', 10),
-      activeLimit: parseInt(inputActive?.value ?? '5', 10),
-    });
-    await loadSettingsUI();
-    updateProgressUI();
-    settingsDialog?.close();
-  });
-
-  btnResetDeck?.addEventListener('click', async () => {
-    if (!confirm('Сбросить прогресс по словам этого раздела?')) return;
-    await db.deleteCardsForSlugs(catalogSlugs);
-    await db.setSetting(`deck:${deckId}:activeLimit`, parseInt(inputInitial?.value ?? '5', 10));
-    updateProgressUI();
-    if (!practiceSection?.classList.contains('hidden')) pickAndShowNext();
-    settingsDialog?.close();
-  });
-
-  btnHeaderSettings?.addEventListener('click', async () => {
-    await loadSettingsUI();
-    settingsDialog?.showModal();
-  });
-
   db.init().then(() => {
     sortWordLinksAlphabetically();
-    loadSettingsUI();
     updateProgressUI();
   });
 })();

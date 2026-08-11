@@ -14,13 +14,14 @@ import {
   renderHome,
   renderIndex,
   renderSearch,
+  renderSettings,
   renderWord,
   sitePath,
   wordOutputPath,
 } from './render';
 import { writeManifest, writeServiceWorker } from './pwa';
 import { enrichWordEntry, buildLevelAggregates, buildTopicAggregates } from './meta';
-import type { CatalogWord, EssayTopic, WordEntry } from './types';
+import type { CatalogWord, EssayTopic, VerbCatalog, WordEntry } from './types';
 import { HOME_SECTIONS } from './constants';
 import {
   buildCatalogForIndex,
@@ -123,6 +124,8 @@ function main(): void {
     console.log(`  ✍️  ${out}`);
   }
 
+  const deckCatalogs: Record<string, VerbCatalog> = {};
+
   for (const file of mdFiles) {
     const relative = path.relative(WORDS_DIR, file);
     if (!relative.toLowerCase().endsWith('readme.md')) continue;
@@ -138,6 +141,9 @@ function main(): void {
     const pageDir = outputDirFor(out);
     const catalog = buildCatalogForIndex(index, wordsBySlug, wordsByHref, pageDir);
     writeCatalog(pageDir, catalog);
+    if (catalog.words.length > 0 && catalog.deckId) {
+      deckCatalogs[catalog.deckId] = catalog;
+    }
 
     const html =
       relative.toLowerCase() === 'cases/readme.md'
@@ -176,6 +182,18 @@ function main(): void {
 
   const topicAggregates = buildTopicAggregates(globalWords);
   const levelAggregates = buildLevelAggregates(globalWords);
+  for (const topic of topicAggregates) {
+    if (topic.words.length > 0) {
+      deckCatalogs[`topic-${topic.slug}`] = { deckId: `topic-${topic.slug}`, words: topic.words };
+    }
+  }
+  for (const level of levelAggregates) {
+    const slug = level.level.toLowerCase();
+    if (level.words.length > 0) {
+      deckCatalogs[`level-${slug}`] = { deckId: `level-${slug}`, words: level.words };
+    }
+  }
+
   const extraPageCatalogs = [
     ...topicAggregates.map((t) => ({
       pageId: `topics/${t.slug}`,
@@ -197,6 +215,7 @@ function main(): void {
     pagesMap,
   );
   writeCatalog('', globalCatalog);
+  deckCatalogs.global = globalCatalog;
 
   writeHtml('index.html', renderHome([...HOME_SECTIONS], globalCatalog));
   console.log('  🏠 index.html');
@@ -204,6 +223,9 @@ function main(): void {
   const searchIndex = buildSearchIndex(globalWords);
   writeHtml('search.html', renderSearch(searchIndex));
   console.log(`  🔍 search.html (${searchIndex.length} words)`);
+
+  writeHtml('settings.html', renderSettings(deckCatalogs));
+  console.log('  ⚙️  settings.html');
 
   const baseUrl = process.env.SITE_BASE_URL ?? '';
   const buildId = process.env.BUILD_ID ?? 'dev';
