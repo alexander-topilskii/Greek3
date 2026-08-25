@@ -1,6 +1,7 @@
 # Словарь
 
 [Уроки](lessons/readme.md)
+[Блоки](blocks/readme.md)
 [Глаголы](verbs/readme.md)
 [Существительные](nouns/readme.md)
 [Прилагательные](adjectives/readme.md)

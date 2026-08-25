@@ -27,6 +27,8 @@ export interface WordEntry {
   sourcePath: string;
   meta: WordMeta;
   primaryGreek: string;
+  /** Номер блока учебника (1…20), если слово есть в blocks/ */
+  block?: number;
 }
 
 export interface IndexLink {
@@ -66,6 +68,8 @@ export interface CatalogWord {
   category: string;
   /** Номер урока (1…), если слово из lessons/ */
   lesson?: number;
+  /** Номер блока учебника (1…20), если слово из blocks/ */
+  block?: number;
   /** Блок ~10 слов для подсказки смены направления */
   blockIndex?: number;
   /** Уровень чисел: 0 = 1–20, 1 = десятки, 2 = сотни, 3 = тысячи */

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { buildSlugIndexMap, indexOutputPath, parseIndexFile } from './parse-index';
-import { sortLessonIndexPage } from './catalog-order';
+import { sortLessonIndexPage, collectBlockAssignments } from './catalog-order';
 import { isWordFile, parseWordFile } from './parse-word';
 import { parseEssayFile } from './parse-essay';
 import {
@@ -104,6 +104,14 @@ function main(): void {
       const href = `${path.basename(file).replace(/\.md$/i, '')}.html`;
       wordsByHref.set(href, word);
     }
+  }
+
+  const blockBySlug = collectBlockAssignments(indexPages, (link) =>
+    wordFromIndexLink(link, wordsBySlug, wordsByHref),
+  );
+  for (const word of words) {
+    const block = blockBySlug.get(word.slug);
+    if (block != null) word.block = block;
   }
 
   const greekFormLookup = buildGreekFormLookup(words);

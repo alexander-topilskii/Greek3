@@ -5,6 +5,9 @@ import { escapeHtml } from './html';
 export function renderBadges(word: CatalogWord | undefined): string {
   if (!word) return '';
   const parts: string[] = [];
+  if (word.block != null) {
+    parts.push(`<span class="word-badge word-badge--block">Блок ${word.block}</span>`);
+  }
   if (word.level) {
     parts.push(`<span class="word-badge word-badge--level">${escapeHtml(word.level)}</span>`);
   }
@@ -21,6 +24,9 @@ export function renderBadges(word: CatalogWord | undefined): string {
 
 export function renderMetaBadges(word: WordEntry): string {
   const parts: string[] = [];
+  if (word.block != null) {
+    parts.push(`<span class="word-badge word-badge--block">Блок ${word.block}</span>`);
+  }
   if (word.meta.level) {
     parts.push(`<span class="word-badge word-badge--level">${escapeHtml(word.meta.level)}</span>`);
   }
