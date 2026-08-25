@@ -117,11 +117,6 @@
   const sessionBar = document.getElementById('practice-session-bar');
   const catalogComplete = document.getElementById('practice-catalog-complete');
   const btnRepeatCatalog = document.getElementById('btn-repeat-catalog');
-  const btnHeaderSettings = document.getElementById('btn-header-settings');
-  const settingsDialog = document.getElementById('home-settings-dialog');
-  const btnResetAll = document.getElementById('btn-reset-all-progress');
-  const inputGroupSize = document.getElementById('home-setting-group-size');
-  const btnSaveHomeSettings = document.getElementById('btn-save-home-settings');
 
   let currentPick = null;
   let fc = null;
@@ -209,6 +204,7 @@
 
   async function usesLearningLadder(pick) {
     if (!pick?.word) return false;
+    if (await window.GreekAppSettings?.isSimpleLearning?.(db)) return false;
     const card = await ensurePickCard(pick);
     return ladder.shouldUseLadder(card, srs);
   }
@@ -1061,27 +1057,9 @@
     }
   }
 
-  async function loadHomeSettingsUI() {
-    const s = await srs.loadDeckSettings(deckId, db);
-    if (inputGroupSize) inputGroupSize.value = String(s.initialBatchSize);
-  }
+  async function pickPendingLearningPick(settings, cards) {
+    if (await window.GreekAppSettings?.isSimpleLearning?.(db)) return null;
 
-  async function saveHomeSettings() {
-    const groupSize = parseInt(inputGroupSize?.value ?? '5', 10);
-    const clamped = Math.max(1, Math.min(30, groupSize));
-    await srs.saveDeckSettings(deckId, db, {
-      initialBatchSize: clamped,
-      activeLimit: clamped,
-    });
-    if (inputGroupSize) inputGroupSize.value = String(clamped);
-    settingsDialog?.close();
-    await updateContinueHint();
-    if (!practiceSection?.classList.contains('hidden')) {
-      await pickAndShowNext();
-    }
-  }
-
-  function pickPendingLearningPick(settings, cards) {
     const pool = srs.getActivePoolWords(catalog, cards, db, settings);
     const candidates = [];
 
@@ -1124,7 +1102,7 @@
       return;
     }
 
-    const pendingPick = pickPendingLearningPick(settings, cards);
+    const pendingPick = await pickPendingLearningPick(settings, cards);
     if (pendingPick) {
       currentPick = pendingPick;
       srs.recordRecentPick(pendingPick.word.slug, pendingPick.direction, db);
@@ -1257,26 +1235,6 @@
     if (currentPick?.word) examples?.show(currentPick.word);
   });
 
-  if (!isLesson) {
-    btnHeaderSettings?.addEventListener('click', async () => {
-      await loadHomeSettingsUI();
-      settingsDialog?.showModal();
-    });
-
-    btnSaveHomeSettings?.addEventListener('click', saveHomeSettings);
-
-    btnResetAll?.addEventListener('click', async () => {
-      if (!confirm('Сбросить весь прогресс? Все выученные слова будут забыты.')) return;
-      await db.resetAllProgress();
-      currentPick = null;
-      await updateContinueHint();
-      settingsDialog?.close();
-      if (!practiceSection?.classList.contains('hidden')) {
-        await pickAndShowNext();
-      }
-    });
-  }
-
   async function tryRestorePractice() {
     const state = readSessionState();
     if (!state) return;
@@ -1314,7 +1272,6 @@
     try {
       await db.init();
       if (!isLesson) {
-        await loadHomeSettingsUI();
         await updateContinueHint();
         await tryRestorePractice();
       }

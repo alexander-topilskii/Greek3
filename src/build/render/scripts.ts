@@ -4,6 +4,7 @@ export const SHARED_SCRIPTS = [
   'assets/js/nav-back.js',
   'assets/js/normalize-search.js',
   'assets/js/db.js',
+  'assets/js/app-settings.js',
   'assets/js/favorites.js',
   'assets/js/favorites-ui.js',
   'assets/js/srs-schedule.js',

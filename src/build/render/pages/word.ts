@@ -8,7 +8,7 @@ import { escapeHtml } from '../html';
 import { layout } from '../layout';
 import { renderMetaBadges } from '../badges';
 import { renderContextSection } from '../context';
-import { flashcardMarkup, progressBarMarkup, wordSettingsDialogMarkup, favoriteButtonMarkup } from '../fragments';
+import { flashcardMarkup, progressBarMarkup, favoriteButtonMarkup, settingsButtonHref } from '../fragments';
 import { wordOutputPath } from '../paths-catalog';
 
 function formRowLinkMarkup(
@@ -163,6 +163,9 @@ export function renderWord(
 
   return layout(content, word.translation || word.title, breadcrumbs, ['assets/js/practice.js'], {
     showSettings: true,
-    bodyEnd: wordSettingsDialogMarkup(),
+    settingsHref: settingsButtonHref({
+      word: word.slug,
+      from: wordOutputPath(word.slug),
+    }),
   });
 }

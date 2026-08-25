@@ -35,9 +35,13 @@ if (items.length !== 1) {
 }
 
 const item = items[0];
-// Trailing period stripped; tokens preserved in order.
-if (item.tokens.join(' ') !== 'Αύριο θα φύγω νωρίς') {
+// Trailing period stripped; tokens preserved in order; sentence-initial word
+// lowercased so tiles are uniformly lowercase.
+if (item.tokens.join(' ') !== 'αύριο θα φύγω νωρίς') {
   throw new Error(`Unexpected tokens: ${item.tokens.join(' ')}`);
+}
+if (item.tokens[0] !== 'αύριο') {
+  throw new Error(`Expected lowercased first token, got "${item.tokens[0]}"`);
 }
 if (item.tokens.length !== 4) {
   throw new Error(`Expected 4 tokens, got ${item.tokens.length}`);

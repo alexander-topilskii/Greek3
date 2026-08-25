@@ -9,5 +9,7 @@ export { renderHome } from './pages/home';
 export { renderIndex, renderCasesIndex } from './pages/list';
 export { renderCasesPractice } from './pages/cases-practice';
 export { renderWord } from './pages/word';
+export { renderEssay } from './pages/essay';
 export { buildSearchIndex, renderSearch } from './pages/search';
+export { renderSettings } from './pages/settings';
 export type { SearchIndexEntry } from './pages/search';

@@ -135,12 +135,18 @@ const sleepVerb = {
   ],
 };
 const sleepMatch = ladder.getMatchPairs(sleepVerb, 4);
-const dupGreek = sleepMatch.filter((p) => p.greek === 'κοιμήθηκα');
-if (dupGreek.length < 2) {
-  throw new Error('Expected duplicate κοιμήθηκα pairs for gendered translations');
+if (sleepMatch.length !== 4) {
+  throw new Error(`Expected 4 match pairs, got ${sleepMatch.length}`);
 }
-if (new Set(dupGreek.map((p) => p.translation)).size < 2) {
-  throw new Error('Duplicate greek pairs should keep distinct translations');
+const distinctGreek = new Set(sleepMatch.map((p) => p.greek));
+if (distinctGreek.size !== sleepMatch.length) {
+  throw new Error('Match pairs should use distinct greek forms (no confusing duplicates)');
+}
+const hasFuture = sleepMatch.some((p) => p.greek.startsWith('θα'));
+const hasPast = sleepMatch.some((p) => p.greek.includes('κοιμήθηκ'));
+const hasPresent = sleepMatch.some((p) => p.greek.startsWith('κοιμά'));
+if (!hasFuture || !hasPast || !hasPresent) {
+  throw new Error('Match pairs must cover past, present and future tenses');
 }
 
 console.log('✓ learning ladder base pairs');
@@ -152,4 +158,4 @@ console.log('✓ learning ladder spell pairs and letter bank');
 console.log('✓ learning ladder last game detection');
 console.log('✓ learning ladder direction gate');
 console.log('✓ learning ladder pending game detection');
-console.log('✓ learning ladder duplicate greek pairs');
+console.log('✓ learning ladder match pairs tense variety');

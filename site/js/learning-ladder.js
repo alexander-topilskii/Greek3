@@ -91,36 +91,57 @@
   }
 
   /**
-   * 3–4 pairs for matching: 1-е лицо по временам + 2-е лицо где возможно.
+   * До 4 пар для сопоставления с разными формами глагола: по одной случайной
+   * форме на каждое время (прошедшее / настоящее / будущее), затем любые формы
+   * (любое лицо, любое время) до 4 штук. Одна и та же греческая форма не
+   * повторяется, чтобы карточки не были неоднозначными.
    * @param {import('./types').CatalogWord} word
    * @param {number} maxPairs
    */
   function getMatchPairs(word, maxPairs = 4) {
     const blocks = getFormBlocks(word);
     const pairs = [];
-    const seen = new Set();
+    const seenKey = new Set();
+    const seenGreek = new Set();
 
-    function pushPair(pair) {
+    function pushPair(pair, { allowDuplicateGreek = false } = {}) {
+      if (!pair?.greek || !pair?.translation || pairs.length >= maxPairs) return false;
       const key = `${pair.greek}::${pair.translation}`;
-      if (seen.has(key) || pairs.length >= maxPairs) return;
-      seen.add(key);
-      pairs.push(pair);
+      if (seenKey.has(key)) return false;
+      if (!allowDuplicateGreek && seenGreek.has(pair.greek)) return false;
+      seenKey.add(key);
+      seenGreek.add(pair.greek);
+      pairs.push({ greek: pair.greek, translation: pair.translation });
+      return true;
     }
 
+    // Случайная форма из блока времени с ещё не использованной греческой формой.
+    function pickFromBlock(block) {
+      if (!block?.length) return null;
+      const candidates = shuffle(
+        block.filter((f) => f?.greek && f?.translation && !seenGreek.has(f.greek)),
+      );
+      return candidates[0] ?? null;
+    }
+
+    // 1) Гарантируем минимум по одному времени (прош./наст./буд.), лицо любое.
     for (const block of blocks.slice(0, 3)) {
-      if (block[0]) pushPair({ greek: block[0].greek, translation: block[0].translation });
+      const pick = pickFromBlock(block);
+      if (pick) pushPair(pick);
     }
 
-    if (pairs.length < maxPairs && blocks[0]?.[1]) {
-      pushPair({ greek: blocks[0][1].greek, translation: blocks[0][1].translation });
-    }
-    if (pairs.length < maxPairs && blocks[1]?.[1]) {
-      pushPair({ greek: blocks[1][1].greek, translation: blocks[1][1].translation });
+    // 2) Добираем до 4 любыми формами (любое лицо, любое время).
+    if (pairs.length < maxPairs) {
+      for (const form of shuffle(blocks.flat())) {
+        if (!pushPair(form)) continue;
+        if (pairs.length >= maxPairs) break;
+      }
     }
 
+    // 3) Запасной вариант: базовые формы, если форм совсем мало.
     if (pairs.length < 2) {
       for (const p of getBaseFormPairs(word)) {
-        pushPair(p);
+        pushPair(p, { allowDuplicateGreek: true });
         if (pairs.length >= maxPairs) break;
       }
     }
@@ -347,8 +368,32 @@
     return items;
   }
 
+  /** true, если строка начинается с заглавной буквы (начало предложения). */
+  function startsUppercase(text) {
+    const first = String(text ?? '').charAt(0);
+    if (!first) return false;
+    return (
+      first === first.toLocaleUpperCase('el') &&
+      first !== first.toLocaleLowerCase('el')
+    );
+  }
+
+  /** Приводит первую букву варианта к нужному регистру. */
+  function matchFirstLetterCase(text, capitalize) {
+    const value = String(text ?? '');
+    if (!value) return value;
+    const first = value.charAt(0);
+    const normalized = capitalize
+      ? first.toLocaleUpperCase('el')
+      : first.toLocaleLowerCase('el');
+    return normalized + value.slice(1);
+  }
+
   /**
    * 4 варианта для cloze: правильная форма + греческие формы других слов.
+   * Регистр всех вариантов подгоняется под правильный ответ: если пропуск в
+   * начале предложения (ответ с заглавной) — все варианты с заглавной, если в
+   * середине (ответ строчный) — все со строчной.
    * @param {import('./types').CatalogWord[]} poolWords
    * @param {import('./types').CatalogWord} word
    * @param {string} answer
@@ -381,7 +426,11 @@
       }
     }
 
-    return shuffle([answer, ...distractors.slice(0, 3)]);
+    const capitalize = startsUppercase(answer);
+    const normalizedDistractors = distractors
+      .slice(0, 3)
+      .map((text) => matchFirstLetterCase(text, capitalize));
+    return shuffle([answer, ...normalizedDistractors]);
   }
 
   /** Убирает завершающую пунктуацию предложения (. ! ; · …). */
@@ -423,6 +472,11 @@
       if (tokens.length < BUILD_MIN_TOKENS || tokens.length > BUILD_MAX_TOKENS) {
         continue;
       }
+
+      // Слова-плитки всегда с маленькой буквы: первое слово предложения
+      // теряет заглавную (артефакт начала предложения), чтобы плитки были
+      // единообразными и не подсказывали порядок слов.
+      if (tokens.length) tokens[0] = matchFirstLetterCase(tokens[0], false);
 
       const key = tokens.join('|').toLowerCase();
       if (seen.has(key)) continue;

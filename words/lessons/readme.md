@@ -65,10 +65,21 @@
 [Урок 49](49/readme.md)
 [Урок 50](50/readme.md)
 
-## Уроки 51–55
+## Уроки 51–60
 
 [Урок 51](51/readme.md)
 [Урок 52](52/readme.md)
 [Урок 53](53/readme.md)
 [Урок 54](54/readme.md)
 [Урок 55](55/readme.md)
+[Урок 56](56/readme.md)
+[Урок 57](57/readme.md)
+[Урок 58](58/readme.md)
+[Урок 59](59/readme.md)
+[Урок 60](60/readme.md)
+
+## Уроки 61–63
+
+[Урок 61](61/readme.md)
+[Урок 62](62/readme.md)
+[Урок 63](63/readme.md)

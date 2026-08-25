@@ -3,12 +3,13 @@ import { sitePath } from '../../site-path';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
-  deckSettingsDialogMarkup,
+  copyWordsListButtonMarkup,
   examplesDialogMarkup,
   favoriteButtonMarkup,
   flashcardMarkup,
   homePracticePanelMarkup,
   practiceCompleteMarkup,
+  settingsButtonHref,
 } from '../fragments';
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
@@ -70,6 +71,7 @@ export function renderIndex(
         </div>
         ${intro}
         ${hasWords ? `<div class="list-practice-actions">
+          ${copyWordsListButtonMarkup()}
           ${lessonLearnBtn}
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
@@ -113,10 +115,15 @@ export function renderIndex(
       : [];
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
   const layoutOptions = hasDeckPractice
     ? {
         showSettings: true,
-        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+        settingsHref: settingsButtonHref({
+          deck: catalog?.deckId ?? pageId,
+          from: fromPath,
+        }),
+        bodyEnd: examplesDialogMarkup(),
       }
     : {};
 
@@ -281,7 +288,10 @@ export function renderCasesIndex(
         <h1>${escapeHtml(page.title)}</h1>
         ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем откройте тренировку для практики артиклей, окончаний и переводов.</p>'}
         <div class="cases-practice-launch fade-in">
-          <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
+          <div class="list-practice-actions cases-practice-actions">
+            <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
+            ${hasWords ? copyWordsListButtonMarkup() : ''}
+          </div>
           <p class="cases-practice-launch-hint">Артикли, окончания, переводы и сопоставление форм — в отдельной тренировке с прогрессом.</p>
         </div>
       </div>
@@ -298,10 +308,12 @@ export function renderCasesIndex(
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
   const layoutOptions = hasDeckPractice
     ? {
         showSettings: true,
-        bodyEnd: `${examplesDialogMarkup()}${deckSettingsDialogMarkup(catalog!.words.length)}`,
+        settingsHref: settingsButtonHref({ deck: 'cases', from: fromPath }),
+        bodyEnd: examplesDialogMarkup(),
       }
     : {};
 
