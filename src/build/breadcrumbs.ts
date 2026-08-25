@@ -37,6 +37,14 @@ export function breadcrumbsForIndex(
     return crumbs;
   }
 
+  if (category === 'blocks') {
+    if (relativePath.toLowerCase() !== 'blocks/readme.md') {
+      crumbs.push({ label: 'Блоки', href: sitePath('words/blocks/index.html') });
+    }
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
   if (category === 'essays') {
     if (relativePath.toLowerCase() !== 'essays/readme.md') {
       crumbs.push({ label: 'Сочинения', href: sitePath('words/essays/index.html') });

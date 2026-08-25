@@ -4,6 +4,10 @@ export function isLessonIndexPage(sourcePath: string): boolean {
   return /^lessons\/\d+\/readme\.md$/i.test(sourcePath.replace(/\\/g, '/'));
 }
 
+export function isBlockIndexPage(sourcePath: string): boolean {
+  return /^blocks\/\d+\/readme\.md$/i.test(sourcePath.replace(/\\/g, '/'));
+}
+
 export function indexLinkSortLabel(
   link: IndexLink,
   wordFromLink: (link: IndexLink) => WordEntry | null,
@@ -12,12 +16,12 @@ export function indexLinkSortLabel(
   return (word?.translation || word?.title || link.label).trim();
 }
 
-/** В уроках: ссылки внутри каждой секции (## Слова, ## Фразы) — по русскому переводу. */
+/** В уроках и блоках: ссылки внутри каждой секции — по русскому переводу. */
 export function sortLessonIndexPage(
   page: IndexPage,
   wordFromLink: (link: IndexLink) => WordEntry | null,
 ): IndexPage {
-  if (!isLessonIndexPage(page.sourcePath)) return page;
+  if (!isLessonIndexPage(page.sourcePath) && !isBlockIndexPage(page.sourcePath)) return page;
 
   const compare = (a: IndexLink, b: IndexLink) =>
     indexLinkSortLabel(a, wordFromLink).localeCompare(indexLinkSortLabel(b, wordFromLink), 'ru');
@@ -169,6 +173,34 @@ export function collectLessonWords(
   return result;
 }
 
+/**
+ * Номер блока учебника для каждого слова.
+ * Одно слово — один блок; при конфликте берётся наиболее ранний (блок 1 раньше блока 7).
+ */
+export function collectBlockAssignments(
+  indexPages: IndexPage[],
+  wordFromIndexLink: (link: IndexLink) => WordEntry | null,
+): Map<string, number> {
+  const blockPages = indexPages
+    .map((page) => {
+      const match = page.sourcePath.replace(/\\/g, '/').match(/^blocks\/(\d+)\/readme\.md$/i);
+      if (!match) return null;
+      return { page, num: Number.parseInt(match[1], 10) };
+    })
+    .filter((item): item is { page: IndexPage; num: number } => item != null)
+    .sort((a, b) => a.num - b.num);
+
+  const result = new Map<string, number>();
+  for (const { page, num } of blockPages) {
+    for (const link of page.links) {
+      const word = wordFromIndexLink(link);
+      if (!word || result.has(word.slug)) continue;
+      result.set(word.slug, num);
+    }
+  }
+  return result;
+}
+
 export interface CatalogBuildItem {
   word: WordEntry;
   href: string;
@@ -215,11 +247,14 @@ export function buildCatalogOrder(
   return assignBlockIndices(items);
 }
 
-export function catalogWordExtras(item: CatalogBuildItem): Pick<CatalogWord, 'lesson' | 'blockIndex' | 'numberTier'> {
-  const extras: Pick<CatalogWord, 'lesson' | 'blockIndex' | 'numberTier'> = {
+export function catalogWordExtras(
+  item: CatalogBuildItem,
+): Pick<CatalogWord, 'lesson' | 'block' | 'blockIndex' | 'numberTier'> {
+  const extras: Pick<CatalogWord, 'lesson' | 'block' | 'blockIndex' | 'numberTier'> = {
     blockIndex: item.blockIndex,
   };
   if (item.lesson != null) extras.lesson = item.lesson;
+  if (item.word.block != null) extras.block = item.word.block;
   if (item.numberTier != null) extras.numberTier = item.numberTier;
   return extras;
 }

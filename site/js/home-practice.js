@@ -3,7 +3,7 @@
   if (!scope) return;
 
   const mode = scope.dataset.learningMode || 'home';
-  const isLesson = mode === 'lesson';
+  const isLesson = mode === 'lesson' || mode === 'block';
 
   const db = window.GreekDB;
   const srs = window.GreekSRS;

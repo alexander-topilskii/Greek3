@@ -46,6 +46,7 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 ## Разделы
 
 - [Словарь](words/readme.md)
+- [Блоки](words/blocks/readme.md) — слова по блокам учебника
 - [Глаголы](words/verbs/readme.md)
 - [Существительные](words/nouns/readme.md)
 - [Прилагательные](words/adjectives/readme.md)

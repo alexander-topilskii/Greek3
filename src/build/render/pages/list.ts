@@ -18,6 +18,10 @@ function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
 }
 
+function isBlockPage(pageDir: string): boolean {
+  return /^words\/blocks\/\d+$/i.test(pageDir.replace(/\/$/, ''));
+}
+
 export function renderIndex(
   page: IndexPage,
   pageOutputDir: string,
@@ -36,6 +40,10 @@ export function renderIndex(
   const hasWords = Boolean(catalog && catalog.words.length > 0);
   const pageId = catalog?.pageId ?? pageOutputDir.replace(/^words\/?/, '').replace(/\/$/, '');
   const lessonPage = isLessonPage(pageOutputDir);
+  const blockPage = isBlockPage(pageOutputDir);
+  const learningPage = lessonPage || blockPage;
+  const learningMode = lessonPage ? 'lesson' : blockPage ? 'block' : '';
+  const learningLabel = lessonPage ? 'уроку' : 'блоку';
   const pageFavoriteBtn =
     hasWords && pageId
       ? favoriteButtonMarkup({
@@ -47,23 +55,23 @@ export function renderIndex(
       : '';
 
   const lessonLearnBtn =
-    lessonPage && hasWords
+    learningPage && hasWords
       ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-lesson-learn">Обучение</button>`
       : '';
 
   const lessonLearningBlock =
-    lessonPage && hasWords
+    learningPage && hasWords
       ? `
       <section class="home-practice list-practice hidden" id="lesson-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
           ${homePracticePanelMarkup('lesson-flashcard-root')}
         </div>
-        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-lesson-practice">← К уроку</button>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-lesson-practice">← К ${learningLabel}</button>
       </section>`
       : '';
 
   const content = `
-    <section class="verbs-list-page"${lessonPage && hasWords ? ` data-learning-practice data-learning-mode="lesson" data-practice-section-id="lesson-practice" data-flashcard-root-id="lesson-flashcard-root" data-open-btn-id="btn-lesson-learn" data-close-btn-id="btn-close-lesson-practice" data-nav-id="lesson-practice-immersive" data-session-key="greek3:lesson-practice-session" data-hide-on-open="#verbs-links,.list-practice-actions,.page-head,#list-practice"` : ''} data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
+    <section class="verbs-list-page"${learningPage && hasWords ? ` data-learning-practice data-learning-mode="${learningMode}" data-practice-section-id="lesson-practice" data-flashcard-root-id="lesson-flashcard-root" data-open-btn-id="btn-lesson-learn" data-close-btn-id="btn-close-lesson-practice" data-nav-id="${learningMode}-practice-immersive" data-session-key="greek3:${learningMode}-practice-session" data-hide-on-open="#verbs-links,.list-practice-actions,.page-head,#list-practice"` : ''} data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${pageId ? ` data-page-id="${escapeHtml(pageId)}"` : ''}>
       <div class="page-head fade-in list-head">
         <div class="page-head-row">
           <h1>${escapeHtml(page.title)}</h1>
@@ -100,7 +108,7 @@ export function renderIndex(
       ? [
           'assets/js/list-controls.js',
           'assets/js/list-practice.js',
-          ...(lessonPage
+          ...(learningPage
             ? [
                 'assets/js/learning-ladder.js',
                 'assets/js/quiz-step.js',

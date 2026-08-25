@@ -153,6 +153,7 @@
 
   function wordSourceLabel(word, categoryLabels = {}) {
     if (word.lesson != null) return `Урок ${word.lesson}`;
+    if (word.block != null) return `Блок ${word.block}`;
     const cat = categoryLabels[word.category] ?? word.category;
     return cat || 'Словарь';
   }

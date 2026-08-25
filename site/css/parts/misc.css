@@ -41,6 +41,12 @@
   color: #047857;
 }
 
+.word-badge--block {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
 .phrase-summary {
   background: var(--bg-card);
   border: 1px solid var(--border);

@@ -42,6 +42,7 @@ export function buildCatalogWord(word: WordEntry, href: string, label: string): 
     recordType: word.meta.recordType,
     primaryGreek: word.primaryGreek,
     category: word.category,
+    ...(word.block != null ? { block: word.block } : {}),
     ...(examples.length > 0 ? { examples } : {}),
   };
 }

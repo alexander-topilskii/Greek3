@@ -8,6 +8,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   particles: 'Частицы',
   phrases: 'Фразы',
   lessons: 'Уроки',
+  blocks: 'Блоки',
   essays: 'Сочинения',
   topics: 'Темы',
   levels: 'Уровни',
@@ -27,6 +28,7 @@ export const RECORD_TYPE_LABELS: Record<string, string> = {
 
 export const HOME_SECTIONS = [
   { title: 'Уроки', href: 'words/lessons/index.html', description: 'Слова по занятиям с репетитором' },
+  { title: 'Блоки', href: 'words/blocks/index.html', description: 'Слова по блокам учебника' },
   { title: 'Глаголы', href: 'words/verbs/index.html', description: 'Спряжения, времена и формы' },
   { title: 'Существительные', href: 'words/nouns/index.html', description: 'Род, число и падежные формы' },
   { title: 'Прилагательные', href: 'words/adjectives/index.html', description: 'Согласование и степени сравнения' },
