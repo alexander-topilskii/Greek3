@@ -34,16 +34,29 @@ def strip_accents(s: str) -> str:
 
 def find_exact(*needles: str) -> str | None:
     needles_l = [n.lower() for n in needles if n and len(n) >= 3]
+    exact_hits: list[str] = []
+    token_hits: list[str] = []
     for item in EXISTING:
         gl = item["gr_low"]
         tokens = re.split(r"[\s/·,;]+", gl)
         stem = Path(item["rel"]).stem.lower()
         stem_gr = stem.split(" ", 1)[-1] if " " in stem else stem
+        stem_tokens = re.split(r"[\s/·,;]+", stem_gr)
         for n in needles_l:
             alts = {n, VARIANTS.get(n, n)}
             for a in alts:
-                if a == gl or a in tokens or a == stem_gr or a in stem_gr.split():
-                    return item["rel"]
+                if a == gl or a == stem_gr:
+                    exact_hits.append(item["rel"])
+                elif a in tokens or a in stem_tokens:
+                    token_hits.append(item["rel"])
+    def rank(rel: str) -> tuple[int, int]:
+        # prefer non-phrases, then shorter stem
+        cat = 0 if not rel.startswith("phrases/") else 1
+        return (cat, len(Path(rel).stem))
+    if exact_hits:
+        return sorted(set(exact_hits), key=rank)[0]
+    if token_hits:
+        return sorted(set(token_hits), key=rank)[0]
     return None
 
 
