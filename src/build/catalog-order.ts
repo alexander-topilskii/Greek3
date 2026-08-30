@@ -16,15 +16,30 @@ export function indexLinkSortLabel(
   return (word?.translation || word?.title || link.label).trim();
 }
 
-/** В уроках и блоках: ссылки внутри каждой секции — по русскому переводу. */
+/** В уроках: все ссылки вместе по русскому переводу; в блоках — внутри каждой секции. */
 export function sortLessonIndexPage(
   page: IndexPage,
   wordFromLink: (link: IndexLink) => WordEntry | null,
 ): IndexPage {
-  if (!isLessonIndexPage(page.sourcePath) && !isBlockIndexPage(page.sourcePath)) return page;
+  const isLesson = isLessonIndexPage(page.sourcePath);
+  const isBlock = isBlockIndexPage(page.sourcePath);
+  if (!isLesson && !isBlock) return page;
 
   const compare = (a: IndexLink, b: IndexLink) =>
     indexLinkSortLabel(a, wordFromLink).localeCompare(indexLinkSortLabel(b, wordFromLink), 'ru');
+
+  if (isLesson) {
+    const allLinks =
+      page.sections.length > 0
+        ? page.sections.flatMap((section) => section.links)
+        : [...page.links];
+    const sortedLinks = [...allLinks].sort(compare);
+    return {
+      ...page,
+      sections: sortedLinks.length > 0 ? [{ title: '', links: sortedLinks }] : [],
+      links: sortedLinks,
+    };
+  }
 
   const sections =
     page.sections.length > 0
