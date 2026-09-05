@@ -121,7 +121,7 @@ words/
 ├── readme.md          # → words/index.html (оглавление словаря)
 ├── lessons/           # → уроки (только ссылки на слова, не дублировать контент)
 │   ├── readme.md
-│   └── 01/readme.md … 65/readme.md
+│   └── 01/readme.md … 68/readme.md
 ├── blocks/            # → блоки учебника (только ссылки; слова в категориях)
 │   ├── readme.md
 │   └── 01/readme.md … 20/readme.md
