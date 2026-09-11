@@ -42,3 +42,11 @@ npm run build:site && npm run dev
 ## Обновление этой документации
 
 Если узнал что-то новое о проекте — **добавь в соответствующий файл в `agents/`**, не только в ответ пользователю.
+
+## Cursor Cloud specific instructions
+
+- Чистый Node/TypeScript-проект без внешних сервисов, БД и Docker. Зависимости ставятся через `npm ci` (см. update script). Локальный Node 22 подходит; CI использует Node 20.
+- Команды описаны в `package.json` и `agents/PROJECT.md`: тесты — `npm test` (сначала `tsc`, затем `.mjs`-смоук-тесты в `scripts/`); сборка сайта — `npm run build:site`; локальный запуск — `npm run dev` (порт 3000).
+- Отдельного lint-шага нет (нет `lint`-скрипта); проверка типов выполняется как часть `npm run build`/`npm test` через `tsc`.
+- `npm run dev` = `build:site` + статический сервер `scripts/dev.mjs`, который раздаёт готовый `dist/`. **Hot-reload отсутствует**: после изменений в `words/`, `site/` или `src/` нужно заново выполнить `npm run build:site` (или перезапустить `npm run dev`), иначе изменения не появятся.
+- `dist/` — артефакт сборки, не коммитить.
