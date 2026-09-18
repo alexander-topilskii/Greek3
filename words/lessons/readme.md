@@ -87,4 +87,5 @@
 [Урок 66](66/readme.md)
 [Урок 67](67/readme.md)
 [Урок 68](68/readme.md)
+[Урок 69](69/readme.md)
 [Урок 70](70/readme.md)
