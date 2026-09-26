@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { parseFrontmatter } from './parse-frontmatter';
+import { parseVerbParadigm } from './parse-paradigm';
 import type { WordEntry, WordExample, WordForm, WordMeta } from './types';
 
 const SECTION_BASE = 'база';
@@ -83,6 +84,9 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
   let verbType = '';
   let baseForms: string[] = [];
   let forms: WordForm[] = [];
+  let conjugationLines: string[] = [];
+  let imperativeLines: string[] = [];
+  let participleLines: string[] = [];
   const extraSections: { title: string; lines: string[] }[] = [];
 
   const meta: WordMeta = {
@@ -103,6 +107,12 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       verbType = section.lines.map((l) => l.trim()).find(Boolean) ?? '';
     } else if (key === SECTION_FORMS) {
       forms = parseForms(section.lines);
+    } else if (key === 'спряжение') {
+      conjugationLines = section.lines;
+    } else if (key === 'повелительное' || key === 'повелительное наклонение') {
+      imperativeLines = section.lines;
+    } else if (key === 'причастие' || key === 'причастия') {
+      participleLines = section.lines;
     } else if (key === 'уровень' && !meta.level) {
       meta.level = section.lines.map((l) => l.trim()).find(Boolean) ?? '';
     } else {
@@ -117,6 +127,11 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
     translation,
     verbType,
     baseForms,
+    paradigm: parseVerbParadigm({
+      conjugation: conjugationLines,
+      imperative: imperativeLines,
+      participle: participleLines,
+    }),
     forms,
     extraSections,
     sourcePath: relativePath,

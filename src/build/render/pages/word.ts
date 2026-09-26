@@ -10,6 +10,7 @@ import { renderMetaBadges } from '../badges';
 import { renderContextSection } from '../context';
 import { flashcardMarkup, progressBarMarkup, favoriteButtonMarkup, settingsButtonHref } from '../fragments';
 import { wordOutputPath } from '../paths-catalog';
+import { renderVerbParadigm } from '../verb-cube';
 
 function formRowLinkMarkup(
   greek: string,
@@ -112,6 +113,8 @@ export function renderWord(
       </section>`
       : '';
 
+  const paradigm = renderVerbParadigm(word);
+
   const content = `
     <article class="word-page${isPhrase ? ' word-page--phrase' : ''}"
       data-word-slug="${escapeHtml(word.slug)}"
@@ -131,6 +134,8 @@ export function renderWord(
         </div>
         ${progressBarMarkup(word.slug)}
       </header>
+
+      ${paradigm.html}
 
       <section class="practice-panel practice-panel--wide fade-in">
         ${flashcardMarkup('flashcard-root')}
@@ -161,7 +166,10 @@ export function renderWord(
       ${extraHtml}
     </article>`;
 
-  return layout(content, word.translation || word.title, breadcrumbs, ['assets/js/practice.js'], {
+  const scripts = ['assets/js/practice.js'];
+  if (paradigm.interactive) scripts.push('assets/js/verb-cube.js');
+
+  return layout(content, word.translation || word.title, breadcrumbs, scripts, {
     showSettings: true,
     settingsHref: settingsButtonHref({
       word: word.slug,

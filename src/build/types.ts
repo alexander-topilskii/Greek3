@@ -1,3 +1,27 @@
+export type VerbTense = 'past' | 'present' | 'future';
+export type VerbAspect = 'simple' | 'continuous' | 'perfect';
+
+/** Шесть форм: я, мы, ты, вы, он, они. */
+export type VerbPersonForms = string[];
+
+export interface VerbImperative {
+  /** `default` — одна пара, не зависит от переключателя вида. */
+  aspect: VerbAspect | 'default';
+  sg: string;
+  pl: string;
+}
+
+export interface VerbParticiple {
+  label: string;
+  form: string;
+}
+
+export interface VerbParadigm {
+  conjugations: Partial<Record<VerbTense, Partial<Record<VerbAspect, VerbPersonForms>>>>;
+  imperative: VerbImperative[];
+  participles: VerbParticiple[];
+}
+
 export interface WordForm {
   greek: string;
   translation: string;
@@ -22,6 +46,8 @@ export interface WordEntry {
   translation: string;
   verbType: string;
   baseForms: string[];
+  /** Спряжение для куба времён; null, если секции нет. */
+  paradigm: VerbParadigm | null;
   forms: WordForm[];
   extraSections: { title: string; lines: string[] }[];
   sourcePath: string;

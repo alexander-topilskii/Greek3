@@ -31,6 +31,7 @@
 | Интерактив практики | `site/js/practice.js` |
 | Шаблон страницы | `src/build/render.ts` |
 | Парсинг MD | `src/build/parse-word.ts` |
+| Спряжение глагола (куб) | секции в MD + `src/build/parse-paradigm.ts`, `src/build/render/verb-cube.ts`, `site/js/verb-cube.js` |
 | CI/CD | `.github/workflows/deploy.yml` |
 
 ## Проверка локально

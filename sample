@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Глагол: γίνομαι (Хронология)</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Динамическое значение, будет перезаписано через JS для идеальной геометрии куба */
+            --tz: 150px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #cbd5e1;
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 414px;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 3D Сцена */
+        .scene {
+            width: 100%;
+            height: 250px;
+            perspective: 1000px;
+            position: relative;
+            touch-action: pan-y;
+        }
+
+        /* Куб (мы используем 3 грани из 4) */
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* Отодвигаем ось вращения ровно в центр куба */
+            transform: translateZ(calc(var(--tz) * -1)) rotateY(0deg);
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Грани куба - теперь без рамок, сливаются с фоном */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            /* Фон совпадает с приложением, чтобы скрыть "задник" при вращении, но не выглядеть как карточка */
+            background-color: #f8fafc;
+        }
+
+        /* Расположение граней под 90 градусов друг к другу */
+        .face-present { transform: rotateY(0deg) translateZ(var(--tz)); }
+        .face-future { transform: rotateY(90deg) translateZ(var(--tz)); }
+        .face-past { transform: rotateY(-90deg) translateZ(var(--tz)); }
+
+        .dot { transition: all 0.3s ease; }
+        .dot.active { width: 1.5rem; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <header class="bg-slate-800 text-white sticky top-0 z-50 shadow-md">
+            <div class="flex items-center justify-between p-4 pt-6">
+                <button class="p-2 -ml-2 rounded-full hover:bg-slate-700 transition active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <div class="flex flex-col items-center flex-1">
+                    <h1 class="text-xl font-bold tracking-wide">γίνομαι</h1>
+                    <span class="text-slate-300 text-xs font-medium">становлюсь</span>
+                </div>
+                <button class="p-2 -mr-2 rounded-full hover:bg-slate-700 transition active:scale-95 text-slate-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto pb-24 pt-5 space-y-6 no-scrollbar">
+
+            <section class="bg-white mx-4 rounded-2xl shadow-sm border border-slate-200 p-4">
+                <h2 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Основные формы</h2>
+                <div class="grid grid-cols-3 gap-3 text-center divide-x divide-slate-100">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-blue-500 font-bold mb-1">ПРОШ.</span>
+                        <span class="font-bold text-slate-800 text-base">έγινα</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-amber-500 font-bold mb-1">НАСТ.</span>
+                        <span class="font-bold text-slate-800 text-base">γίνομαι</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-emerald-500 font-bold mb-1">БУД.</span>
+                        <span class="font-bold text-slate-800 text-base">θα γίνω</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="relative">
+
+                <!-- Переключатель Вида -->
+                <div class="flex bg-slate-200/70 p-1 rounded-xl mb-6 mx-4 relative">
+                    <div id="toggle-slider" class="absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ease-out z-0"></div>
+                    <button onclick="setAspect('simple', 0)" id="btn-simple" class="flex-1 z-10 text-[10px] sm:text-xs py-2 font-bold text-slate-800 transition-colors">Разовое</button>
+                    <button onclick="setAspect('continuous', 1)" id="btn-cont" class="flex-1 z-10 text-[10px] sm:text-xs py-2 font-medium text-slate-500 transition-colors">Длительное</button>
+                    <button onclick="setAspect('perfect', 2)" id="btn-perf" class="flex-1 z-10 text-[10px] sm:text-xs py-2 font-medium text-slate-500 transition-colors">Завершённое</button>
+                </div>
+
+                <!-- Заголовок и Навигация -->
+                <div class="flex justify-between items-center px-4 mb-2">
+                    <button onclick="rotateCube(-1)" id="nav-prev" class="p-2 text-slate-400 hover:text-slate-800 transition rounded-full opacity-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+
+                    <div class="flex flex-col items-center">
+                        <h3 id="tense-title" class="text-[15px] font-bold text-slate-800 uppercase tracking-wide transition-opacity duration-300">Настоящее</h3>
+                        <span id="tense-subtitle" class="text-[11px] text-slate-400 transition-opacity duration-300">Ενεστώτας</span>
+                    </div>
+
+                    <button onclick="rotateCube(1)" id="nav-next" class="p-2 text-slate-400 hover:text-slate-800 transition rounded-full opacity-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Точки хронологии -->
+                <div class="flex justify-center items-center space-x-3 mb-5">
+                    <div class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Прошлое</div>
+                    <div id="dot-past" class="dot h-1.5 w-1.5 rounded-full bg-slate-300"></div>
+                    <div id="dot-present" class="dot active h-1.5 w-4 rounded-full bg-amber-400"></div>
+                    <div id="dot-future" class="dot h-1.5 w-1.5 rounded-full bg-slate-300"></div>
+                    <div class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Будущее</div>
+                </div>
+
+                <!-- 3D Контейнер -->
+                <div class="px-4">
+                    <div class="scene" id="scene">
+                        <div class="cube" id="cube">
+
+                            <!-- Грань: НАСТОЯЩЕЕ (0deg) -->
+                            <div class="cube-face face-present">
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 h-full content-start">
+                                    <div class="text-[10px] text-amber-500 font-bold uppercase border-b border-amber-200 pb-1">Единственное</div>
+                                    <div class="text-[10px] text-amber-500 font-bold uppercase border-b border-amber-200 pb-1">Множественное</div>
+
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">я</span><span id="pres-1s" class="font-semibold text-slate-800 text-[15px]">γίνομαι</span></div>
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">мы</span><span id="pres-1p" class="font-semibold text-slate-800 text-[15px]">γινόμαστε</span></div>
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">ты</span><span id="pres-2s" class="font-semibold text-slate-800 text-[15px]">γίνεσαι</span></div>
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">вы</span><span id="pres-2p" class="font-semibold text-slate-800 text-[15px]">γίνεστε</span></div>
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">он</span><span id="pres-3s" class="font-semibold text-slate-800 text-[15px]">γίνεται</span></div>
+                                    <div class="flex items-center justify-between bg-amber-50/50 border border-amber-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">они</span><span id="pres-3p" class="font-semibold text-slate-800 text-[15px]">γίνονται</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Грань: БУДУЩЕЕ (90deg) -->
+                            <div class="cube-face face-future">
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 h-full content-start">
+                                    <div class="text-[10px] text-emerald-500 font-bold uppercase border-b border-emerald-200 pb-1">Единственное</div>
+                                    <div class="text-[10px] text-emerald-500 font-bold uppercase border-b border-emerald-200 pb-1">Множественное</div>
+
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">я</span><span id="fut-1s" class="font-semibold text-slate-800 text-[15px]">θα γίνω</span></div>
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">мы</span><span id="fut-1p" class="font-semibold text-slate-800 text-[15px]">θα γίνουμε</span></div>
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">ты</span><span id="fut-2s" class="font-semibold text-slate-800 text-[15px]">θα γίνεις</span></div>
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">вы</span><span id="fut-2p" class="font-semibold text-slate-800 text-[15px]">θα γίνετε</span></div>
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">он</span><span id="fut-3s" class="font-semibold text-slate-800 text-[15px]">θα γίνει</span></div>
+                                    <div class="flex items-center justify-between bg-emerald-50/50 border border-emerald-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">они</span><span id="fut-3p" class="font-semibold text-slate-800 text-[15px]">θα γίνουν</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Грань: ПРОШЛОЕ (-90deg) -->
+                            <div class="cube-face face-past">
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 h-full content-start">
+                                    <div class="text-[10px] text-blue-500 font-bold uppercase border-b border-blue-200 pb-1">Единственное</div>
+                                    <div class="text-[10px] text-blue-500 font-bold uppercase border-b border-blue-200 pb-1">Множественное</div>
+
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">я</span><span id="past-1s" class="font-semibold text-slate-800 text-[15px]">έγινα</span></div>
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">мы</span><span id="past-1p" class="font-semibold text-slate-800 text-[15px]">γίναμε</span></div>
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">ты</span><span id="past-2s" class="font-semibold text-slate-800 text-[15px]">έγινες</span></div>
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">вы</span><span id="past-2p" class="font-semibold text-slate-800 text-[15px]">γίνατε</span></div>
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">он</span><span id="past-3s" class="font-semibold text-slate-800 text-[15px]">έγινε</span></div>
+                                    <div class="flex items-center justify-between bg-blue-50/50 border border-blue-100/50 px-3 py-2.5 rounded-xl"><span class="text-slate-400 text-xs w-4">они</span><span id="past-3p" class="font-semibold text-slate-800 text-[15px]">έγιναν</span></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Повелительное и Причастие (Статика, не зависит от времени) -->
+            <section class="grid grid-cols-2 gap-3 mt-2 mx-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Повелительное</h3>
+                    <div class="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                        <span class="text-xs text-slate-500">ед.ч.</span>
+                        <span class="font-semibold text-slate-800">γίνε</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1.5">
+                        <span class="text-xs text-slate-500">мн.ч.</span>
+                        <span class="font-semibold text-slate-800">γίνετε</span>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Причастие</h3>
+                    <div class="flex flex-col h-full justify-center pb-3">
+                        <span class="text-xs text-slate-400 mb-1">медиопассивное:</span>
+                        <span class="font-semibold text-slate-800">γινόμενος, -η, -ο</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // --- ДИНАМИЧЕСКАЯ ГЕОМЕТРИЯ КУБА ---
+        // Рассчитываем радиус 3D сцены в зависимости от реальной ширины экрана
+        function updateCubeDimensions() {
+            const scene = document.getElementById('scene');
+            // Получаем реальную ширину сцены в пикселях
+            const width = scene.getBoundingClientRect().width;
+            // Для куба (90 градусов) дистанция до центра равна ровно половине ширины
+            document.documentElement.style.setProperty('--tz', `${width / 2}px`);
+        }
+
+        window.addEventListener('resize', updateCubeDimensions);
+        // Инициализация при старте
+        updateCubeDimensions();
+
+
+        // --- ДАННЫЕ СПРЯЖЕНИЙ ---
+        const conjugations = {
+            present: {
+                simple: ['γίνομαι', 'γινόμαστε', 'γίνεσαι', 'γίνεστε', 'γίνεται', 'γίνονται'],
+                continuous: ['γίνομαι', 'γινόμαστε', 'γίνεσαι', 'γίνεστε', 'γίνεται', 'γίνονται'],
+                perfect: ['έχω γίνει', 'έχουμε γίνει', 'έχεις γίνει', 'έχετε γίνει', 'έχει γίνει', 'έχουν γίνει']
+            },
+            past: {
+                simple: ['έγινα', 'γίναμε', 'έγινες', 'γίνατε', 'έγινε', 'έγιναν'],
+                continuous: ['γινόμουν', 'γινόμασταν', 'γινόσουν', 'γινόσασταν', 'γινόταν', 'γίνονταν'],
+                perfect: ['είχα γίνει', 'είχαμε γίνει', 'είχες γίνει', 'είχατε γίνει', 'είχε γίνει', 'είχαν γίνει']
+            },
+            future: {
+                simple: ['θα γίνω', 'θα γίνουμε', 'θα γίνεις', 'θα γίνете', 'θα γίνει', 'θα γίνουν'],
+                continuous: ['θα γίνομαι', 'θα γινόμαστε', 'θα γίνεσαι', 'θα γίνεστε', 'θα γίνεται', 'θα γίνονται'],
+                perfect: ['θα έχω γίνει', 'θα έχουμε γίνει', 'θα έχεις γίνει', 'θα έχετε γίνει', 'θα έχει γίνει', 'θα έχουν γίνει']
+            }
+        };
+
+        const tenseTitles = {
+            present: {
+                simple: { title: "Настоящее", subtitle: "Ενεστώτας (общ.)" },
+                continuous: { title: "Настоящее Длит.", subtitle: "Ενεστώτας" },
+                perfect: { title: "Настоящее Заверш.", subtitle: "Παρακείμενος (Перфект)" }
+            },
+            past: {
+                simple: { title: "Прош. Разовое", subtitle: "Αόριστος" },
+                continuous: { title: "Прош. Длит.", subtitle: "Παρατατικός" },
+                perfect: { title: "Прош. Заверш.", subtitle: "Υπερσυντέλικος (Плюсквамперфект)" }
+            },
+            future: {
+                simple: { title: "Будущее Разовое", subtitle: "Συνοπτικός Μέλλοντας" },
+                continuous: { title: "Будущее Длит.", subtitle: "Εξακολουθητικός" },
+                perfect: { title: "Будущее Заверш.", subtitle: "Συντελεσμένος Μέλλοντας" }
+            }
+        };
+
+        // --- СОСТОЯНИЕ ---
+        // Хронология: -1 (Прошлое), 0 (Настоящее), 1 (Будущее)
+        let currentFaceIndex = 0;
+        let currentAspect = 'simple'; // 'simple', 'continuous', 'perfect'
+
+        const cube = document.getElementById('cube');
+        const titleEl = document.getElementById('tense-title');
+        const subtitleEl = document.getElementById('tense-subtitle');
+
+        const btnPrev = document.getElementById('nav-prev');
+        const btnNext = document.getElementById('nav-next');
+
+        function formatVerb(text, aspect) {
+            if (aspect === 'perfect') {
+                const parts = text.split(' γίνει');
+                return `<span class="font-bold text-slate-800">${parts[0]}</span> <span class="text-slate-400 text-[11px] ml-0.5">γίνει</span>`;
+            }
+            return `<span class="font-semibold text-slate-800">${text}</span>`;
+        }
+
+        // --- ПЕРЕКЛЮЧАТЕЛЬ ВИДА (Разовое/Длительное/Перфект) ---
+        function setAspect(aspect, index) {
+            currentAspect = aspect;
+
+            const slider = document.getElementById('toggle-slider');
+            slider.style.transform = `translateX(${index * 100}%)`;
+
+            const btns = [document.getElementById('btn-simple'), document.getElementById('btn-cont'), document.getElementById('btn-perf')];
+            btns.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.replace('font-medium', 'font-bold');
+                    btn.classList.replace('text-slate-500', 'text-slate-800');
+                } else {
+                    btn.classList.replace('font-bold', 'font-medium');
+                    btn.classList.replace('text-slate-800', 'text-slate-500');
+                }
+            });
+
+            updateFaceContent();
+            updateTitle();
+        }
+
+        function updateFaceContent() {
+            const prData = conjugations.present[currentAspect];
+            ['1s','1p','2s','2p','3s','3p'].forEach((p, i) => {
+                document.getElementById(`pres-${p}`).innerHTML = formatVerb(prData[i], currentAspect);
+            });
+
+            const pData = conjugations.past[currentAspect];
+            ['1s','1p','2s','2p','3s','3p'].forEach((p, i) => {
+                document.getElementById(`past-${p}`).innerHTML = formatVerb(pData[i], currentAspect);
+            });
+
+            const fData = conjugations.future[currentAspect];
+            ['1s','1p','2s','2p','3s','3p'].forEach((p, i) => {
+                document.getElementById(`fut-${p}`).innerHTML = formatVerb(fData[i], currentAspect);
+            });
+        }
+
+        // --- НАВИГАЦИЯ ПО ВРЕМЕНИ (ВЛЕВО/ВПРАВО) ---
+        function rotateCube(direction) {
+            let newIndex = currentFaceIndex + direction;
+
+            // Ограничиваем вращение (только -1, 0, 1)
+            if (newIndex < -1) newIndex = -1;
+            if (newIndex > 1) newIndex = 1;
+
+            if (newIndex !== currentFaceIndex) {
+                currentFaceIndex = newIndex;
+                updateCubeUI();
+            }
+        }
+
+        function updateTitle() {
+            let currentData;
+            if (currentFaceIndex === 0) currentData = tenseTitles.present[currentAspect];
+            else if (currentFaceIndex === 1) currentData = tenseTitles.future[currentAspect];
+            else currentData = tenseTitles.past[currentAspect];
+
+            titleEl.style.opacity = 0;
+            subtitleEl.style.opacity = 0;
+
+            setTimeout(() => {
+                titleEl.innerText = currentData.title;
+                subtitleEl.innerText = currentData.subtitle;
+                titleEl.style.opacity = 1;
+                subtitleEl.style.opacity = 1;
+            }, 150);
+        }
+
+        function updateCubeUI() {
+            // Вращаем куб (-90 = будущее, 0 = настоящее, 90 = прошлое)
+            const rotationY = currentFaceIndex * -90;
+            cube.style.transform = `translateZ(calc(var(--tz) * -1)) rotateY(${rotationY}deg)`;
+
+            updateTitle();
+
+            // Обновляем видимость кнопок навигации
+            btnPrev.style.opacity = currentFaceIndex === -1 ? "0.2" : "1";
+            btnPrev.style.pointerEvents = currentFaceIndex === -1 ? "none" : "auto";
+
+            btnNext.style.opacity = currentFaceIndex === 1 ? "0.2" : "1";
+            btnNext.style.pointerEvents = currentFaceIndex === 1 ? "none" : "auto";
+
+            // Обновляем индикаторы-точки
+            const dots = {
+                '-1': { id: 'dot-past', color: 'bg-blue-400' },
+                '0': { id: 'dot-present', color: 'bg-amber-400' },
+                '1': { id: 'dot-future', color: 'bg-emerald-400' }
+            };
+
+            // Сбрасываем все точки
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.className = 'dot h-1.5 w-1.5 rounded-full bg-slate-300';
+            });
+
+            // Активируем нужную
+            const activeDotInfo = dots[currentFaceIndex.toString()];
+            const activeDotEl = document.getElementById(activeDotInfo.id);
+            activeDotEl.className = `dot active h-1.5 w-4 rounded-full ${activeDotInfo.color}`;
+        }
+
+        // --- СВАЙПЫ ---
+        let startX = 0;
+        let endX = 0;
+        const scene = document.getElementById('scene');
+
+        scene.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        scene.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            handleSwipe();
+        }, { passive: true });
+
+        let isDragging = false;
+        scene.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; });
+        scene.addEventListener('mouseup', (e) => { if (!isDragging) return; isDragging = false; endX = e.clientX; handleSwipe(); });
+        scene.addEventListener('mouseleave', () => { isDragging = false; });
+
+        function handleSwipe() {
+            const diffX = startX - endX;
+            if (diffX > 40) rotateCube(1);      // Свайп влево -> Будущее (Вправо по хронологии)
+            else if (diffX < -40) rotateCube(-1); // Свайп вправо -> Прошлое (Влево по хронологии)
+        }
+
+        // Запуск
+        updateFaceContent();
+        updateCubeUI(); // Установит правильные состояния кнопок и заголовков
+    </script>
+</body>
+</html>
