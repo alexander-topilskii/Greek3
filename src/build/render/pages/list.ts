@@ -157,86 +157,136 @@ export function casesCheatSheetRow(
             </tr>`;
 }
 
-export function casesDetailExampleRow(
-  gender: string,
-  col1: string,
-  col2: string,
-  col3: string,
-  options?: { genderRowspan?: number; hideGender?: boolean },
-): string {
-  const genderCell = options?.hideGender
-    ? ''
-    : `<td class="cases-cheatsheet-gender"${options?.genderRowspan ? ` rowspan="${options.genderRowspan}"` : ''}>${escapeHtml(gender)}</td>`;
-  return `
-            <tr>
-              ${genderCell}
-              ${casesCheatSheetCell(col1)}
-              ${casesCheatSheetCell(col2)}
-              ${casesCheatSheetCell(col3)}
-            </tr>`;
+type CaseWordForms = {
+  singular: [string, string];
+  plural: [string, string];
+};
+
+type CaseGenderGroup = {
+  gender: string;
+  words: CaseWordForms[];
+};
+
+function casesNumberTableRows(groups: CaseGenderGroup[]): string {
+  const lines: string[] = [];
+  for (const group of groups) {
+    const rowCount = group.words.length * 2;
+    group.words.forEach((word, wordIndex) => {
+      const rows = [
+        { number: 'ед.', forms: word.singular, plural: false },
+        { number: 'мн.', forms: word.plural, plural: true },
+      ];
+      rows.forEach((row, rowIndex) => {
+        const genderCell =
+          wordIndex === 0 && rowIndex === 0
+            ? `<td class="cases-cheatsheet-gender" rowspan="${rowCount}">${escapeHtml(group.gender)}</td>`
+            : '';
+        const rowClass = row.plural ? ' class="cases-cheatsheet-row--plural"' : '';
+        lines.push(
+          '<tr' +
+            rowClass +
+            '>' +
+            genderCell +
+            `<td class="cases-cheatsheet-number">${escapeHtml(row.number)}</td>` +
+            casesCheatSheetCell(row.forms[0]) +
+            casesCheatSheetCell(row.forms[1]) +
+            '</tr>',
+        );
+      });
+    });
+  }
+  return lines.join('');
 }
 
-export function casesGenitiveCheatsheetMarkup(): string {
-  const rows = [
-    casesDetailExampleRow('м.р.', 'ο φίλος', 'του φίλου', 'των φίλων', { genderRowspan: 3 }),
-    casesDetailExampleRow('', 'ο γείτονας', 'του γείτονα', 'των γειτόνων', { hideGender: true }),
-    casesDetailExampleRow('', 'ο φοιτητής', 'του φοιτητή', 'των φοιτητών', { hideGender: true }),
-    casesDetailExampleRow('ж.р.', 'η γυναίκα', 'της γυναίκας', 'των γυναικών', { genderRowspan: 2 }),
-    casesDetailExampleRow('', 'η αδερφή', 'της αδερφής', 'των αδερφών', { hideGender: true }),
-    casesDetailExampleRow('с.р.', 'το μωρό', 'του μωρού', 'των μωρών', { genderRowspan: 3 }),
-    casesDetailExampleRow('', 'το παιδί', 'του παιδιού', 'των παιδιών', { hideGender: true }),
-    casesDetailExampleRow('', 'το διαμέρισμα', 'του διαμερίσματος', 'των διαμερισμάτων', { hideGender: true }),
-  ].join('');
-
+function casesNumberTable(
+  caseClass: 'gen' | 'acc',
+  caseTitle: string,
+  caseHint: string,
+  groups: CaseGenderGroup[],
+): string {
   return `
-    <section class="cases-cheatsheet cases-cheatsheet--genitive fade-in" aria-label="Родительный падеж — окончания">
-      <h2>Родительный — окончания</h2>
-      <p class="cases-cheatsheet-note">Типичные изменения: <strong>−ος → −ου</strong>, <strong>−ας → −α</strong>, <strong>−ης → −ή</strong>; <strong>−α → −ας</strong>, <strong>−η → −ης</strong>; <strong>−ο → −ου</strong>, <strong>−ι → −ιού</strong>, <strong>−μα → −ματος</strong>. Во мн. числе артикль <strong>των</strong>, ударение часто на <strong>−ών</strong>.</p>
       <div class="cases-cheatsheet-scroll">
         <table class="cases-cheatsheet-table cases-cheatsheet-table--detail">
           <thead>
             <tr>
               <th></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ. ед.<span>кто? что?</span></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--gen">Γεν. ед.<span>кого? чего?</span></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--gen">Γεν. мн.<span>кого? чего?</span></th>
+              <th class="cases-cheatsheet-number-col">число</th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ.<span>кто? что?</span></th>
+              <th class="cases-cheatsheet-th cases-cheatsheet-th--${caseClass}">${caseTitle}<span>${caseHint}</span></th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${casesNumberTableRows(groups)}</tbody>
         </table>
-      </div>
+      </div>`;
+}
+
+const GENITIVE_EXAMPLES: CaseGenderGroup[] = [
+  {
+    gender: 'м.р.',
+    words: [
+      { singular: ['ο φίλος', 'του φίλου'], plural: ['οι φίλοι', 'των φίλων'] },
+      { singular: ['ο γείτονας', 'του γείτονα'], plural: ['οι γείτονες', 'των γειτόνων'] },
+      { singular: ['ο φοιτητής', 'του φοιτητή'], plural: ['οι φοιτητές', 'των φοιτητών'] },
+    ],
+  },
+  {
+    gender: 'ж.р.',
+    words: [
+      { singular: ['η γυναίκα', 'της γυναίκας'], plural: ['οι γυναίκες', 'των γυναικών'] },
+      { singular: ['η αδερφή', 'της αδερφής'], plural: ['οι αδερφές', 'των αδερφών'] },
+    ],
+  },
+  {
+    gender: 'с.р.',
+    words: [
+      { singular: ['το μωρό', 'του μωρού'], plural: ['τα μωρά', 'των μωρών'] },
+      { singular: ['το παιδί', 'του παιδιού'], plural: ['τα παιδιά', 'των παιδιών'] },
+      { singular: ['το διαμέρισμα', 'του διαμερίσματος'], plural: ['τα διαμερίσματα', 'των διαμερισμάτων'] },
+    ],
+  },
+];
+
+const ACCUSATIVE_EXAMPLES: CaseGenderGroup[] = [
+  {
+    gender: 'м.р.',
+    words: [
+      { singular: ['ο φίλος', 'τον φίλο'], plural: ['οι φίλοι', 'τους φίλους'] },
+      { singular: ['ο γείτονας', 'τον γείτονα'], plural: ['οι γείτονες', 'τους γείτονες'] },
+      { singular: ['ο φοιτητής', 'τον φοιτητή'], plural: ['οι φοιτητές', 'τους φοιτητές'] },
+    ],
+  },
+  {
+    gender: 'ж.р.',
+    words: [
+      { singular: ['η γυναίκα', 'την γυναίκα'], plural: ['οι γυναίκες', 'τις γυναίκες'] },
+      { singular: ['η αδερφή', 'την αδερφή'], plural: ['οι αδερφές', 'τις αδερφές'] },
+    ],
+  },
+  {
+    gender: 'с.р.',
+    words: [
+      { singular: ['το μωρό', 'το μωρό'], plural: ['τα μωρά', 'τα μωρά'] },
+      { singular: ['το παιδί', 'το παιδί'], plural: ['τα παιδιά', 'τα παιδιά'] },
+      { singular: ['το διαμέρισμα', 'το διαμέρισμα'], plural: ['τα διαμερίσματα', 'τα διαμερίσματα'] },
+    ],
+  },
+];
+
+export function casesGenitiveCheatsheetMarkup(): string {
+  return `
+    <section class="cases-cheatsheet cases-cheatsheet--genitive fade-in" aria-label="Родительный падеж — окончания">
+      <h2>Родительный — окончания</h2>
+      <p class="cases-cheatsheet-note">Типичные изменения: <strong>−ος → −ου</strong>, <strong>−ας → −α</strong>, <strong>−ης → −ή</strong>; <strong>−α → −ας</strong>, <strong>−η → −ης</strong>; <strong>−ο → −ου</strong>, <strong>−ι → −ιού</strong>, <strong>−μα → −ματος</strong>. Во мн. числе артикль родительного <strong>των</strong>, ударение часто на <strong>−ών</strong>.</p>
+      ${casesNumberTable('gen', 'Γεν.', 'кого? чего?', GENITIVE_EXAMPLES)}
     </section>`;
 }
 
 export function casesAccusativeCheatsheetMarkup(): string {
-  const rows = [
-    casesDetailExampleRow('м.р.', 'ο φίλος', 'τον φίλο', 'τους φίλους', { genderRowspan: 3 }),
-    casesDetailExampleRow('', 'ο γείτονας', 'τον γείτονα', 'τους γείτονες', { hideGender: true }),
-    casesDetailExampleRow('', 'ο φοιτητής', 'τον φοιτητή', 'τους φοιτητές', { hideGender: true }),
-    casesDetailExampleRow('ж.р.', 'η γυναίκα', 'την γυναίκα', 'τις γυναίκες', { genderRowspan: 2 }),
-    casesDetailExampleRow('', 'η αδερφή', 'την αδερφή', 'τις αδερφές', { hideGender: true }),
-    casesDetailExampleRow('с.р.', 'το μωρό', 'το μωρό', 'τα μωρά', { genderRowspan: 3 }),
-    casesDetailExampleRow('', 'το παιδί', 'το παιδί', 'τα παιδιά', { hideGender: true }),
-    casesDetailExampleRow('', 'το διαμέρισμα', 'το διαμέρισμα', 'τα διαμερίσματα', { hideGender: true }),
-  ].join('');
-
   return `
     <section class="cases-cheatsheet cases-cheatsheet--accusative fade-in" aria-label="Винительный падеж — окончания">
       <h2>Винительный — окончания</h2>
       <p class="cases-cheatsheet-note">М.р. меняется: <strong>−ος → −ο</strong>, <strong>−ας → −α</strong>, <strong>−ης → −η</strong>. Ж.р. и с.р. в ед. числе часто <strong>совпадают с именительным</strong>. Во мн. числе: <strong>τους</strong> …−ους / −ες (м.), <strong>τις</strong> …−ες (ж.), <strong>τα</strong> …−α / −ια / −ματα (ср.).</p>
-      <div class="cases-cheatsheet-scroll">
-        <table class="cases-cheatsheet-table cases-cheatsheet-table--detail">
-          <thead>
-            <tr>
-              <th></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--nom">Ονομ. ед.<span>кто? что?</span></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--acc">Αιτ. ед.<span>кого? что?</span></th>
-              <th class="cases-cheatsheet-th cases-cheatsheet-th--acc">Αιτ. мн.<span>кого? что?</span></th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      ${casesNumberTable('acc', 'Αιτ.', 'кого? что?', ACCUSATIVE_EXAMPLES)}
     </section>`;
 }
 

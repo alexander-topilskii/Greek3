@@ -2761,6 +2761,18 @@ body.practice-immersive-open {
   width: 3.25rem;
 }
 
+.cases-cheatsheet-number,
+.cases-cheatsheet-number-col {
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  width: 2.75rem;
+}
+
+.cases-cheatsheet-row--plural td {
+  background: var(--bg);
+}
+
 .cases-cheatsheet-cell {
   font-family: var(--font-greek);
   font-weight: 500;
