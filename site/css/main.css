@@ -1539,8 +1539,17 @@ body.progress-fullscreen-open {
 .verb-cube-heading {
   flex: 1;
   min-width: 0;
+  margin: 0;
+  padding: 0.55rem 0.35rem;
   text-align: center;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
   transition: opacity 0.3s ease;
+}
+
+.verb-cube-heading:active {
+  cursor: grabbing;
 }
 
 .verb-cube-heading.is-fading {

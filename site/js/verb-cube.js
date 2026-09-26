@@ -231,8 +231,9 @@
     if (!drag || event.pointerId !== drag.id) return;
     const state = drag;
     drag = null;
-    if (scene.hasPointerCapture && scene.hasPointerCapture(event.pointerId)) {
-      scene.releasePointerCapture(event.pointerId);
+    const surface = state.surface;
+    if (surface && surface.hasPointerCapture && surface.hasPointerCapture(event.pointerId)) {
+      surface.releasePointerCapture(event.pointerId);
     }
     if (!state.active) return;
 
@@ -250,47 +251,53 @@
     updateChrome();
   }
 
-  scene.addEventListener('pointerdown', (event) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    if (event.target.closest('button, a')) return;
-    drag = {
-      id: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastT: event.timeStamp,
-      vx: 0,
-      active: false,
-      shown: currentFaceIndex,
-    };
-  });
+  function bindDrag(surface) {
+    surface.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.target.closest('button, a')) return;
+      drag = {
+        id: event.pointerId,
+        surface,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastX: event.clientX,
+        lastT: event.timeStamp,
+        vx: 0,
+        active: false,
+        shown: currentFaceIndex,
+      };
+    });
 
-  scene.addEventListener('pointermove', (event) => {
-    if (!drag || event.pointerId !== drag.id) return;
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
-    if (!drag.active) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      if (Math.abs(dy) > Math.abs(dx)) {
-        drag = null;
-        return;
+    surface.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.id || drag.surface !== surface) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (!drag.active) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          drag = null;
+          return;
+        }
+        drag.active = true;
+        try {
+          if (surface.setPointerCapture) surface.setPointerCapture(event.pointerId);
+        } catch (err) {
+          // The pointer may already be gone; the drag still follows clientX.
+        }
       }
-      drag.active = true;
-      try {
-        if (scene.setPointerCapture) scene.setPointerCapture(event.pointerId);
-      } catch (err) {
-        // The pointer may already be gone; the drag still follows clientX.
-      }
-    }
-    const dt = event.timeStamp - drag.lastT;
-    if (dt > 0) drag.vx = (event.clientX - drag.lastX) / dt;
-    drag.lastX = event.clientX;
-    drag.lastT = event.timeStamp;
-    followFinger(dx);
-  });
+      const dt = event.timeStamp - drag.lastT;
+      if (dt > 0) drag.vx = (event.clientX - drag.lastX) / dt;
+      drag.lastX = event.clientX;
+      drag.lastT = event.timeStamp;
+      followFinger(dx);
+    });
 
-  scene.addEventListener('pointerup', finishDrag);
-  scene.addEventListener('pointercancel', finishDrag);
+    surface.addEventListener('pointerup', finishDrag);
+    surface.addEventListener('pointercancel', finishDrag);
+  }
+
+  bindDrag(scene);
+  bindDrag(heading);
 
   cube.style.transition = 'none';
   syncGeometry();
