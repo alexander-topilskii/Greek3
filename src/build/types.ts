@@ -109,6 +109,17 @@ export interface EssayExample {
   body: string;
 }
 
+/** Песня в разделе «Песни». */
+export interface Song {
+  slug: string;
+  title: string;
+  intro: string;
+  /** Номер урока, если указан в frontmatter */
+  lesson: number | null;
+  lines: EssayPair[];
+  sourcePath: string;
+}
+
 /** Тема раздела «Сочинения». */
 export interface EssayTopic {
   slug: string;

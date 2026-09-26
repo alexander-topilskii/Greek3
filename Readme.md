@@ -56,5 +56,6 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 - [Частицы](words/particles/readme.md)
 - [Фразы](words/phrases/readme.md)
 - [Сочинения](words/essays/readme.md) — темы для письма: вопросы, лексика и примеры
+- [Песни](words/songs/readme.md) — тексты песен с переводом
 - [Темы](words/topics/readme.md) — генерируются при сборке
 - [Уровни](words/levels/readme.md) — генерируются при сборке

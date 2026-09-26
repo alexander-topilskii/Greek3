@@ -27,7 +27,7 @@ function parsePair(line: string): EssayPair | null {
   return { greek, translation };
 }
 
-function parsePairs(lines: string[]): EssayPair[] {
+export function parsePairs(lines: string[]): EssayPair[] {
   const pairs: EssayPair[] = [];
   for (const line of lines) {
     const trimmed = line.trim();

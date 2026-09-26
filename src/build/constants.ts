@@ -10,6 +10,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   lessons: 'Уроки',
   blocks: 'Блоки',
   essays: 'Сочинения',
+  songs: 'Песни',
   topics: 'Темы',
   levels: 'Уровни',
 };
@@ -38,6 +39,7 @@ export const HOME_SECTIONS = [
   { title: 'Падежи и управление', href: 'words/cases/index.html', description: 'Падежи, управление глаголов и практика' },
   { title: 'Частицы', href: 'words/particles/index.html', description: 'Связки для письма: и, но, поэтому, потом…' },
   { title: 'Сочинения', href: 'words/essays/index.html', description: 'Темы для письма: вопросы, лексика и образцы' },
+  { title: 'Песни', href: 'words/songs/index.html', description: 'Тексты песен с переводом строка за строкой' },
   { title: 'Темы', href: 'words/topics/index.html', description: 'Группировка по темам из метаданных' },
   { title: 'Уровни', href: 'words/levels/index.html', description: 'A1 → B2 по шкале CEFR' },
 ] as const;

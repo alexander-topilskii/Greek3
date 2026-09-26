@@ -53,6 +53,14 @@ export function breadcrumbsForIndex(
     return crumbs;
   }
 
+  if (category === 'songs') {
+    if (relativePath.toLowerCase() !== 'songs/readme.md') {
+      crumbs.push({ label: 'Песни', href: sitePath('words/songs/index.html') });
+    }
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
   if (category === 'topics') {
     crumbs.push({ label: 'Темы', href: sitePath('words/topics/index.html') });
     if (relativePath.toLowerCase() !== 'topics/readme.md') crumbs.push({ label: title });

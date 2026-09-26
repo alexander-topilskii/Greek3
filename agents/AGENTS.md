@@ -25,7 +25,8 @@
 | Добавить слово | `words/<кат>/<имя>.md` + ссылка в `readme.md` |
 | Добавить слово в урок | 1) файл слова в `words/<кат>/` + ссылка в `words/<кат>/readme.md`; 2) ссылка в `words/lessons/<NN>/readme.md`. Категорию подобрать по типу слова; если подходящей нет — создать новую (см. MD_FORMAT) |
 | Добавить слово в блок | 1) файл в `words/<кат>/` + ссылка в категории; 2) ссылка в `words/blocks/<NN>/readme.md`. Одна метка блока на слово; конфликт → ранний блок |
-| Новый раздел | Папка в `words/` + `readme.md` + ссылка в `words/readme.md` и `Readme.md`; карточка на главной — `homeSections` в `src/build/index.ts` |
+| Новый раздел | Папка в `words/` + `readme.md` + ссылка в `words/readme.md` и `Readme.md`; карточка на главной — `HOME_SECTIONS` в `src/build/constants.ts` |
+| Добавить песню | `words/songs/<имя>.md` + ссылка в `words/songs/readme.md`; опционально `lesson: N` во frontmatter (см. `agents/MD_FORMAT.md` → «Песни») |
 | Стили/анимации | `site/css/main.css` |
 | Интерактив практики | `site/js/practice.js` |
 | Шаблон страницы | `src/build/render.ts` |

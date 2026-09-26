@@ -3,6 +3,8 @@ export interface WordFrontmatter {
   topics: string[];
   tags: string[];
   type: string;
+  /** Номер урока (для песен и др.) */
+  lesson: number | null;
 }
 
 const EMPTY: WordFrontmatter = {
@@ -10,6 +12,7 @@ const EMPTY: WordFrontmatter = {
   topics: [],
   tags: [],
   type: '',
+  lesson: null,
 };
 
 function parseScalarList(value: string): string[] {
@@ -47,6 +50,10 @@ export function parseFrontmatter(raw: string): {
     else if (key === 'topics') frontmatter.topics = parseScalarList(value);
     else if (key === 'tags') frontmatter.tags = parseScalarList(value);
     else if (key === 'type') frontmatter.type = value.replace(/^['"]|['"]$/g, '');
+    else if (key === 'lesson') {
+      const n = parseInt(value.replace(/^['"]|['"]$/g, ''), 10);
+      if (!Number.isNaN(n) && n > 0) frontmatter.lesson = n;
+    }
   }
 
   return { frontmatter, body: raw.slice(match[0].length) };
