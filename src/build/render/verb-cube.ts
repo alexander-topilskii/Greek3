@@ -52,14 +52,20 @@ function formsFor(paradigm: VerbParadigm, tense: VerbTense, aspect: VerbAspect):
   return forms && forms.length === 6 ? forms : ['', '', '', '', '', ''];
 }
 
+const PERFECT_AUX = new Set([
+  'έχω', 'έχουμε', 'έχεις', 'έχετε', 'έχει', 'έχουν',
+  'είχα', 'είχαμε', 'είχες', 'είχατε', 'είχε', 'είχαν',
+]);
+
 function formatVerbHtml(text: string, aspect: VerbAspect): string {
   const value = text.trim();
   if (!value) return '<span class="verb-person-empty">—</span>';
   if (aspect === 'perfect') {
     const bits = value.split(/\s+/);
-    if (bits.length >= 2) {
-      const tail = bits.pop() ?? '';
-      const head = bits.join(' ');
+    let auxEnd = bits[0] === 'θα' ? 1 : 0;
+    if (PERFECT_AUX.has(bits[auxEnd] ?? '') && bits.length > auxEnd + 1) {
+      const head = bits.slice(0, auxEnd + 1).join(' ');
+      const tail = bits.slice(auxEnd + 1).join(' ');
       return `<span class="verb-aux">${escapeHtml(head)}</span><span class="verb-part">${escapeHtml(tail)}</span>`;
     }
   }

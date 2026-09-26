@@ -488,7 +488,7 @@ def replace_perfect_stem(block: str, stem: str) -> str:
         if not re.search(r"(έχ|είχ)", line):
             return line
         return re.sub(
-            r"(έχω|έχουμε|έχεις|έχετε|έχει|έχουν|είχα|είχαμε|είχες|είχατε|είχε|είχαν) \S+",
+            r"(?:^|(?<= ))(έχω|έχουμε|έχεις|έχετε|έχει|έχουν|είχα|είχαμε|είχες|είχατε|είχε|είχαν) (?=\S*[Α-ωά-ώ])\S+",
             lambda match: f"{match.group(1)} {stem}",
             line,
         )
@@ -567,7 +567,9 @@ def overlay_card(block: str, source: str, lemma: str, base_forms: list[str]) -> 
                 accent_key(head) == accent_key(generated_imperfect)
                 and accent_key(head) != accent_key(generated_past)
             )
-            if not card_is_imperfect:
+            if card_is_imperfect:
+                block = set_aspect_rows(block, "прошедшее", "длительное", plain)
+            else:
                 block = set_aspect_rows(block, "прошедшее", "разовое", plain)
         elif accent_key(head) == accent_key(lemma):
             block = set_aspect_rows(block, "настоящее", "разовое", plain)
@@ -732,7 +734,7 @@ def main() -> int:
             continue
         original = path.read_text(encoding="utf-8")
         lemma, base_forms = parse_base(original)
-        if lemma == "γίνομαι":
+        if lemma in {"γίνομαι", "αισθάνομαι", "φυσάει"}:
             skipped += 1
             continue
         original = strip_generated(original)
@@ -757,6 +759,11 @@ def main() -> int:
             fix = LEMMA_FIXES.get(lemma)
             if fix:
                 block = fix(block)
+            if lemma == "πάω" and "πηγαίνοντας" not in block:
+                if "# Причастие" in block:
+                    block = block.replace("# Причастие\n", "# Причастие\nактивное: πηγαίνοντας\n", 1)
+                else:
+                    block = block.rstrip() + "\n\n# Причастие\nактивное: πηγαίνοντας\n"
         if len(base_forms) >= 3:
             past = base_forms[0]
             future = strip_tha(base_forms[2])

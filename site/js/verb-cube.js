@@ -34,10 +34,18 @@
   let titleTimer = 0;
   let ready = false;
 
-  function tenseKey() {
-    if (currentFaceIndex === -1) return 'past';
-    if (currentFaceIndex === 1) return 'future';
+  function tenseFromIndex(index) {
+    if (index === -1) return 'past';
+    if (index === 1) return 'future';
     return 'present';
+  }
+
+  function tenseKey() {
+    return tenseFromIndex(currentFaceIndex);
+  }
+
+  function rotationFor(index) {
+    return index * -90;
   }
 
   function formatVerb(text, aspect) {
@@ -45,9 +53,11 @@
     if (!value) return '<span class="verb-person-empty">—</span>';
     if (aspect === 'perfect') {
       const bits = value.split(/\s+/);
-      if (bits.length >= 2) {
-        const tail = bits.pop();
-        const head = bits.join(' ');
+      const aux = new Set(['έχω', 'έχουμε', 'έχεις', 'έχετε', 'έχει', 'έχουν', 'είχα', 'είχαμε', 'είχες', 'είχατε', 'είχε', 'είχαν']);
+      let auxEnd = bits[0] === 'θα' ? 1 : 0;
+      if (aux.has(bits[auxEnd]) && bits.length > auxEnd + 1) {
+        const head = bits.slice(0, auxEnd + 1).join(' ');
+        const tail = bits.slice(auxEnd + 1).join(' ');
         return `<span class="verb-aux">${escapeHtml(head)}</span><span class="verb-part">${escapeHtml(tail)}</span>`;
       }
     }
@@ -72,7 +82,7 @@
       cube.style.setProperty('--verb-tz', tz);
       scene.style.perspective = `${Math.max(800, Math.round(width * 2.4))}px`;
       void cube.offsetWidth;
-      if (ready) cube.style.transition = '';
+      if (ready && !drag) cube.style.transition = '';
     }
 
     let max = 0;
@@ -123,20 +133,32 @@
     titleTimer = window.setTimeout(apply, 150);
   }
 
-  function updateChrome() {
-    const rotationY = currentFaceIndex * -90;
-    cube.style.transform = `translateZ(calc(var(--verb-tz) * -1)) rotateY(${rotationY}deg)`;
+  function paintChrome(index) {
+    if (btnPrev) btnPrev.disabled = index === -1;
+    if (btnNext) btnNext.disabled = index === 1;
 
-    if (btnPrev) btnPrev.disabled = currentFaceIndex === -1;
-    if (btnNext) btnNext.disabled = currentFaceIndex === 1;
-
-    const active = tenseKey();
+    const active = tenseFromIndex(index);
     root.querySelectorAll('.verb-cube-dot').forEach((dot) => {
       dot.classList.toggle('is-active', dot.getAttribute('data-dot') === active);
     });
     root.querySelectorAll('.verb-cube-face').forEach((face) => {
       face.setAttribute('aria-hidden', face.getAttribute('data-tense') === active ? 'false' : 'true');
     });
+  }
+
+  function applyRotation(degrees, animate) {
+    if (animate) {
+      cube.style.transition = '';
+      void cube.offsetWidth;
+    } else {
+      cube.style.transition = 'none';
+    }
+    cube.style.transform = `translateZ(calc(var(--verb-tz) * -1)) rotateY(${degrees}deg)`;
+  }
+
+  function updateChrome() {
+    applyRotation(rotationFor(currentFaceIndex), true);
+    paintChrome(currentFaceIndex);
   }
 
   function rotateCube(direction) {
@@ -182,24 +204,93 @@
     }
   });
 
-  let startX = 0;
-  let tracking = false;
+  let drag = null;
+
+  function rubberBand(degrees) {
+    if (degrees > 90) return 90 + (degrees - 90) * 0.22;
+    if (degrees < -90) return -90 + (degrees + 90) * 0.22;
+    return degrees;
+  }
+
+  function followFinger(dx) {
+    const width = scene.getBoundingClientRect().width || 1;
+    const degrees = rubberBand(rotationFor(currentFaceIndex) + (dx / width) * 90);
+    applyRotation(degrees, false);
+    const nearest = Math.max(-1, Math.min(1, Math.round(-degrees / 90)));
+    if (drag && nearest !== drag.shown) {
+      drag.shown = nearest;
+      const previous = currentFaceIndex;
+      currentFaceIndex = nearest;
+      updateTitle(false);
+      currentFaceIndex = previous;
+      paintChrome(nearest);
+    }
+  }
+
+  function finishDrag(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    const state = drag;
+    drag = null;
+    if (scene.hasPointerCapture && scene.hasPointerCapture(event.pointerId)) {
+      scene.releasePointerCapture(event.pointerId);
+    }
+    if (!state.active) return;
+
+    const width = scene.getBoundingClientRect().width || 1;
+    const dx = event.clientX - state.startX;
+    const ratio = dx / width;
+    let next = currentFaceIndex;
+    if (ratio <= -0.22 || (state.vx < -0.45 && dx <= -16)) next = Math.min(1, currentFaceIndex + 1);
+    else if (ratio >= 0.22 || (state.vx > 0.45 && dx >= 16)) next = Math.max(-1, currentFaceIndex - 1);
+
+    if (next !== currentFaceIndex) {
+      currentFaceIndex = next;
+      updateTitle(true);
+    }
+    updateChrome();
+  }
+
   scene.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    tracking = true;
-    startX = event.clientX;
-    if (scene.setPointerCapture) scene.setPointerCapture(event.pointerId);
+    if (event.target.closest('button, a')) return;
+    drag = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastT: event.timeStamp,
+      vx: 0,
+      active: false,
+      shown: currentFaceIndex,
+    };
   });
-  scene.addEventListener('pointerup', (event) => {
-    if (!tracking) return;
-    tracking = false;
-    const dx = event.clientX - startX;
-    if (dx <= -40) rotateCube(1);
-    else if (dx >= 40) rotateCube(-1);
+
+  scene.addEventListener('pointermove', (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (!drag.active) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        drag = null;
+        return;
+      }
+      drag.active = true;
+      try {
+        if (scene.setPointerCapture) scene.setPointerCapture(event.pointerId);
+      } catch (err) {
+        // The pointer may already be gone; the drag still follows clientX.
+      }
+    }
+    const dt = event.timeStamp - drag.lastT;
+    if (dt > 0) drag.vx = (event.clientX - drag.lastX) / dt;
+    drag.lastX = event.clientX;
+    drag.lastT = event.timeStamp;
+    followFinger(dx);
   });
-  scene.addEventListener('pointercancel', () => {
-    tracking = false;
-  });
+
+  scene.addEventListener('pointerup', finishDrag);
+  scene.addEventListener('pointercancel', finishDrag);
 
   cube.style.transition = 'none';
   syncGeometry();
