@@ -4,6 +4,7 @@ import { buildSlugIndexMap, indexOutputPath, parseIndexFile } from './parse-inde
 import { sortLessonIndexPage, collectBlockAssignments } from './catalog-order';
 import { isWordFile, parseWordFile } from './parse-word';
 import { parseEssayFile } from './parse-essay';
+import { parseSongFile } from './parse-song';
 import {
   buildCatalogWord,
   buildSearchIndex,
@@ -11,6 +12,7 @@ import {
   renderCasesIndex,
   renderCasesPractice,
   renderEssay,
+  renderSong,
   renderHome,
   renderIndex,
   renderSearch,
@@ -21,7 +23,7 @@ import {
 } from './render';
 import { writeManifest, writeServiceWorker } from './pwa';
 import { enrichWordEntry, buildLevelAggregates, buildTopicAggregates } from './meta';
-import type { CatalogWord, EssayTopic, VerbCatalog, WordEntry } from './types';
+import type { CatalogWord, EssayTopic, Song, VerbCatalog, WordEntry } from './types';
 import { HOME_SECTIONS } from './constants';
 import {
   buildCatalogForIndex,
@@ -68,6 +70,7 @@ function main(): void {
   const wordsByHref = new Map<string, WordEntry>();
   const wordsBySlug = new Map<string, WordEntry>();
   const essayTopics: EssayTopic[] = [];
+  const songs: Song[] = [];
 
   const casesGamePath = path.join(SITE_DIR, 'data', 'cases-game.json');
   const casesGameData = fs.existsSync(casesGamePath)
@@ -90,6 +93,11 @@ function main(): void {
 
     if (relLower.startsWith('essays/')) {
       essayTopics.push(parseEssayFile(file, WORDS_DIR));
+      continue;
+    }
+
+    if (relLower.startsWith('songs/')) {
+      songs.push(parseSongFile(file, WORDS_DIR));
       continue;
     }
 
@@ -130,6 +138,17 @@ function main(): void {
     const out = `words/${topic.slug}.html`;
     writeHtml(out, renderEssay(topic, crumbs));
     console.log(`  ✍️  ${out}`);
+  }
+
+  for (const song of songs) {
+    const crumbs = [
+      { label: 'Главная', href: sitePath('index.html') },
+      { label: 'Песни', href: sitePath('words/songs/index.html') },
+      { label: song.title },
+    ];
+    const out = `words/${song.slug}.html`;
+    writeHtml(out, renderSong(song, crumbs));
+    console.log(`  🎵 ${out}`);
   }
 
   const deckCatalogs: Record<string, VerbCatalog> = {};

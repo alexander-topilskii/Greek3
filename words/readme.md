@@ -10,5 +10,6 @@
 [Числа](numbers/readme.md)
 [Падежи и управление](cases/readme.md)
 [Частицы](particles/readme.md)
+[Песни](songs/readme.md)
 [Темы](topics/readme.md)
 [Уровни](levels/readme.md)

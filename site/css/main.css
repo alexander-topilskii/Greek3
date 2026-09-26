@@ -3936,6 +3936,17 @@ body.cases-progress-open {
   color: #c2410c;
 }
 
+.word-badge--lesson {
+  background: #fce7f3;
+  border-color: #fbcfe8;
+  color: #9d174d;
+  text-decoration: none;
+}
+
+.word-badge--lesson:hover {
+  background: #fbcfe8;
+}
+
 .phrase-summary {
   background: var(--bg-card);
   border: 1px solid var(--border);
