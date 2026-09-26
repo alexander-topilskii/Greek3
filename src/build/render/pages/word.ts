@@ -43,11 +43,19 @@ export function renderWord(
   const contextSection = getSpecialSection(word, 'контекст');
   const skipTitles = new Set(['контекст', 'уровень']);
 
+  const favoriteBtn = favoriteButtonMarkup({
+    kind: 'word',
+    id: word.slug,
+    label: translation,
+    className: 'btn-favorite--word',
+  });
+
   const summaryHtml = showVerbSummary
     ? `
       <div class="verb-summary">
         <div class="verb-summary-head">
-          <span class="verb-summary-translation">${escapeHtml(translation)}</span>${word.verbType ? `<span class="verb-summary-type"> (${escapeHtml(word.verbType)})</span>` : ''}
+          <span class="verb-summary-title"><span class="verb-summary-translation">${escapeHtml(translation)}</span>${word.verbType ? `<span class="verb-summary-type"> (${escapeHtml(word.verbType)})</span>` : ''}</span>
+          ${favoriteBtn}
         </div>
         ${metaBadges}
         <div class="verb-summary-grid">
@@ -65,12 +73,18 @@ export function renderWord(
     : isPhrase
       ? `
       <div class="phrase-summary">
-        <p class="phrase-summary-greek greek">${escapeHtml(word.primaryGreek || word.baseForms[0] || '')}</p>
+        <div class="word-title-row">
+          <p class="phrase-summary-greek greek">${escapeHtml(word.primaryGreek || word.baseForms[0] || '')}</p>
+          ${favoriteBtn}
+        </div>
         <p class="phrase-summary-ru">${escapeHtml(translation)}</p>
         ${metaBadges}
       </div>`
       : `<div class="word-title-block">
-        <h1 class="word-title">${escapeHtml(translation)}</h1>
+        <div class="word-title-row">
+          <h1 class="word-title">${escapeHtml(translation)}</h1>
+          ${favoriteBtn}
+        </div>
         ${word.primaryGreek ? `<p class="word-title-greek greek">${escapeHtml(word.primaryGreek)}</p>` : ''}
         ${metaBadges}
       </div>`;
@@ -123,15 +137,7 @@ export function renderWord(
       data-base-forms="${baseFormsJson}"
       data-forms="${formsJson}">
       <header class="word-header fade-in">
-        <div class="word-header-top">
-          ${summaryHtml}
-          ${favoriteButtonMarkup({
-            kind: 'word',
-            id: word.slug,
-            label: translation,
-            className: 'btn-favorite--word',
-          })}
-        </div>
+        ${summaryHtml}
         ${progressBarMarkup(word.slug)}
       </header>
 
@@ -142,7 +148,7 @@ export function renderWord(
       </section>
 
       ${
-        word.forms.length
+        word.forms.length && !paradigm.interactive
           ? `
       <section class="forms-table-section fade-in">
         <h2>${isPhrase ? 'Варианты' : 'Все формы'}</h2>

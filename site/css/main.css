@@ -1416,13 +1416,50 @@ body.progress-fullscreen-open {
 }
 
 .verb-summary-head {
-  padding: 0.875rem 1rem;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  column-gap: 0.25rem;
+  padding: 0.625rem 0.4rem;
   text-align: center;
   font-size: 1.25rem;
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent-soft), #fff);
   border-bottom: 1px solid var(--border);
   line-height: 1.3;
+}
+
+.verb-summary-title {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.word-title-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+
+.word-title-row > :first-child {
+  grid-column: 2;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.verb-summary-head .btn-favorite--word,
+.word-title-row .btn-favorite--word {
+  grid-column: 3;
+  justify-self: center;
+}
+
+.phrase-summary .word-title-row {
+  margin-bottom: 0.5rem;
+}
+
+.phrase-summary .word-title-row .phrase-summary-greek {
+  margin-bottom: 0;
 }
 
 .verb-summary-type {
@@ -1443,6 +1480,12 @@ body.progress-fullscreen-open {
   gap: 0.25rem;
   padding: 0.75rem 0.5rem;
   text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.verb-summary-cell:active .verb-summary-form {
+  opacity: 0.55;
 }
 
 .verb-summary-cell:not(:last-child) {
@@ -1718,6 +1761,20 @@ body.progress-fullscreen-open {
   padding: 0.5rem 0.7rem;
   border-radius: 12px;
   border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.verb-person:has(.verb-person-empty) {
+  cursor: default;
+}
+
+.verb-person:active .verb-person-form {
+  opacity: 0.55;
+}
+
+.verb-person:has(.verb-person-empty):active .verb-person-form {
+  opacity: 1;
 }
 
 .verb-cube-face--past .verb-person {
@@ -1812,6 +1869,13 @@ body.progress-fullscreen-open {
   justify-content: space-between;
   align-items: baseline;
   gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.verb-extra-row:active .verb-extra-form,
+.verb-participle:active .verb-extra-form {
+  opacity: 0.55;
 }
 
 .verb-participle {
@@ -2482,9 +2546,8 @@ body.practice-immersive-open {
 }
 
 .btn-favorite--word {
-  position: absolute;
-  top: 0;
-  right: 0;
+  width: 2rem;
+  height: 2rem;
 }
 
 .word-link-actions {
@@ -2518,11 +2581,6 @@ body.practice-immersive-open {
   padding-bottom: 0;
   border-bottom: none;
   flex: 1;
-}
-
-.word-header-top {
-  position: relative;
-  padding-right: 3rem;
 }
 
 .favorites-section {

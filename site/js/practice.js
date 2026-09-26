@@ -141,6 +141,14 @@
     srs.applyProgressBar(bar, st);
   }
 
+  page.querySelectorAll('.verb-summary-cell').forEach((cell) => {
+    cell.addEventListener('click', () => {
+      const greek = cell.querySelector('.verb-summary-form')?.textContent?.replace(/\s+/g, ' ').trim();
+      if (!greek || greek === '—') return;
+      if (speak?.isSupported?.()) speak.speakGreek(greek);
+    });
+  });
+
   formRows.forEach((row) => {
     row.addEventListener('click', (event) => {
       if (event.target.closest('.form-row-goto')) return;

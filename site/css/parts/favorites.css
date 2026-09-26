@@ -59,9 +59,8 @@
 }
 
 .btn-favorite--word {
-  position: absolute;
-  top: 0;
-  right: 0;
+  width: 2rem;
+  height: 2rem;
 }
 
 .word-link-actions {
@@ -95,11 +94,6 @@
   padding-bottom: 0;
   border-bottom: none;
   flex: 1;
-}
-
-.word-header-top {
-  position: relative;
-  padding-right: 3rem;
 }
 
 .favorites-section {

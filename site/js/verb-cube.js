@@ -205,6 +205,33 @@
   });
 
   let drag = null;
+  let blockSpeak = false;
+
+  function greekToSpeak(node) {
+    const cell = node.closest('.verb-person, .verb-extra-row, .verb-participle');
+    if (!cell || !root.contains(cell)) return '';
+    const face = cell.closest('.verb-cube-face');
+    if (face && face.getAttribute('aria-hidden') === 'true') return '';
+    const greek = cell.querySelector('.verb-person-form, .verb-extra-form');
+    if (!greek) return '';
+    const bits = [...greek.querySelectorAll('.verb-aux, .verb-part, .verb-main')];
+    const text = (bits.length ? bits.map((el) => el.textContent.trim()).filter(Boolean).join(' ') : greek.textContent || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text || text === '—') return '';
+    return text;
+  }
+
+  root.addEventListener('click', (event) => {
+    if (blockSpeak) {
+      blockSpeak = false;
+      return;
+    }
+    const text = greekToSpeak(event.target);
+    if (!text) return;
+    const speak = window.GreekSpeak;
+    if (speak?.isSupported?.()) speak.speakGreek(text);
+  });
 
   function rubberBand(degrees) {
     if (degrees > 90) return 90 + (degrees - 90) * 0.22;
@@ -235,6 +262,7 @@
     if (surface && surface.hasPointerCapture && surface.hasPointerCapture(event.pointerId)) {
       surface.releasePointerCapture(event.pointerId);
     }
+    blockSpeak = state.active;
     if (!state.active) return;
 
     const width = scene.getBoundingClientRect().width || 1;
@@ -255,6 +283,7 @@
     surface.addEventListener('pointerdown', (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
       if (event.target.closest('button, a')) return;
+      blockSpeak = false;
       drag = {
         id: event.pointerId,
         surface,
