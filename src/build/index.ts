@@ -38,6 +38,7 @@ import {
 import { breadcrumbsForWord, breadcrumbsForIndex } from './breadcrumbs';
 import { BUILD_VERSION } from './build-version';
 import { buildGreekFormLookup } from './greek-lookup';
+import { buildSongCatalog, songCatalogPageDir } from './build-song-catalog';
 import { songLineOutputPath } from './song-line-path';
 import {
   DIST_DIR,
@@ -126,6 +127,8 @@ function main(): void {
   }
 
   const greekFormLookup = buildGreekFormLookup(words);
+  const deckCatalogs: Record<string, VerbCatalog> = {};
+
   for (const word of wordRenderQueue) {
     const out = wordOutputPath(word.slug);
     writeHtml(out, renderWord(word, breadcrumbsForWord(word), greekFormLookup));
@@ -150,9 +153,16 @@ function main(): void {
       { label: 'Песни', href: sitePath('words/songs/index.html') },
       { label: song.title },
     ];
+    const catalog = buildSongCatalog(song, greekFormLookup, wordsBySlug);
+    const songPageDir = songCatalogPageDir(song.slug);
+    writeCatalog(songPageDir, catalog);
+    if (catalog.words.length > 0 && catalog.deckId) {
+      deckCatalogs[catalog.deckId] = catalog;
+    }
+
     const out = `words/${song.slug}.html`;
-    writeHtml(out, renderSong(song, crumbs));
-    console.log(`  🎵 ${out}`);
+    writeHtml(out, renderSong(song, crumbs, catalog.words.length > 0 ? catalog : undefined));
+    console.log(`  🎵 ${out}${catalog.words.length ? ` (+ ${catalog.words.length} слов)` : ''}`);
 
     song.lines.forEach((line, lineIndex) => {
       const lineCrumbs = [
@@ -168,8 +178,6 @@ function main(): void {
       );
     });
   }
-
-  const deckCatalogs: Record<string, VerbCatalog> = {};
 
   for (const file of mdFiles) {
     const relative = path.relative(WORDS_DIR, file);
