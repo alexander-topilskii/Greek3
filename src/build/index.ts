@@ -13,6 +13,8 @@ import {
   renderCasesPractice,
   renderEssay,
   renderSong,
+  renderSongLine,
+  songLineBreadcrumbLabel,
   renderHome,
   renderIndex,
   renderSearch,
@@ -36,6 +38,7 @@ import {
 import { breadcrumbsForWord, breadcrumbsForIndex } from './breadcrumbs';
 import { BUILD_VERSION } from './build-version';
 import { buildGreekFormLookup } from './greek-lookup';
+import { songLineOutputPath } from './song-line-path';
 import {
   DIST_DIR,
   SITE_DIR,
@@ -141,6 +144,7 @@ function main(): void {
   }
 
   for (const song of songs) {
+    const songPageHref = sitePath(`words/${song.slug}.html`);
     const crumbs = [
       { label: 'Главная', href: sitePath('index.html') },
       { label: 'Песни', href: sitePath('words/songs/index.html') },
@@ -149,6 +153,20 @@ function main(): void {
     const out = `words/${song.slug}.html`;
     writeHtml(out, renderSong(song, crumbs));
     console.log(`  🎵 ${out}`);
+
+    song.lines.forEach((line, lineIndex) => {
+      const lineCrumbs = [
+        { label: 'Главная', href: sitePath('index.html') },
+        { label: 'Песни', href: sitePath('words/songs/index.html') },
+        { label: song.title, href: songPageHref },
+        { label: songLineBreadcrumbLabel(line) },
+      ];
+      const lineOut = songLineOutputPath(song.slug, lineIndex);
+      writeHtml(
+        lineOut,
+        renderSongLine(song, lineIndex, line, lineCrumbs, greekFormLookup),
+      );
+    });
   }
 
   const deckCatalogs: Record<string, VerbCatalog> = {};

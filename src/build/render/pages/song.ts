@@ -1,4 +1,5 @@
 import type { EssayPair, Song } from '../../types';
+import { songLineOutputPath } from '../../song-line-path';
 import { escapeHtml } from '../html';
 import { layout } from '../layout';
 import { sitePath } from '../../site-path';
@@ -9,14 +10,17 @@ function speakButton(text: string): string {
     </button>`;
 }
 
-function pairRow(pair: EssayPair): string {
+function pairRow(pair: EssayPair, songSlug: string, lineIndex: number): string {
+  const lineHref = sitePath(songLineOutputPath(songSlug, lineIndex));
   return `
         <div class="essay-pair song-line">
-          <div class="essay-pair-greek">
-            <span class="greek">${escapeHtml(pair.greek)}</span>
-            ${speakButton(pair.greek)}
-          </div>
-          <p class="essay-pair-ru">${escapeHtml(pair.translation)}</p>
+          <a class="song-line-hit" href="${escapeHtml(lineHref)}">
+            <div class="essay-pair-greek">
+              <span class="greek">${escapeHtml(pair.greek)}</span>
+            </div>
+            <p class="essay-pair-ru">${escapeHtml(pair.translation)}</p>
+          </a>
+          ${speakButton(pair.greek)}
         </div>`;
 }
 
@@ -35,7 +39,9 @@ export function renderSong(
     ? `<p class="page-intro">${escapeHtml(song.intro).replace(/\n/g, '<br>')}</p>`
     : '';
 
-  const lyricItems = song.lines.map((line) => pairRow(line)).join('');
+  const lyricItems = song.lines
+    .map((line, index) => pairRow(line, song.slug, index))
+    .join('');
   const lyricsBlock = song.lines.length
     ? `
       <section class="essay-section fade-in">

@@ -168,6 +168,89 @@
   margin-bottom: 0;
 }
 
+/* Песни: кликабельная строка и разбор слов */
+.song-pairs .song-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.song-line-hit {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: calc(var(--radius-sm) - 2px);
+  transition: var(--transition);
+}
+
+.song-line-hit:hover .greek,
+.song-line-hit:focus-visible .greek {
+  color: var(--accent);
+}
+
+.song-line-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.song-line-back {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.song-line-back a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.song-line-back a:hover {
+  color: var(--accent);
+}
+
+.song-line--detail {
+  margin: 0;
+}
+
+.song-line-tokens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.song-line-token {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.song-line-token-greek {
+  font-weight: 600;
+}
+
+.song-line-token-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.song-line-token-link:hover {
+  text-decoration: underline;
+}
+
+.song-line-token-missing {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
 @media (min-width: 640px) {
   .essay-pairs--grid {
     grid-template-columns: 1fr 1fr;
