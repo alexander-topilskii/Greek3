@@ -41,6 +41,21 @@ const MATCH_PRIORITY: Record<GreekFormTarget['matchKind'], number> = {
   form: 2,
 };
 
+/** При равном matchKind — не отдавать фразу, если та же форма есть у слова/частицы. */
+function categoryRank(slug: string): number {
+  const cat = slug.split('/')[0] ?? '';
+  const ranks: Record<string, number> = {
+    verbs: 0,
+    pronouns: 1,
+    particles: 2,
+    adjectives: 3,
+    adverbs: 3,
+    nouns: 4,
+    phrases: 8,
+  };
+  return ranks[cat] ?? 5;
+}
+
 export function resolveGreekFormLink(
   lookup: Map<string, GreekFormTarget[]>,
   greek: string,
@@ -55,6 +70,34 @@ export function resolveGreekFormLink(
   matches.sort(
     (a, b) =>
       MATCH_PRIORITY[a.matchKind] - MATCH_PRIORITY[b.matchKind] ||
+      categoryRank(a.slug) - categoryRank(b.slug) ||
+      a.slug.localeCompare(b.slug, 'ru'),
+  );
+
+  return matches[0];
+}
+
+/** Для колоды песни: та же логика, но без карточек phrases/ (только слова). */
+export function resolveGreekFormLinkForSongDeck(
+  lookup: Map<string, GreekFormTarget[]>,
+  greek: string,
+  currentSlug: string,
+): GreekFormTarget | null {
+  const key = normalizeSearchText(greek.trim());
+  if (!key) return null;
+
+  const matches =
+    lookup
+      .get(key)
+      ?.filter(
+        (item) => item.slug !== currentSlug && !item.slug.startsWith('phrases/'),
+      ) ?? [];
+  if (!matches.length) return null;
+
+  matches.sort(
+    (a, b) =>
+      MATCH_PRIORITY[a.matchKind] - MATCH_PRIORITY[b.matchKind] ||
+      categoryRank(a.slug) - categoryRank(b.slug) ||
       a.slug.localeCompare(b.slug, 'ru'),
   );
 

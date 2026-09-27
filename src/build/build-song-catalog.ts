@@ -1,6 +1,6 @@
 import path from 'path';
-import type { GreekFormTarget } from './greek-lookup';
-import { analyzeSongLineTokens } from './song-line-tokens';
+import { resolveGreekFormLinkForSongDeck, type GreekFormTarget } from './greek-lookup';
+import { tokenizeGreekLine } from './tokenize-greek-line';
 import type { CatalogWord, Song, VerbCatalog, WordEntry } from './types';
 import { buildCatalogWord, wordOutputPath } from './render';
 
@@ -20,15 +20,16 @@ export function buildSongCatalog(
   const words: CatalogWord[] = [];
 
   for (const line of song.lines) {
-    for (const token of analyzeSongLineTokens(line.greek, lookup)) {
-      const slug = token.target?.slug;
+    for (const surface of tokenizeGreekLine(line.greek)) {
+      const target = resolveGreekFormLinkForSongDeck(lookup, surface, '');
+      const slug = target?.slug;
       if (!slug || seen.has(slug)) continue;
       const word = wordsBySlug.get(slug);
       if (!word) continue;
       seen.add(slug);
       const wordHtml = wordOutputPath(word.slug);
       const href = path.relative(songHtmlDir, wordHtml).replace(/\\/g, '/');
-      const label = token.target?.label || word.translation || word.title;
+      const label = target?.label || word.translation || word.title;
       words.push(buildCatalogWord(word, href, label));
     }
   }
