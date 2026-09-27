@@ -56,21 +56,7 @@
 }
 
 .btn-header-settings {
-  position: relative;
   text-decoration: none;
-}
-
-.settings-version {
-  position: absolute;
-  top: 0.1rem;
-  right: 0;
-  font-size: 0.42rem;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--text-muted);
-  letter-spacing: -0.04em;
-  pointer-events: none;
-  transform: translateX(35%);
 }
 
 body.dialog-open {
