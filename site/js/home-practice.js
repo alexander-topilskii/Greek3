@@ -3,7 +3,7 @@
   if (!scope) return;
 
   const mode = scope.dataset.learningMode || 'home';
-  const isLesson = mode === 'lesson' || mode === 'block';
+  const isLesson = mode === 'lesson' || mode === 'block' || mode === 'song';
 
   const db = window.GreekDB;
   const srs = window.GreekSRS;
@@ -946,9 +946,13 @@
     catalogComplete?.removeAttribute('hidden');
     const completeText = catalogComplete?.querySelector('.practice-catalog-complete-text');
     if (completeText) {
-      completeText.textContent = isLesson
-        ? 'Все слова урока пройдены в обоих направлениях.'
-        : 'Все слова каталога пройдены в обоих направлениях.';
+      if (mode === 'song') {
+        completeText.textContent = 'Все слова из песни пройдены в обоих направлениях.';
+      } else if (isLesson) {
+        completeText.textContent = 'Все слова урока пройдены в обоих направлениях.';
+      } else {
+        completeText.textContent = 'Все слова каталога пройдены в обоих направлениях.';
+      }
     }
     practiceControls?.classList.add('hidden');
     practiceControls?.setAttribute('hidden', '');

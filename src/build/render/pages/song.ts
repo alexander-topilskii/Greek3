@@ -1,8 +1,13 @@
-import type { EssayPair, Song } from '../../types';
+import type { EssayPair, Song, VerbCatalog } from '../../types';
 import { songLineOutputPath } from '../../song-line-path';
-import { escapeHtml } from '../html';
+import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import { sitePath } from '../../site-path';
+import {
+  examplesDialogMarkup,
+  homePracticePanelMarkup,
+  settingsButtonHref,
+} from '../fragments';
 
 function speakButton(text: string): string {
   return `<button type="button" class="essay-speak" data-speak-text="${escapeHtml(text)}" aria-label="Озвучить">
@@ -33,6 +38,7 @@ function lessonBadge(lesson: number): string {
 export function renderSong(
   song: Song,
   breadcrumbs: { label: string; href?: string }[],
+  catalog?: VerbCatalog,
 ): string {
   const lessonLink = song.lesson != null ? lessonBadge(song.lesson) : '';
   const intro = song.intro
@@ -44,23 +50,76 @@ export function renderSong(
     .join('');
   const lyricsBlock = song.lines.length
     ? `
-      <section class="essay-section fade-in">
+      <section class="essay-section fade-in" id="song-lyrics">
         <h2>Текст</h2>
         <div class="essay-pairs song-pairs">${lyricItems}</div>
       </section>`
     : '';
 
-  const content = `
-    <article class="essay-page song-page">
-      <header class="page-head fade-in">
-        <div class="page-head-row">
-          <h1>${escapeHtml(song.title)}</h1>
-          ${lessonLink}
-        </div>
-        ${intro}
-      </header>
-      ${lyricsBlock}
-    </article>`;
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const catalogJson = hasWords
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog!)}</script>`
+    : '';
 
-  return layout(content, song.title, breadcrumbs, ['assets/js/essays.js']);
+  const learnBtn = hasWords
+    ? `<button type="button" class="btn btn-primary list-practice-btn" id="btn-song-learn">Учить слова</button>`
+    : '';
+
+  const practiceBlock = hasWords
+    ? `
+      <section class="home-practice list-practice hidden" id="song-practice" aria-hidden="true">
+        <div class="practice-panel practice-panel--wide fade-in">
+          ${homePracticePanelMarkup('song-flashcard-root')}
+        </div>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-song-practice">← К песне</button>
+      </section>`
+    : '';
+
+  const learningAttrs = hasWords
+    ? ` data-learning-practice data-learning-mode="song" data-practice-section-id="song-practice" data-flashcard-root-id="song-flashcard-root" data-open-btn-id="btn-song-learn" data-close-btn-id="btn-close-song-practice" data-nav-id="song-practice-immersive" data-session-key="greek3:song-practice-session" data-hide-on-open=".page-head,#song-lyrics,#song-practice-actions"`
+    : '';
+
+  const content = `
+    <section class="verbs-list-page song-list-page"${learningAttrs} data-deck-id="${escapeHtml(catalog?.deckId ?? '')}"${catalog?.pageId ? ` data-page-id="${escapeHtml(catalog.pageId)}"` : ''}>
+      <article class="essay-page song-page">
+        <header class="page-head fade-in">
+          <div class="page-head-row">
+            <h1>${escapeHtml(song.title)}</h1>
+            ${lessonLink}
+          </div>
+          ${intro}
+          ${hasWords ? `<div class="list-practice-actions" id="song-practice-actions">${learnBtn}</div>` : ''}
+        </header>
+        ${lyricsBlock}
+      </article>
+      ${practiceBlock}
+      ${catalogJson}
+    </section>`;
+
+  const scripts = hasWords
+    ? [
+        'assets/js/essays.js',
+        'assets/js/learning-ladder.js',
+        'assets/js/quiz-step.js',
+        'assets/js/spell-step.js',
+        'assets/js/match-step.js',
+        'assets/js/cloze-step.js',
+        'assets/js/build-step.js',
+        'assets/js/home-practice.js',
+      ]
+    : ['assets/js/essays.js'];
+
+  const fromPath = `words/${song.slug}.html`;
+  const layoutOptions = hasWords
+    ? {
+        showSettings: true,
+        settingsHref: settingsButtonHref({
+          deck: catalog!.deckId,
+          from: fromPath,
+        }),
+        bodyEnd: examplesDialogMarkup(),
+      }
+    : {};
+
+  return layout(content, song.title, breadcrumbs, scripts, layoutOptions);
 }
