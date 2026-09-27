@@ -1,6 +1,17 @@
 (function (global) {
+  /** Хранение в MD: прош. - наст. - буд.; на карточке: наст. → прош. → буд. */
+  function verbBaseFormsForDisplay(baseForms) {
+    if (!baseForms?.length || baseForms.length < 3) return baseForms ?? [];
+    return [baseForms[1], baseForms[0], baseForms[2]];
+  }
+
   function greekSummaryLines(word) {
-    if (word.baseForms?.length) return word.baseForms;
+    if (word.baseForms?.length) {
+      if (word.recordType === 'verb' || word.category === 'verbs') {
+        return verbBaseFormsForDisplay(word.baseForms);
+      }
+      return word.baseForms;
+    }
     if (word.forms?.length) return word.forms.slice(0, 3).map((f) => f.greek);
     return [];
   }

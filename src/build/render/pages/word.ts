@@ -1,5 +1,6 @@
 import type { WordEntry } from '../../types';
 import { baseFormLabels } from '../../base-form-labels';
+import { verbBaseFormsForDisplay } from '../../verb-base-forms';
 import { getSpecialSection } from '../../parse-word';
 import { renderMarkdown } from '../../markdown';
 import { resolveGreekFormLink, type GreekFormTarget } from '../../greek-lookup';
@@ -39,6 +40,7 @@ export function renderWord(
   const translation = word.translation || word.title;
   const deckId = word.category || 'default';
   const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers' && !isPhrase;
+  const summaryBaseForms = showVerbSummary ? verbBaseFormsForDisplay(word.baseForms) : word.baseForms;
   const metaBadges = renderMetaBadges(word);
   const contextSection = getSpecialSection(word, 'контекст');
   const skipTitles = new Set(['контекст', 'уровень']);
@@ -59,7 +61,7 @@ export function renderWord(
         </div>
         ${metaBadges}
         <div class="verb-summary-grid">
-          ${word.baseForms
+          ${summaryBaseForms
             .map(
               (form, i) => `
             <div class="verb-summary-cell">
@@ -90,7 +92,7 @@ export function renderWord(
       </div>`;
 
   const formsJson = escapeHtml(JSON.stringify(word.forms));
-  const baseFormsJson = escapeHtml(JSON.stringify(word.baseForms));
+  const baseFormsJson = escapeHtml(JSON.stringify(summaryBaseForms));
 
   const formsRows = word.forms
     .map(
