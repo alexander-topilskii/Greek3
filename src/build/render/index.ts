@@ -11,6 +11,7 @@ export { renderCasesPractice } from './pages/cases-practice';
 export { renderWord } from './pages/word';
 export { renderEssay } from './pages/essay';
 export { renderSong } from './pages/song';
+export { renderSongLine, songLineBreadcrumbLabel } from './pages/song-line';
 export { buildSearchIndex, renderSearch } from './pages/search';
 export { renderSettings } from './pages/settings';
 export type { SearchIndexEntry } from './pages/search';
