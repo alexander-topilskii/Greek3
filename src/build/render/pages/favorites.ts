@@ -38,7 +38,7 @@ export function renderFavorites(globalCatalog?: VerbCatalog): string {
       : '';
 
   const content = `
-    <section class="home-page verbs-list-page favorites-page" data-deck-id="global" data-learning-practice data-learning-mode="favorites" data-hide-on-open="#favorites-main-content">
+    <section class="home-page verbs-list-page favorites-page" data-deck-id="global" data-learning-practice data-learning-mode="favorites" data-nav-id="favorites-practice-immersive" data-session-key="greek3:favorites-practice-session" data-hide-on-open="#favorites-main-content">
       <div id="favorites-main-content">
         <div class="page-head fade-in list-head">
           <div class="page-head-row">

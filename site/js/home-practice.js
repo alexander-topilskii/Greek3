@@ -29,7 +29,7 @@
     return;
   }
 
-  const favorites = isLesson ? null : window.GreekFavorites;
+  const favorites = mode === 'favorites' ? window.GreekFavorites : null;
   const fullCatalog = catalog;
   const PRACTICE_NAV_ID = scope.dataset.navId || 'home-practice-immersive';
   const flashcardRootId = scope.dataset.flashcardRootId || 'home-flashcard-root';
@@ -948,6 +948,8 @@
     if (completeText) {
       if (mode === 'song') {
         completeText.textContent = 'Все слова из песни пройдены в обоих направлениях.';
+      } else if (mode === 'favorites') {
+        completeText.textContent = 'Все избранные слова пройдены в обоих направлениях.';
       } else if (isLesson) {
         completeText.textContent = 'Все слова урока пройдены в обоих направлениях.';
       } else {
