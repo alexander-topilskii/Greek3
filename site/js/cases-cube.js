@@ -107,17 +107,22 @@
       : `
         <span class="cases-item-greek greek">${escapeHtml(cell.greek || '')}</span>`;
 
+    const hasSub = Boolean(cell.ru || cell.hint);
+
     return `
       <div class="cases-item${isCurrent ? ' is-current' : ''}${isEmpty ? ' is-empty' : ''}" data-greek="${escapeHtml(cell.greek || '')}">
-        <div class="cases-item-info">
+        <div class="cases-item-main">
           <span class="cases-item-label">${escapeHtml(cell.label || '')}</span>
+          <div class="cases-item-target">
+            ${formsContent}
+            ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
+          </div>
+        </div>
+        ${hasSub ? `
+        <div class="cases-item-sub">
+          ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : '<span class="cases-item-ru-spacer"></span>'}
           ${cell.hint ? `<span class="cases-item-hint">${escapeHtml(cell.hint)}</span>` : ''}
-        </div>
-        <div class="cases-item-forms">
-          ${formsContent}
-          ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
-          ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : ''}
-        </div>
+        </div>` : ''}
       </div>`;
   }
 
@@ -133,14 +138,38 @@
       const gridEl = faceEl.querySelector('.cases-cube-grid');
       if (!gridEl) return;
 
-      let html = `
-        <div class="cases-col-label">${escapeHtml(face.colLeftTitle || '')}</div>
-        <div class="cases-col-label">${escapeHtml(face.colRightTitle || '')}</div>`;
-
-      (face.rows || []).forEach((row) => {
-        html += renderCellHtml(row.left);
-        html += renderCellHtml(row.right);
-      });
+      let html = '';
+      if (face.sections && face.sections.length > 0) {
+        face.sections.forEach((sec) => {
+          let itemsHtml = '';
+          (sec.items || []).forEach((item) => {
+            itemsHtml += renderCellHtml(item);
+          });
+          html += `
+            <div class="cases-section">
+              <div class="cases-section-head">
+                <div class="cases-section-title-wrap">
+                  ${sec.icon ? `<span class="cases-section-icon" aria-hidden="true">${escapeHtml(sec.icon)}</span>` : ''}
+                  <h3 class="cases-section-title">${escapeHtml(sec.title)}</h3>
+                </div>
+                ${sec.badge ? `<span class="cases-section-badge">${escapeHtml(sec.badge)}</span>` : ''}
+              </div>
+              <div class="cases-section-items">
+                ${itemsHtml}
+              </div>
+            </div>`;
+        });
+      } else if (face.rows && face.rows.length > 0) {
+        if (face.colLeftTitle || face.colRightTitle) {
+          html += `
+            <div class="cases-col-label">${escapeHtml(face.colLeftTitle || '')}</div>
+            <div class="cases-col-label">${escapeHtml(face.colRightTitle || '')}</div>`;
+        }
+        face.rows.forEach((row) => {
+          html += renderCellHtml(row.left);
+          html += renderCellHtml(row.right);
+        });
+      }
 
       gridEl.innerHTML = html;
     });

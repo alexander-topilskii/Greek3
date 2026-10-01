@@ -47,17 +47,22 @@ function renderCell(cell: CaseCell, highlightForm?: string): string {
     : `
       <span class="cases-item-greek greek">${escapeHtml(cell.greek)}</span>`;
 
+  const hasSub = Boolean(cell.ru || cell.hint);
+
   return `
     <div class="cases-item${isCurrent ? ' is-current' : ''}${isEmpty ? ' is-empty' : ''}" data-greek="${escapeHtml(cell.greek)}">
-      <div class="cases-item-info">
+      <div class="cases-item-main">
         <span class="cases-item-label">${escapeHtml(cell.label)}</span>
+        <div class="cases-item-target">
+          ${formsContent}
+          ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
+        </div>
+      </div>
+      ${hasSub ? `
+      <div class="cases-item-sub">
+        ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : '<span class="cases-item-ru-spacer"></span>'}
         ${cell.hint ? `<span class="cases-item-hint">${escapeHtml(cell.hint)}</span>` : ''}
-      </div>
-      <div class="cases-item-forms">
-        ${formsContent}
-        ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
-        ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : ''}
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
@@ -67,20 +72,46 @@ function renderFace(
   highlightForm?: string,
 ): string {
   const hidden = face.case === activeCase ? 'false' : 'true';
-  const rowsHtml = face.rows
-    .map(
-      (row: CaseRow) => `
-        ${renderCell(row.left, highlightForm)}
-        ${renderCell(row.right, highlightForm)}`,
-    )
-    .join('');
+  let contentHtml = '';
+
+  if (face.sections && face.sections.length > 0) {
+    contentHtml = face.sections
+      .map(
+        (sec) => `
+        <div class="cases-section">
+          <div class="cases-section-head">
+            <div class="cases-section-title-wrap">
+              ${sec.icon ? `<span class="cases-section-icon" aria-hidden="true">${escapeHtml(sec.icon)}</span>` : ''}
+              <h3 class="cases-section-title">${escapeHtml(sec.title)}</h3>
+            </div>
+            ${sec.badge ? `<span class="cases-section-badge">${escapeHtml(sec.badge)}</span>` : ''}
+          </div>
+          <div class="cases-section-items">
+            ${sec.items.map((item) => renderCell(item, highlightForm)).join('')}
+          </div>
+        </div>`,
+      )
+      .join('');
+  } else if (face.rows && face.rows.length > 0) {
+    const colLabels = (face.colLeftTitle || face.colRightTitle)
+      ? `
+        <div class="cases-col-label">${escapeHtml(face.colLeftTitle || '')}</div>
+        <div class="cases-col-label">${escapeHtml(face.colRightTitle || '')}</div>`
+      : '';
+    const rowsHtml = face.rows
+      .map(
+        (row: CaseRow) => `
+          ${renderCell(row.left, highlightForm)}
+          ${renderCell(row.right, highlightForm)}`,
+      )
+      .join('');
+    contentHtml = colLabels + rowsHtml;
+  }
 
   return `
     <div class="cases-cube-face cases-cube-face--${face.case}" data-case="${face.case}" aria-hidden="${hidden}">
       <div class="cases-cube-grid">
-        <div class="cases-col-label">${escapeHtml(face.colLeftTitle)}</div>
-        <div class="cases-col-label">${escapeHtml(face.colRightTitle)}</div>
-        ${rowsHtml}
+        ${contentHtml}
       </div>
     </div>`;
 }

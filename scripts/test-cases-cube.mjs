@@ -74,6 +74,14 @@ assert(renderedWord.html.includes('data-cases-cube'), 'has data-cases-cube');
 assert(renderedWord.html.includes('cases-cube-face--nominative'), 'has nominative face');
 assert(renderedWord.html.includes('cases-cube-face--accusative'), 'has accusative face');
 assert(renderedWord.html.includes('cases-cube-face--genitive'), 'has genitive face');
+assert(renderedWord.html.includes('cases-section'), 'has cases-section');
+assert(renderedWord.html.includes('cases-section-head'), 'has cases-section-head');
+assert(renderedWord.html.includes('cases-item-main'), 'has cases-item-main');
+assert(renderedWord.html.includes('cases-item-sub'), 'has cases-item-sub');
+assert(renderedWord.html.includes('Мужской род'), 'has masculine section title');
+assert(renderedWord.html.includes('Женский род'), 'has feminine section title');
+assert(renderedWord.html.includes('Средний род'), 'has neuter section title');
+assert(renderedWord.html.includes('Множественное число'), 'has plural section title');
 assert(renderedWord.html.includes('cases-item-trans'), 'has transformation markup');
 assert(renderedWord.html.includes('cases-trans-from'), 'has from form');
 assert(renderedWord.html.includes('cases-trans-to'), 'has to form');
@@ -83,6 +91,7 @@ assert(renderedWord.html.includes('data-cases-data'), 'has data-cases-data json'
 // 3. renderCaseThemeCube & renderCasesThemesHub
 const themeCubeHtml = renderCaseThemeCube(nounsTheme);
 assert(themeCubeHtml.includes('data-cases-cube'), 'theme cube has data-cases-cube');
+assert(themeCubeHtml.includes('cases-section'), 'theme cube has cases-section');
 assert(themeCubeHtml.includes('cases-item-trans'), 'theme cube has transformation markup');
 
 const themesHubHtml = renderCasesThemesHub();

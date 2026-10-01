@@ -4107,12 +4107,93 @@ body.practice-immersive-open {
   transform: rotateY(90deg) translateZ(var(--cases-tz, 150px));
 }
 
-/* Grid within faces */
+/* Grid within faces - 1 column sections */
 .cases-cube-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.45rem 0.65rem;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Sections */
+.cases-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.cases-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.2rem 0.35rem;
+  border-bottom: 1.5px solid var(--border);
+  margin-bottom: 0.15rem;
+}
+
+.cases-cube-face--nominative .cases-section-head {
+  border-bottom-color: rgba(37, 99, 235, 0.25);
+}
+
+.cases-cube-face--accusative .cases-section-head {
+  border-bottom-color: rgba(5, 150, 105, 0.25);
+}
+
+.cases-cube-face--genitive .cases-section-head {
+  border-bottom-color: rgba(217, 119, 6, 0.25);
+}
+
+.cases-section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cases-section-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.cases-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cases-cube-face--nominative .cases-section-title {
+  color: #2563eb;
+}
+
+.cases-cube-face--accusative .cases-section-title {
+  color: #059669;
+}
+
+.cases-cube-face--genitive .cases-section-title {
+  color: #d97706;
+}
+
+.cases-section-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cases-section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
 }
 
 .cases-col-label {
@@ -4142,31 +4223,33 @@ body.practice-immersive-open {
 /* Items / Cells */
 .cases-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
   min-height: 2.85rem;
-  padding: 0.45rem 0.65rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 12px;
   border: 1.5px solid transparent;
   cursor: pointer;
   user-select: none;
   transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .cases-cube-face--nominative .cases-item {
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(37, 99, 235, 0.04);
   border-color: rgba(37, 99, 235, 0.12);
 }
 
 .cases-cube-face--accusative .cases-item {
-  background: rgba(5, 150, 105, 0.05);
+  background: rgba(5, 150, 105, 0.04);
   border-color: rgba(5, 150, 105, 0.12);
 }
 
 .cases-cube-face--genitive .cases-item {
-  background: rgba(217, 119, 6, 0.05);
+  background: rgba(217, 119, 6, 0.04);
   border-color: rgba(217, 119, 6, 0.12);
 }
 
@@ -4175,17 +4258,17 @@ body.practice-immersive-open {
 }
 
 .cases-cube-face--nominative .cases-item:hover {
-  background: rgba(37, 99, 235, 0.09);
+  background: rgba(37, 99, 235, 0.08);
   border-color: rgba(37, 99, 235, 0.25);
 }
 
 .cases-cube-face--accusative .cases-item:hover {
-  background: rgba(5, 150, 105, 0.09);
+  background: rgba(5, 150, 105, 0.08);
   border-color: rgba(5, 150, 105, 0.25);
 }
 
 .cases-cube-face--genitive .cases-item:hover {
-  background: rgba(217, 119, 6, 0.09);
+  background: rgba(217, 119, 6, 0.08);
   border-color: rgba(217, 119, 6, 0.25);
 }
 
@@ -4228,37 +4311,29 @@ body.practice-immersive-open {
   box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3);
 }
 
-.cases-item-info {
+/* Item Main Row: Label and Target (Greek/Transform + Rule) */
+.cases-item-main {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  flex: 0 0 auto;
-  max-width: 48%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .cases-item-label {
   color: var(--text-muted);
-  font-size: 0.725rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.2;
 }
 
-.cases-item-hint {
-  font-size: 0.625rem;
-  color: #94a3b8;
-  font-style: italic;
-  line-height: 1.1;
-}
-
-.cases-item-forms {
+.cases-item-target {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-  flex: 1;
-  min-width: 0;
-  text-align: right;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .cases-item-greek {
@@ -4268,10 +4343,35 @@ body.practice-immersive-open {
   line-height: 1.25;
 }
 
+/* Item Sub Row: Russian translation / Example and Grammar Hint */
+.cases-item-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding-top: 0.15rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.05);
+}
+
 .cases-item-ru {
-  font-size: 0.6875rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.cases-item-ru-spacer {
+  flex: 1;
+}
+
+.cases-item-hint {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-style: italic;
   line-height: 1.15;
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Extra usage notes card */
@@ -4577,8 +4677,15 @@ body.practice-immersive-open {
 }
 
 @media (max-width: 480px) {
+  .cases-item {
+    padding: 0.45rem 0.65rem;
+  }
+  .cases-item-sub {
+    flex-wrap: wrap;
+    gap: 0.2rem 0.5rem;
+  }
   .cases-item-hint {
-    display: none;
+    white-space: normal;
   }
 }
 
