@@ -1,0 +1,549 @@
+/* 3D Adverbs Cube & Paradigm Explorer */
+
+.adverbs-paradigm {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1rem 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+/* Master category tabs on Adverbs Hub */
+.adverbs-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.2rem 0.2rem 0.6rem;
+  margin-bottom: 0.85rem;
+  scrollbar-width: none;
+}
+
+.adverbs-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.adverbs-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.adverbs-tab:hover {
+  color: var(--text);
+  border-color: #cbd5e1;
+}
+
+.adverbs-tab.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* Variant segmented switcher (Шкала / Частота / etc.) */
+.adverbs-aspect {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr));
+  gap: 0;
+  padding: 4px;
+  margin-bottom: 1.15rem;
+  border-radius: 12px;
+  background: rgba(226, 232, 240, 0.85);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.adverbs-aspect-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--n, 2));
+  border-radius: 8px;
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(26, 26, 46, 0.08);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.adverbs-aspect-btn {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: clamp(0.6875rem, 2.5vw, 0.8125rem);
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0.55rem 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  transition: color var(--transition);
+}
+
+.adverbs-aspect-btn.is-active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.adverbs-aspect-btn:focus-visible,
+.adverbs-cube-nav:focus-visible,
+.adverbs-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Toolbar */
+.adverbs-cube-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.adverbs-cube-heading {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem 0.35rem;
+  text-align: center;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+  transition: opacity 0.3s ease;
+}
+
+.adverbs-cube-heading:active {
+  cursor: grabbing;
+}
+
+.adverbs-cube-heading.is-fading {
+  opacity: 0;
+}
+
+.adverbs-cube-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.adverbs-cube-subtitle {
+  margin: 0.1rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.adverbs-cube-nav {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.adverbs-cube-nav:hover {
+  color: var(--text);
+  border-color: #94a3b8;
+  transform: scale(1.05);
+}
+
+.adverbs-cube-nav:active {
+  transform: scale(0.95);
+}
+
+/* Timeline & Dots */
+.adverbs-cube-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.adverbs-cube-timeline-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.adverbs-cube-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.adverbs-cube-dot:hover {
+  transform: scale(1.25);
+}
+
+.adverbs-cube-dot.is-active {
+  width: 22px;
+  border-radius: 4px;
+}
+
+/* 3D Scene & Face setup */
+.adverbs-cube-clip {
+  overflow: hidden;
+  padding: 0.5rem 0.25rem 0.75rem;
+  margin: -0.5rem -0.25rem 0;
+}
+
+.adverbs-cube-scene {
+  position: relative;
+  width: 100%;
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.adverbs-cube-scene:active {
+  cursor: grabbing;
+}
+
+.adverbs-cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.2, 0.85, 0.32, 1.05);
+  will-change: transform;
+}
+
+.adverbs-cube-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-sizing: border-box;
+}
+
+.adverbs-cube-face--left {
+  transform: rotateY(-90deg) translateZ(var(--adverbs-tz, 150px));
+}
+
+.adverbs-cube-face--center {
+  transform: rotateY(0deg) translateZ(var(--adverbs-tz, 150px));
+}
+
+.adverbs-cube-face--right {
+  transform: rotateY(90deg) translateZ(var(--adverbs-tz, 150px));
+}
+
+/* Face themes */
+.adverbs-cube-face--left .adverbs-cube-title,
+.adverbs-cube-face--left .adverbs-col-label,
+.adverbs-cube-dot[data-dot='left'].is-active {
+  color: #4f46e5;
+  background-color: #4f46e5;
+}
+
+.adverbs-cube-face--left .adverbs-col-label {
+  background: transparent;
+  color: #4f46e5;
+  border-bottom-color: rgba(79, 70, 229, 0.25);
+}
+
+.adverbs-cube-face--center .adverbs-cube-title,
+.adverbs-cube-face--center .adverbs-col-label,
+.adverbs-cube-dot[data-dot='center'].is-active {
+  color: #059669;
+  background-color: #059669;
+}
+
+.adverbs-cube-face--center .adverbs-col-label {
+  background: transparent;
+  color: #059669;
+  border-bottom-color: rgba(5, 150, 105, 0.25);
+}
+
+.adverbs-cube-face--right .adverbs-cube-title,
+.adverbs-cube-face--right .adverbs-col-label,
+.adverbs-cube-dot[data-dot='right'].is-active {
+  color: #7c3aed;
+  background-color: #7c3aed;
+}
+
+.adverbs-cube-face--right .adverbs-col-label {
+  background: transparent;
+  color: #7c3aed;
+  border-bottom-color: rgba(124, 58, 237, 0.25);
+}
+
+/* Grid & Columns */
+.adverbs-cube-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.adverbs-col-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 2px solid rgba(79, 70, 229, 0.2);
+  line-height: 1.25;
+}
+
+/* Items / Cells */
+.adverbs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-height: 2.85rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.adverbs-cube-face--left .adverbs-item {
+  background: rgba(79, 70, 229, 0.05);
+  border-color: rgba(79, 70, 229, 0.12);
+}
+
+.adverbs-cube-face--center .adverbs-item {
+  background: rgba(5, 150, 105, 0.05);
+  border-color: rgba(5, 150, 105, 0.12);
+}
+
+.adverbs-cube-face--right .adverbs-item {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: rgba(124, 58, 237, 0.12);
+}
+
+.adverbs-item:hover {
+  transform: translateY(-1px);
+}
+
+.adverbs-cube-face--left .adverbs-item:hover {
+  background: rgba(79, 70, 229, 0.09);
+  border-color: rgba(79, 70, 229, 0.25);
+}
+
+.adverbs-cube-face--center .adverbs-item:hover {
+  background: rgba(5, 150, 105, 0.09);
+  border-color: rgba(5, 150, 105, 0.25);
+}
+
+.adverbs-cube-face--right .adverbs-item:hover {
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.25);
+}
+
+.adverbs-item:active {
+  transform: translateY(0);
+  opacity: 0.7;
+}
+
+.adverbs-item.is-empty {
+  cursor: default;
+  opacity: 0.35;
+  background: transparent !important;
+  border-color: var(--border) !important;
+}
+
+.adverbs-item.is-empty:hover {
+  transform: none;
+}
+
+/* Active Highlight */
+.adverbs-item.is-current {
+  font-weight: 700;
+}
+
+.adverbs-cube-face--left .adverbs-item.is-current {
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.14);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+}
+
+.adverbs-cube-face--center .adverbs-item.is-current {
+  border-color: #059669;
+  background: rgba(5, 150, 105, 0.14);
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.3);
+}
+
+.adverbs-cube-face--right .adverbs-item.is-current {
+  border-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.14);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
+.adverbs-item-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+  max-width: 48%;
+}
+
+.adverbs-item-label {
+  color: var(--text-muted);
+  font-size: 0.725rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.adverbs-item-hint {
+  font-size: 0.625rem;
+  color: #94a3b8;
+  font-style: italic;
+  line-height: 1.1;
+}
+
+.adverbs-item-forms {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.adverbs-item-greek {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.adverbs-item-ru {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.15;
+}
+
+/* Extra usage notes card */
+.adverbs-extra {
+  margin-top: 1rem;
+}
+
+.adverbs-extra-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.adverbs-extra-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.adverbs-extra-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.adverbs-extra-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.adverbs-extra-example {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-left: 3px solid var(--accent);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.adverbs-extra-example:hover {
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.adverbs-extra-example:active {
+  opacity: 0.6;
+}
+
+.adverbs-extra-greek {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.adverbs-extra-ru {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .adverbs-item-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adverbs-cube,
+  .adverbs-aspect-slider,
+  .adverbs-cube-heading,
+  .adverbs-cube-dot {
+    transition: none;
+  }
+}

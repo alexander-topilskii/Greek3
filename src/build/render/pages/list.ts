@@ -15,6 +15,7 @@ import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
 import { renderPronounCubeHub } from '../pronoun-cube';
 import { renderCasesCubeHub } from '../cases-cube';
+import { renderAdverbsCubeHub } from '../adverbs-cube';
 
 function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
@@ -376,6 +377,59 @@ export function renderCasesIndex(
     ? {
         showSettings: true,
         settingsHref: settingsButtonHref({ deck: 'cases', from: fromPath }),
+        bodyEnd: examplesDialogMarkup(),
+      }
+    : {};
+
+  return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
+}
+
+export function renderAdverbsIndex(
+  page: IndexPage,
+  pageOutputDir: string,
+  breadcrumbs: { label: string; href?: string }[],
+  catalog: VerbCatalog | undefined,
+): string {
+  const links = renderGroupedLinks(page, pageOutputDir, catalog);
+  const intro = page.intro
+    ? `<p class="page-intro">${escapeHtml(page.intro).replace(/\n/g, '<br>')}</p>`
+    : '';
+
+  const catalogJson = catalog
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
+    : '';
+
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+
+  const content = `
+    <section class="verbs-list-page adverbs-page" data-deck-id="adverbs">
+      <div class="page-head fade-in list-head">
+        <h1>${escapeHtml(page.title)}</h1>
+        ${intro || '<p class="page-intro">Основные группы греческих наречий: место и направление, время и частота, образ действия и степени сравнения, мера и количество, вопрос и указание.</p>'}
+        <div class="cases-practice-launch fade-in">
+          <div class="list-practice-actions">
+            ${hasWords ? copyWordsListButtonMarkup() : ''}
+          </div>
+        </div>
+      </div>
+
+      ${renderAdverbsCubeHub()}
+
+      <section class="links-list" id="verbs-links">
+        ${links}
+      </section>
+      ${catalogJson}
+    </section>`;
+
+  const scripts: string[] = ['assets/js/adverbs-cube.js'];
+  if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
+
+  const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
+  const layoutOptions = hasDeckPractice
+    ? {
+        showSettings: true,
+        settingsHref: settingsButtonHref({ deck: 'adverbs', from: fromPath }),
         bodyEnd: examplesDialogMarkup(),
       }
     : {};

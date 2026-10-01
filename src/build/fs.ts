@@ -15,6 +15,7 @@ const CSS_PARTS = [
   'favorites.css',
   'cases.css',
   'cases-cube.css',
+  'adverbs-cube.css',
   'cases-practice.css',
   'learning-ladder.css',
   'essays.css',

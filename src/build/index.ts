@@ -10,6 +10,7 @@ import {
   buildSearchIndex,
   outputDirFor,
   renderCasesIndex,
+  renderAdverbsIndex,
   renderCasesPractice,
   renderEssay,
   renderSong,
@@ -202,6 +203,13 @@ function main(): void {
     const html =
       relative.toLowerCase() === 'cases/readme.md'
         ? renderCasesIndex(
+            index,
+            pageDir,
+            breadcrumbsForIndex(relative, index.title),
+            catalog.words.length > 0 ? catalog : undefined,
+          )
+        : relative.toLowerCase() === 'adverbs/readme.md'
+        ? renderAdverbsIndex(
             index,
             pageDir,
             breadcrumbsForIndex(relative, index.title),
