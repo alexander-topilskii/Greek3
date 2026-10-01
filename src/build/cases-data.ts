@@ -52,7 +52,7 @@ export const NOUNS_CASE_PARADIGM: CaseParadigm = {
   variants: [
     {
       id: 'endings',
-      label: 'Схема окончаний',
+      label: 'Окончания',
       extraNotes: {
         title: 'Основные правила падежей существительных',
         description:
@@ -192,7 +192,7 @@ export const NOUNS_CASE_PARADIGM: CaseParadigm = {
     },
     {
       id: 'words',
-      label: 'Примеры слов',
+      label: 'Примеры',
       extraNotes: {
         title: 'Типичные образцы склонения',
         description:
@@ -331,7 +331,7 @@ export const NOUNS_CASE_PARADIGM: CaseParadigm = {
     },
     {
       id: 'indefinite',
-      label: 'Неопределённый артикль',
+      label: 'Артикль ένας',
       extraNotes: {
         title: 'Употребление неопределённого артикля',
         description:
@@ -410,7 +410,7 @@ export const ADJECTIVES_CASE_PARADIGM: CaseParadigm = {
   variants: [
     {
       id: 'kalos',
-      label: 'Окончания -ος, -η, -ο (καλός)',
+      label: 'καλός (-ή, -ό)',
       extraNotes: {
         title: 'Прилагательные типа καλός, καλή, καλό',
         description:
@@ -489,7 +489,7 @@ export const ADJECTIVES_CASE_PARADIGM: CaseParadigm = {
     },
     {
       id: 'glykos',
-      label: 'Окончания -ος, -ια, -ο (γλυκός)',
+      label: 'γλυκός (-ιά, -ό)',
       extraNotes: {
         title: 'Прилагательные типа γλυκός, γλυκιά, γλυκό',
         description:
@@ -579,7 +579,7 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
   variants: [
     {
       id: 'prep_se',
-      label: 'Предлог σε + артикль (στο, στη, στον)',
+      label: 'σε + артикль',
       extraNotes: {
         title: 'Слияние предлога σε с определенным артиклем',
         description:
@@ -615,8 +615,8 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный — σε + артикль (в, на, к, у)',
-          subtitle: 'Основная форма направления и места в греческом',
+          title: 'Винительный — σε + артикль',
+          subtitle: 'Направление и место (в, на, к, у)',
           colLeftTitle: 'Единственное число',
           colRightTitle: 'Множественное число',
           rows: [
@@ -659,7 +659,7 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
     },
     {
       id: 'definite',
-      label: 'Определенный артикль (ο, η, το)',
+      label: 'Артикли',
       extraNotes: {
         title: 'Формы определенного артикля',
         description:
@@ -673,7 +673,7 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
       faces: {
         nominative: {
           case: 'nominative',
-          title: 'Именительный — определенный артикль',
+          title: 'Именительный — артикль',
           subtitle: 'Кто? Что? (подлежащее)',
           colLeftTitle: 'Единственное число',
           colRightTitle: 'Множественное число',
@@ -694,8 +694,8 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный — определенный артикль',
-          subtitle: 'Кого? Что? (прямой объект / предлоги)',
+          title: 'Винительный — артикль',
+          subtitle: 'Кого? Что? (прямой объект)',
           colLeftTitle: 'Единственное число',
           colRightTitle: 'Множественное число',
           rows: [
@@ -715,8 +715,8 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
         },
         genitive: {
           case: 'genitive',
-          title: 'Родительный — определенный артикль',
-          subtitle: 'Кого? Чего? Чей?',
+          title: 'Родительный — артикль',
+          subtitle: 'Кого? Чего? Чей? (принадлежность)',
           colLeftTitle: 'Единственное число',
           colRightTitle: 'Множественное число',
           rows: [
@@ -738,7 +738,7 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
     },
     {
       id: 'prep_other',
-      label: 'Предлоги με, για, από (с, за, от)',
+      label: 'Предлоги',
       extraNotes: {
         title: 'Управление предлогов με, για, από',
         description:
@@ -774,8 +774,8 @@ export const ARTICLES_PREPOSITIONS_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный с предлогами με, για, από',
-          subtitle: 'Стандартное управление предлогов',
+          title: 'Винительный — με, για, από',
+          subtitle: 'с (με), для/о (για), из/от (από)',
           colLeftTitle: 'Единственное число',
           colRightTitle: 'Множественное число',
           rows: [
@@ -825,7 +825,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
   variants: [
     {
       id: 'direct',
-      label: 'Винительный падеж (прямое дополнение)',
+      label: 'Прямой',
       extraNotes: {
         title: 'Переходные глаголы с винительным падежом',
         description:
@@ -846,7 +846,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
           title: 'Именительный — глаголы-связки',
           subtitle: 'Глаголы είμαι, γίνομαι, φαίνομαι требуют именительного',
           colLeftTitle: 'Глагол-связка',
-          colRightTitle: 'Пример использования',
+          colRightTitle: 'Пример',
           rows: [
             {
               left: { label: 'είμαι (быть)', greek: 'είμαι', ru: 'Ο Πέτρος είναι δάσκαλος', hint: 'не «учителем», а именительный!' },
@@ -860,10 +860,10 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный — переходные глаголы',
+          title: 'Винительный — прямой объект',
           subtitle: 'Кого? Что? (прямой объект действия)',
-          colLeftTitle: 'Глаголы восприятия и действия',
-          colRightTitle: 'Глаголы общения и мысли',
+          colLeftTitle: 'Восприятие и действие',
+          colRightTitle: 'Общение и мысль',
           rows: [
             {
               left: { label: 'βλέπω (видеть)', greek: 'βλέπω το σπίτι', ru: 'я вижу дом' },
@@ -875,7 +875,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
             },
             {
               left: { label: 'αγοράζω (покупать)', greek: 'αγοράζω ψωμί', ru: 'я покупаю хлеб' },
-              right: { label: 'πίνω / τρώω', greek: 'πίνω νερό / τρώω μήλο', ru: 'пью воду / ем яблоко' },
+              right: { label: 'πίνω (пить)', greek: 'πίνω νερό', ru: 'я пью воду' },
             },
             {
               left: { label: 'ξέρω (знать)', greek: 'ξέρω τον καθηγητή', ru: 'я знаю преподавателя' },
@@ -886,9 +886,9 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         genitive: {
           case: 'genitive',
           title: 'Родительный — косвенный объект',
-          subtitle: 'Кому? (обычно с местоимениями μου, σου, του...)',
+          subtitle: 'Кому? (местоимения μου, σου, του...)',
           colLeftTitle: 'Глагол',
-          colRightTitle: 'Пример использования',
+          colRightTitle: 'Пример',
           rows: [
             {
               left: { label: 'αρέσω (нравиться)', greek: 'μου αρέσει αυτό', ru: 'мне нравится это' },
@@ -904,7 +904,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
     },
     {
       id: 'indirect',
-      label: 'Родительный падеж (косвенный объект)',
+      label: 'Косвенный',
       extraNotes: {
         title: 'Глаголы с родительным падежом (дательное значение)',
         description:
@@ -932,7 +932,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный — прямое дополнение',
+          title: 'Винительный — объект',
           subtitle: 'Что именно даётся или говорится',
           colLeftTitle: 'Конструкция',
           colRightTitle: 'Пример',
@@ -945,8 +945,8 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         },
         genitive: {
           case: 'genitive',
-          title: 'Родительный — адресат действия',
-          subtitle: 'Кому направлено действие (μου, σου, του, της...)',
+          title: 'Родительный — адресат',
+          subtitle: 'Кому направлено (μου, σου, του...)',
           colLeftTitle: '1-е и 2-е лицо',
           colRightTitle: '3-е лицо',
           rows: [
@@ -968,7 +968,7 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
     },
     {
       id: 'prep_se_verbs',
-      label: 'Глаголы с предлогом σε (в, к, на)',
+      label: 'Предлог σε',
       extraNotes: {
         title: 'Управление через предлог σε + винительный',
         description:
@@ -983,8 +983,8 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
       faces: {
         nominative: {
           case: 'nominative',
-          title: 'Именительный — кто совершает действие',
-          subtitle: 'Подлежащее предложения',
+          title: 'Именительный — подлежащее',
+          subtitle: 'Кто совершает действие',
           colLeftTitle: 'Лицо',
           colRightTitle: 'Пример',
           rows: [
@@ -996,10 +996,10 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         },
         accusative: {
           case: 'accusative',
-          title: 'Винительный — объект и направление',
-          subtitle: 'σε + винительный (куда? кому? где?)',
-          colLeftTitle: 'Движение и место',
-          colRightTitle: 'Адресат действия',
+          title: 'Винительный — σε + объект',
+          subtitle: 'σε + винительный (куда? где? кому?)',
+          colLeftTitle: 'Куда и где',
+          colRightTitle: 'Кому',
           rows: [
             {
               left: { label: 'в / на (место)', greek: 'πηγαίνω στο γραφείο', ru: 'я иду в офис' },
@@ -1017,10 +1017,10 @@ export const VERB_GOVERNMENT_PARADIGM: CaseParadigm = {
         },
         genitive: {
           case: 'genitive',
-          title: 'Родительный — параллельная форма',
-          subtitle: 'Родительный клитик заменяет σε + винительный',
-          colLeftTitle: 'С предлогом σε (Вин.)',
-          colRightTitle: 'Клитика (Род.)',
+          title: 'Родительный — сравнение',
+          subtitle: 'Клитика род. пад. заменяет σε + вин.',
+          colLeftTitle: 'σε + вин.',
+          colRightTitle: 'Клитика (род.)',
           rows: [
             {
               left: { label: 'σε + вин.', greek: 'Δίνω στον φίλο μου', ru: 'даю моему другу' },

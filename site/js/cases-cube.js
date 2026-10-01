@@ -259,7 +259,7 @@
     let html = '<div class="cases-aspect-slider" aria-hidden="true"></div>';
     variants.forEach((v) => {
       const active = v.id === currentVariantId;
-      html += `<button type="button" class="cases-aspect-btn${active ? ' is-active' : ''}" data-variant="${v.id}" aria-pressed="${active ? 'true' : 'false'}">${escapeHtml(v.label)}</button>`;
+      html += `<button type="button" class="cases-aspect-btn${active ? ' is-active' : ''}" data-variant="${v.id}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeHtml(v.label)}">${escapeHtml(v.label)}</button>`;
     });
     aspectWrap.innerHTML = html;
 

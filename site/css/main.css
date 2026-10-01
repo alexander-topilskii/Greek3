@@ -1994,6 +1994,8 @@ body.progress-fullscreen-open {
   margin-bottom: 1.15rem;
   border-radius: 12px;
   background: rgba(226, 232, 240, 0.85);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .pronoun-aspect-slider {
@@ -2008,6 +2010,7 @@ body.progress-fullscreen-open {
   transform: translateX(calc(var(--i, 0) * 100%));
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 0;
+  pointer-events: none;
 }
 
 .pronoun-aspect-btn {
@@ -2025,6 +2028,10 @@ body.progress-fullscreen-open {
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
   transition: color var(--transition);
 }
 
@@ -3879,7 +3886,7 @@ body.practice-immersive-open {
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
-/* Variant segmented switcher (Схема окончаний / Примеры слов / etc.) */
+/* Variant segmented switcher (Окончания / Примеры / etc.) */
 .cases-aspect {
   position: relative;
   display: grid;
@@ -3889,6 +3896,8 @@ body.practice-immersive-open {
   margin-bottom: 1.15rem;
   border-radius: 12px;
   background: rgba(226, 232, 240, 0.85);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .cases-aspect-slider {
@@ -3903,6 +3912,7 @@ body.practice-immersive-open {
   transform: translateX(calc(var(--i, 0) * 100%));
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 0;
+  pointer-events: none;
 }
 
 .cases-aspect-btn {
@@ -3913,13 +3923,17 @@ body.practice-immersive-open {
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: clamp(0.6875rem, 2.7vw, 0.8125rem);
+  font-size: clamp(0.6875rem, 2.5vw, 0.8125rem);
   font-weight: 500;
   line-height: 1.2;
   padding: 0.55rem 0.25rem;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
   transition: color var(--transition);
 }
 

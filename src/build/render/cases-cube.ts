@@ -83,7 +83,7 @@ function renderVariantSwitcher(
   const buttons = variants
     .map((v) => {
       const active = v.id === activeVariantId;
-      return `<button type="button" class="cases-aspect-btn${active ? ' is-active' : ''}" data-variant="${v.id}" aria-pressed="${active ? 'true' : 'false'}">${escapeHtml(v.label)}</button>`;
+      return `<button type="button" class="cases-aspect-btn${active ? ' is-active' : ''}" data-variant="${v.id}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeHtml(v.label)}">${escapeHtml(v.label)}</button>`;
     })
     .join('');
 
