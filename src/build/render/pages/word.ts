@@ -11,6 +11,7 @@ import { renderContextSection } from '../context';
 import { flashcardMarkup, progressBarMarkup, favoriteButtonMarkup, settingsButtonHref } from '../fragments';
 import { wordOutputPath } from '../paths-catalog';
 import { renderVerbParadigm } from '../verb-cube';
+import { renderPronounCube } from '../pronoun-cube';
 
 function formRowLinkMarkup(
   greek: string,
@@ -128,6 +129,7 @@ export function renderWord(
       : '';
 
   const paradigm = renderVerbParadigm(word);
+  const pronounParadigm = renderPronounCube(word);
 
   const content = `
     <article class="word-page${isPhrase ? ' word-page--phrase' : ''}"
@@ -142,13 +144,14 @@ export function renderWord(
       </header>
 
       ${paradigm.html}
+      ${pronounParadigm.html}
 
       <section class="practice-panel practice-panel--wide fade-in">
         ${flashcardMarkup('flashcard-root')}
       </section>
 
       ${
-        word.forms.length && !paradigm.interactive
+        word.forms.length && !paradigm.interactive && !pronounParadigm.interactive
           ? `
       <section class="forms-table-section fade-in">
         <h2>${isPhrase ? 'Варианты' : 'Все формы'}</h2>
@@ -174,6 +177,7 @@ export function renderWord(
 
   const scripts = ['assets/js/practice.js'];
   if (paradigm.interactive) scripts.push('assets/js/verb-cube.js');
+  if (pronounParadigm.interactive) scripts.push('assets/js/pronoun-cube.js');
 
   return layout(content, word.translation || word.title, breadcrumbs, scripts, {
     showSettings: true,

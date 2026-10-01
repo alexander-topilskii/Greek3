@@ -10,6 +10,7 @@ const CSS_PARTS = [
   'tokens.css',
   'base.css',
   'word-page.css',
+  'pronoun-cube.css',
   'practice.css',
   'favorites.css',
   'cases.css',

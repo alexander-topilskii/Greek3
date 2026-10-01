@@ -13,6 +13,7 @@ import {
 } from '../fragments';
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
+import { renderPronounCubeHub } from '../pronoun-cube';
 
 function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
@@ -97,17 +98,20 @@ export function renderIndex(
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
       </section>
 
+      ${pageOutputDir === 'words/pronouns' ? renderPronounCubeHub() : ''}
       <section class="links-list" id="verbs-links">
         ${links}
       </section>
       ${catalogJson}
     </section>`;
 
+  const isPronounsHub = pageOutputDir === 'words/pronouns';
   const scripts =
     catalog && catalog.words.length > 0
       ? [
           'assets/js/list-controls.js',
           'assets/js/list-practice.js',
+          ...(isPronounsHub ? ['assets/js/pronoun-cube.js'] : []),
           ...(learningPage
             ? [
                 'assets/js/learning-ladder.js',
@@ -120,7 +124,7 @@ export function renderIndex(
               ]
             : []),
         ]
-      : [];
+      : (isPronounsHub ? ['assets/js/pronoun-cube.js'] : []);
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
   const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
