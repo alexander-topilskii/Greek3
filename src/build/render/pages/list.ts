@@ -15,7 +15,8 @@ import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
 import { renderPronounCubeHub } from '../pronoun-cube';
 import { renderCasesCubeHub } from '../cases-cube';
-import { renderAdverbsCubeHub } from '../adverbs-cube';
+import { renderAdverbsThemesHub, renderAdverbThemeCube } from '../adverbs-cube';
+import { getParadigmForSubDir } from '../../adverbs-data';
 
 function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
@@ -405,15 +406,29 @@ export function renderAdverbsIndex(
     <section class="verbs-list-page adverbs-page" data-deck-id="adverbs">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Основные группы греческих наречий: место и направление, время и частота, образ действия и степени сравнения, мера и количество, вопрос и указание.</p>'}
-        <div class="cases-practice-launch fade-in">
-          <div class="list-practice-actions">
-            ${hasWords ? copyWordsListButtonMarkup() : ''}
-          </div>
-        </div>
+        ${intro || '<p class="page-intro">Основные смысловые группы греческих наречий: место, время, образ действия, количество, вопрос и указание. Выберите раздел для подробного изучения или тренируйте все наречия сразу.</p>'}
+        ${hasWords ? `<div class="list-practice-actions">
+          ${copyWordsListButtonMarkup()}
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
+          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
+        </div>` : ''}
       </div>
 
-      ${renderAdverbsCubeHub()}
+      <section class="list-practice hidden" id="list-practice" aria-hidden="true">
+        <div class="practice-panel practice-panel--wide fade-in">
+          ${flashcardMarkup('list-flashcard-root')}
+          ${practiceCompleteMarkup()}
+        </div>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
+      </section>
+
+      ${renderAdverbsThemesHub()}
+
+      <div class="adverbs-full-list-head fade-in">
+        <h2>Все наречия по группам</h2>
+        <p class="adverbs-full-list-desc">Полный алфавитный каталог из 105 наречий с возможностью фильтрации и тренировки.</p>
+      </div>
 
       <section class="links-list" id="verbs-links">
         ${links}
@@ -421,8 +436,8 @@ export function renderAdverbsIndex(
       ${catalogJson}
     </section>`;
 
-  const scripts: string[] = ['assets/js/adverbs-cube.js'];
-  if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
+  const scripts: string[] = [];
+  if (hasWords) scripts.push('assets/js/list-controls.js', 'assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
   const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
@@ -430,6 +445,78 @@ export function renderAdverbsIndex(
     ? {
         showSettings: true,
         settingsHref: settingsButtonHref({ deck: 'adverbs', from: fromPath }),
+        bodyEnd: examplesDialogMarkup(),
+      }
+    : {};
+
+  return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
+}
+
+export function renderAdverbCategoryIndex(
+  page: IndexPage,
+  pageOutputDir: string,
+  breadcrumbs: { label: string; href?: string }[],
+  catalog: VerbCatalog | undefined,
+): string {
+  const links = renderGroupedLinks(page, pageOutputDir, catalog);
+  const intro = page.intro
+    ? `<p class="page-intro">${escapeHtml(page.intro).replace(/\n/g, '<br>')}</p>`
+    : '';
+
+  const catalogJson = catalog
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
+    : '';
+
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const deckId = catalog?.deckId || pageOutputDir.replace(/^words\/?/, '').replace(/\//g, '-');
+  const paradigm = getParadigmForSubDir(pageOutputDir);
+  const cubeHtml = paradigm ? renderAdverbThemeCube(paradigm) : '';
+
+  const content = `
+    <section class="verbs-list-page adverbs-category-page" data-deck-id="${escapeHtml(deckId)}">
+      <div class="page-head fade-in list-head">
+        <div class="adverbs-category-back">
+          <a href="${escapeHtml(sitePath('words/adverbs/index.html'))}" class="adverbs-back-to-hub">← Все разделы наречий</a>
+        </div>
+        <h1>${escapeHtml(page.title)}</h1>
+        ${intro}
+        ${hasWords ? `<div class="list-practice-actions">
+          ${copyWordsListButtonMarkup()}
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
+          <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
+          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
+        </div>` : ''}
+      </div>
+
+      <section class="list-practice hidden" id="list-practice" aria-hidden="true">
+        <div class="practice-panel practice-panel--wide fade-in">
+          ${flashcardMarkup('list-flashcard-root')}
+          ${practiceCompleteMarkup()}
+        </div>
+        <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
+      </section>
+
+      ${cubeHtml}
+
+      <div class="adverbs-category-words-head fade-in">
+        <h2>Слова раздела (${catalog?.words.length ?? 0})</h2>
+      </div>
+
+      <section class="links-list" id="verbs-links">
+        ${links}
+      </section>
+      ${catalogJson}
+    </section>`;
+
+  const scripts: string[] = [];
+  if (cubeHtml) scripts.push('assets/js/adverbs-cube.js');
+  if (hasWords) scripts.push('assets/js/list-controls.js', 'assets/js/list-practice.js');
+
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
+  const layoutOptions = hasWords
+    ? {
+        showSettings: true,
+        settingsHref: settingsButtonHref({ deck: deckId, from: fromPath }),
         bodyEnd: examplesDialogMarkup(),
       }
     : {};

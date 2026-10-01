@@ -1,7 +1,9 @@
 import type { WordEntry } from '../types';
+import { sitePath } from '../site-path';
 import { embedJson, escapeHtml } from './html';
 import {
   ALL_ADVERB_PARADIGMS,
+  ALL_ADVERB_THEMES,
   PLACE_ADVERB_PARADIGM,
   AdverbCell,
   AdverbFace,
@@ -9,6 +11,7 @@ import {
   AdverbParadigm,
   AdverbRow,
   AdverbVariant,
+  getAdverbThemeInfo,
   getParadigmForAdverbWordSlug,
 } from '../adverbs-data';
 
@@ -203,9 +206,14 @@ export function renderAdverbCube(word: WordEntry): {
     return { html: '', interactive: false };
   }
 
+  const theme = getAdverbThemeInfo(word.slug);
+  const themeLink = theme
+    ? `<div class="adverbs-theme-back-wrap"><a href="${escapeHtml(sitePath(`words/adverbs/${theme.subDir}/index.html`))}" class="adverbs-theme-back-link">← Все наречия темы «${escapeHtml(theme.title)}»</a></div>`
+    : '';
+
   const lookup = getParadigmForAdverbWordSlug(word.slug);
   if (!lookup) {
-    const html = renderCubeInner(
+    const html = themeLink + renderCubeInner(
       PLACE_ADVERB_PARADIGM,
       'left',
       'coords',
@@ -214,13 +222,59 @@ export function renderAdverbCube(word: WordEntry): {
     return { html, interactive: true };
   }
 
-  const html = renderCubeInner(
+  const html = themeLink + renderCubeInner(
     lookup.paradigm,
     lookup.initialPosition,
     lookup.initialVariant,
     lookup.highlightForm,
   );
   return { html, interactive: true };
+}
+
+export function renderAdverbThemeCube(paradigm: AdverbParadigm): string {
+  const initialVariant = paradigm.variants[0]?.id || 'default';
+  return renderCubeInner(
+    paradigm,
+    'left',
+    initialVariant,
+    undefined,
+    undefined,
+  );
+}
+
+export function renderAdverbsThemesHub(): string {
+  const cardsHtml = ALL_ADVERB_THEMES.map((theme) => {
+    const hasCube = Boolean(theme.paradigm);
+    const tagsHtml = theme.sampleTags
+      .map((tag) => `<span class="adverbs-theme-tag greek">${escapeHtml(tag)}</span>`)
+      .join('');
+
+    return `
+      <a href="${escapeHtml(sitePath(`words/adverbs/${theme.subDir}/index.html`))}" class="adverbs-theme-card">
+        <div class="adverbs-theme-card-top">
+          <span class="adverbs-theme-icon" aria-hidden="true">${theme.icon}</span>
+          <div class="adverbs-theme-card-badges">
+            <span class="adverbs-theme-badge">${theme.wordCount} слов</span>
+            ${hasCube ? '<span class="adverbs-theme-badge adverbs-theme-badge--cube">3D-куб</span>' : ''}
+          </div>
+        </div>
+        <h3 class="adverbs-theme-title">${escapeHtml(theme.title)}</h3>
+        <p class="adverbs-theme-desc">${escapeHtml(theme.description)}</p>
+        <div class="adverbs-theme-tags">${tagsHtml}</div>
+        <div class="adverbs-theme-action">
+          <span>Перейти к разделу</span>
+          <span class="adverbs-theme-arrow" aria-hidden="true">→</span>
+        </div>
+      </a>`;
+  }).join('');
+
+  return `
+    <section class="adverbs-themes-hub fade-in" aria-label="Тематические разделы наречий">
+      <div class="adverbs-themes-intro">
+        <p>Греческие наречия сгруппированы по 7 ключевым смысловым блокам. В основных разделах доступен интерактивный 3D-куб для пространственного и смыслового запоминания, а также отдельные тренировки (карточки и режим Ру → Ελ):</p>
+      </div>
+      <div class="adverbs-themes-grid">${cardsHtml}</div>
+    </section>`;
 }
 
 export function renderAdverbsCubeHub(): string {
@@ -232,3 +286,4 @@ export function renderAdverbsCubeHub(): string {
     ALL_ADVERB_PARADIGMS,
   );
 }
+

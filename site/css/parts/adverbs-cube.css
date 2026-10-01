@@ -539,6 +539,193 @@
   }
 }
 
+/* Adverbs Thematic Hub Grid & Cards */
+
+.adverbs-themes-hub {
+  margin-bottom: 2rem;
+}
+
+.adverbs-themes-intro {
+  margin-bottom: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.adverbs-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.adverbs-theme-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.adverbs-theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent);
+}
+
+.adverbs-theme-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.adverbs-theme-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.adverbs-theme-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.adverbs-theme-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.adverbs-theme-badge--cube {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.25);
+  color: var(--accent);
+}
+
+.adverbs-theme-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.adverbs-theme-desc {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.adverbs-theme-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.adverbs-theme-tag {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.adverbs-theme-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.adverbs-theme-arrow {
+  transition: transform var(--transition);
+}
+
+.adverbs-theme-card:hover .adverbs-theme-arrow {
+  transform: translateX(4px);
+}
+
+/* Category Page Header & Navigation */
+
+.adverbs-category-back {
+  margin-bottom: 0.75rem;
+}
+
+.adverbs-back-to-hub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.adverbs-back-to-hub:hover {
+  text-decoration: underline;
+}
+
+.adverbs-category-words-head,
+.adverbs-full-list-head {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.adverbs-category-words-head h2,
+.adverbs-full-list-head h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text);
+}
+
+.adverbs-full-list-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.adverbs-theme-back-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.adverbs-theme-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.adverbs-theme-back-link:hover {
+  text-decoration: underline;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   .adverbs-cube,
   .adverbs-aspect-slider,

@@ -11,6 +11,7 @@ import {
   outputDirFor,
   renderCasesIndex,
   renderAdverbsIndex,
+  renderAdverbCategoryIndex,
   renderCasesPractice,
   renderEssay,
   renderSong,
@@ -210,6 +211,13 @@ function main(): void {
           )
         : relative.toLowerCase() === 'adverbs/readme.md'
         ? renderAdverbsIndex(
+            index,
+            pageDir,
+            breadcrumbsForIndex(relative, index.title),
+            catalog.words.length > 0 ? catalog : undefined,
+          )
+        : relative.toLowerCase().startsWith('adverbs/') && relative.toLowerCase().endsWith('readme.md')
+        ? renderAdverbCategoryIndex(
             index,
             pageDir,
             breadcrumbsForIndex(relative, index.title),

@@ -1193,3 +1193,160 @@ export function getParadigmForAdverbWordSlug(slug: string): {
 
   return null;
 }
+
+export interface AdverbThemeInfo {
+  id: string;
+  title: string;
+  subDir: string;
+  paradigm?: AdverbParadigm;
+  icon: string;
+  description: string;
+  sampleTags: string[];
+  wordCount: number;
+}
+
+export const ALL_ADVERB_THEMES: AdverbThemeInfo[] = [
+  {
+    id: 'place',
+    title: 'Место и направление',
+    subDir: 'place',
+    paradigm: PLACE_ADVERB_PARADIGM,
+    icon: '🧭',
+    description: 'Статика (где), движение (куда), исходный пункт и охват пространства.',
+    sampleTags: ['εδώ', 'εκεί', 'πάνω', 'κάτω', 'μέσα', 'έξω', 'παντού'],
+    wordCount: 27,
+  },
+  {
+    id: 'time',
+    title: 'Время и частота',
+    subDir: 'time',
+    paradigm: TIME_ADVERB_PARADIGM,
+    icon: '⏳',
+    description: 'Относительное время (прошлое, настоящее, будущее), календарь и регулярность.',
+    sampleTags: ['τώρα', 'σήμερα', 'χθες', 'αύριο', 'πάντα', 'συχνά'],
+    wordCount: 24,
+  },
+  {
+    id: 'manner',
+    title: 'Образ действия и качество',
+    subDir: 'manner',
+    paradigm: MANNER_ADVERB_PARADIGM,
+    icon: '⚡',
+    description: 'Качественные наречия на -α и -ως, степени сравнения (положительная, сравнительная, превосходная).',
+    sampleTags: ['καλά', 'γρήγορα', 'καλύτερα', 'σωστά', 'ευγενικά'],
+    wordCount: 13,
+  },
+  {
+    id: 'degree',
+    title: 'Количество и степень',
+    subDir: 'degree',
+    paradigm: DEGREE_ADVERB_PARADIGM,
+    icon: '⚖️',
+    description: 'Мера и интенсивность от минимума (0%) до максимума (100%).',
+    sampleTags: ['πολύ', 'λίγο', 'αρκετά', 'καθόλου', 'πάρα πολύ'],
+    wordCount: 8,
+  },
+  {
+    id: 'questions',
+    title: 'Вопросительные наречия',
+    subDir: 'questions',
+    paradigm: CORRELATIVE_ADVERB_PARADIGM,
+    icon: '❓',
+    description: 'Вопросительные слова (где, когда, как, почему) и парные соотносительные наречия.',
+    sampleTags: ['πού', 'πότε', 'πώς', 'κάπου', 'πουθενά', 'ποτέ'],
+    wordCount: 6,
+  },
+  {
+    id: 'modal',
+    title: 'Оценка и модальные наречия',
+    subDir: 'modal',
+    icon: '💬',
+    description: 'Уверенность, сомнение, эмоциональная оценка и вводные разговорные маркеры.',
+    sampleTags: ['σίγουρα', 'δυστυχώς', 'άριστα', 'σοβαρά', 'επιτέλους'],
+    wordCount: 10,
+  },
+  {
+    id: 'languages',
+    title: 'Названия языков',
+    subDir: 'languages',
+    icon: '🌍',
+    description: 'Названия языков в роли наречий на -ικά (говорить по-гречески, по-русски, по-английски).',
+    sampleTags: ['ελληνικά', 'ρωσικά', 'αγγλικά', 'ισπανικά'],
+    wordCount: 17,
+  },
+];
+
+export function getParadigmForSubDir(subDir: string): AdverbParadigm | null {
+  const normalized = subDir.toLowerCase().replace(/^\/?words\/adverbs\/?/, '').replace(/\/.*$/, '');
+  const theme = ALL_ADVERB_THEMES.find((t) => t.subDir === normalized || t.id === normalized);
+  return theme?.paradigm ?? null;
+}
+
+export function getAdverbThemeInfo(slug: string): AdverbThemeInfo | null {
+  const norm = slug.toLowerCase();
+
+  if (
+    norm.includes('ελληνικά') ||
+    norm.includes('ρωσικά') ||
+    norm.includes('αγγλικά') ||
+    norm.includes('ισπανικά') ||
+    norm.includes('ιταλικά') ||
+    norm.includes('γερμανικά') ||
+    norm.includes('γαλλικά') ||
+    norm.includes('κινέζικα') ||
+    norm.includes('γιαπωνέζικα') ||
+    norm.includes('αραβικά') ||
+    norm.includes('αλβανικά') ||
+    norm.includes('βουλγαρικά') ||
+    norm.includes('πολωνικά') ||
+    norm.includes('πορτογαλικά') ||
+    norm.includes('τουρκικά') ||
+    norm.includes('ουκρανικά') ||
+    norm.includes('σουηδικά') ||
+    norm.includes('по-гречески') ||
+    norm.includes('по-русски')
+  ) {
+    return ALL_ADVERB_THEMES.find((t) => t.id === 'languages') ?? null;
+  }
+
+  if (
+    norm.includes('σίγουρα') ||
+    norm.includes('δυστυχώς') ||
+    norm.includes('σοβαρά') ||
+    norm.includes('φανταστικά') ||
+    norm.includes('επιτέλους') ||
+    norm.includes('δωρεάν') ||
+    norm.includes('γενικά') ||
+    norm.includes('ακριβώς') ||
+    norm.includes('μαζί') ||
+    norm.includes('конечно') ||
+    norm.includes('сожалению') ||
+    norm.includes('серьёзно') ||
+    norm.includes('наконец') ||
+    norm.includes('бесплатно')
+  ) {
+    return ALL_ADVERB_THEMES.find((t) => t.id === 'modal') ?? null;
+  }
+
+  const lookup = getParadigmForAdverbWordSlug(slug);
+  if (lookup) {
+    if (lookup.paradigm.id === 'place') {
+      return ALL_ADVERB_THEMES.find((t) => t.id === 'place') ?? null;
+    }
+    if (lookup.paradigm.id === 'time') {
+      return ALL_ADVERB_THEMES.find((t) => t.id === 'time') ?? null;
+    }
+    if (lookup.paradigm.id === 'manner') {
+      return ALL_ADVERB_THEMES.find((t) => t.id === 'manner') ?? null;
+    }
+    if (lookup.paradigm.id === 'degree') {
+      return ALL_ADVERB_THEMES.find((t) => t.id === 'degree') ?? null;
+    }
+    if (lookup.paradigm.id === 'correlatives') {
+      return ALL_ADVERB_THEMES.find((t) => t.id === 'questions') ?? null;
+    }
+  }
+
+  return null;
+}
+

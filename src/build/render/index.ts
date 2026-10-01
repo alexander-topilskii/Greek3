@@ -7,10 +7,15 @@ export * from './index-links';
 export * from './paths-catalog';
 export { renderHome } from './pages/home';
 export { renderFavorites } from './pages/favorites';
-export { renderIndex, renderCasesIndex, renderAdverbsIndex } from './pages/list';
+export { renderIndex, renderCasesIndex, renderAdverbsIndex, renderAdverbCategoryIndex } from './pages/list';
 export { renderCasesPractice } from './pages/cases-practice';
 export { renderWord } from './pages/word';
-export { renderAdverbCube, renderAdverbsCubeHub } from './adverbs-cube';
+export {
+  renderAdverbCube,
+  renderAdverbsCubeHub,
+  renderAdverbThemeCube,
+  renderAdverbsThemesHub,
+} from './adverbs-cube';
 export { renderEssay } from './pages/essay';
 export { renderSong } from './pages/song';
 export { renderSongLine, songLineBreadcrumbLabel } from './pages/song-line';

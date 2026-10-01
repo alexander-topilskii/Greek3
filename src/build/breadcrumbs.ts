@@ -1,18 +1,32 @@
 import { CATEGORY_LABELS } from './constants';
 import { sitePath } from './site-path';
 import type { WordEntry } from './types';
+import { getAdverbThemeInfo } from './adverbs-data';
 
 export function breadcrumbsForWord(entry: WordEntry) {
-  return [
+  const crumbs: { label: string; href?: string }[] = [
     { label: 'Главная', href: sitePath('index.html') },
-    ...(entry.category
-      ? [{
-          label: CATEGORY_LABELS[entry.category] ?? entry.category,
-          href: sitePath(`words/${entry.category}/index.html`),
-        }]
-      : []),
-    { label: entry.translation || entry.title },
   ];
+
+  if (entry.category) {
+    crumbs.push({
+      label: CATEGORY_LABELS[entry.category] ?? entry.category,
+      href: sitePath(`words/${entry.category}/index.html`),
+    });
+  }
+
+  if (entry.category === 'adverbs') {
+    const theme = getAdverbThemeInfo(entry.slug);
+    if (theme) {
+      crumbs.push({
+        label: theme.title,
+        href: sitePath(`words/adverbs/${theme.subDir}/index.html`),
+      });
+    }
+  }
+
+  crumbs.push({ label: entry.translation || entry.title });
+  return crumbs;
 }
 
 export function breadcrumbsForIndex(
@@ -76,6 +90,16 @@ export function breadcrumbsForIndex(
   }
 
   if (category === 'favorites') {
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
+  if (category === 'adverbs') {
+    if (relativePath.toLowerCase() !== 'adverbs/readme.md') {
+      crumbs.push({ label: 'Наречия', href: sitePath('words/adverbs/index.html') });
+    } else {
+      crumbs.push({ label: 'Словарь', href: sitePath('words/index.html') });
+    }
     crumbs.push({ label: title });
     return crumbs;
   }
