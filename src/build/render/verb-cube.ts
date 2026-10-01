@@ -62,8 +62,8 @@ function formatVerbHtml(text: string, aspect: VerbAspect): string {
   if (!value) return '<span class="verb-person-empty">—</span>';
   if (aspect === 'perfect') {
     const bits = value.split(/\s+/);
-    let auxEnd = bits[0] === 'θα' ? 1 : 0;
-    if (PERFECT_AUX.has(bits[auxEnd] ?? '') && bits.length > auxEnd + 1) {
+    let auxEnd = (bits[0] ?? '').toLowerCase() === 'θα' ? 1 : 0;
+    if (PERFECT_AUX.has((bits[auxEnd] ?? '').toLowerCase()) && bits.length > auxEnd + 1) {
       const head = bits.slice(0, auxEnd + 1).join(' ');
       const tail = bits.slice(auxEnd + 1).join(' ');
       return `<span class="verb-aux">${escapeHtml(head)}</span><span class="verb-part">${escapeHtml(tail)}</span>`;

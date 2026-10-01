@@ -54,8 +54,8 @@
     if (aspect === 'perfect') {
       const bits = value.split(/\s+/);
       const aux = new Set(['έχω', 'έχουμε', 'έχεις', 'έχετε', 'έχει', 'έχουν', 'είχα', 'είχαμε', 'είχες', 'είχατε', 'είχε', 'είχαν']);
-      let auxEnd = bits[0] === 'θα' ? 1 : 0;
-      if (aux.has(bits[auxEnd]) && bits.length > auxEnd + 1) {
+      let auxEnd = (bits[0] || '').toLowerCase() === 'θα' ? 1 : 0;
+      if (aux.has((bits[auxEnd] || '').toLowerCase()) && bits.length > auxEnd + 1) {
         const head = bits.slice(0, auxEnd + 1).join(' ');
         const tail = bits.slice(auxEnd + 1).join(' ');
         return `<span class="verb-aux">${escapeHtml(head)}</span><span class="verb-part">${escapeHtml(tail)}</span>`;

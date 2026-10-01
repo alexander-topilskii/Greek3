@@ -1,5 +1,6 @@
 # Словарь
 
+[Избранное](favorites/index.html)
 [Уроки](lessons/readme.md)
 [Блоки](blocks/readme.md)
 [Глаголы](verbs/readme.md)

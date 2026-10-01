@@ -30,6 +30,7 @@ site/css,js    ──►  (копирование) ──►  dist/assets/
 | `practice-common.js` | Общая логика grading/display для home/list practice |
 | `srs-schedule.js` / `srs-session.js` / `srs-pick.js` / `srs-progress.js` | Части SRS; фасад — `srs.js` |
 | `normalize-search.js` | Нормализация запроса поиска (синхронно с `normalize-search.ts`) |
+| `favorites.js` / `favorites-ui.js` / `favorites-page.js` / `home-favorites.js` | Избранное: localStorage, кнопки ★, страница `words/favorites/` и карточка на главной |
 
 ## CSS
 

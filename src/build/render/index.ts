@@ -6,6 +6,7 @@ export * from './context';
 export * from './index-links';
 export * from './paths-catalog';
 export { renderHome } from './pages/home';
+export { renderFavorites } from './pages/favorites';
 export { renderIndex, renderCasesIndex } from './pages/list';
 export { renderCasesPractice } from './pages/cases-practice';
 export { renderWord } from './pages/word';

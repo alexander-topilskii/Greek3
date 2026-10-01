@@ -13,6 +13,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   songs: 'Песни',
   topics: 'Темы',
   levels: 'Уровни',
+  favorites: 'Избранное',
 };
 
 export const RECORD_TYPE_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ export const RECORD_TYPE_LABELS: Record<string, string> = {
 };
 
 export const HOME_SECTIONS = [
+  { title: 'Избранное', href: 'words/favorites/index.html', description: 'Слова и разделы, сохранённые для повторения' },
   { title: 'Уроки', href: 'words/lessons/index.html', description: 'Слова по занятиям с репетитором' },
   { title: 'Блоки', href: 'words/blocks/index.html', description: 'Слова по блокам учебника' },
   { title: 'Глаголы', href: 'words/verbs/index.html', description: 'Спряжения, времена и формы' },

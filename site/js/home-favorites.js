@@ -1,5 +1,5 @@
 (function () {
-  const homePage = document.querySelector('.home-page');
+  const homePage = document.querySelector('.home-page[data-learning-mode="home"]');
   if (!homePage) return;
 
   const fav = window.GreekFavorites;
@@ -16,129 +16,40 @@
     return;
   }
 
-  const sectionEl = document.getElementById('favorites-section');
-  const listEl = document.getElementById('favorites-list');
-  const emptyEl = document.getElementById('favorites-empty');
-  const hintEl = document.getElementById('favorites-section-hint');
+  const card = document.querySelector('.section-card[data-section-href*="favorites"]');
+  if (!card) return;
 
-  function siteBasePrefix() {
-    const logoHref = document.querySelector('.logo')?.getAttribute('href') ?? '/';
-    return logoHref.replace(/\/?index\.html$/, '').replace(/\/$/, '');
-  }
+  const descEl = card.querySelector('p');
+  if (!descEl) return;
 
-  function wordPageHref(href) {
-    const base = siteBasePrefix();
-    const encoded = href
-      .split('/')
-      .map((segment) => encodeURIComponent(segment))
-      .join('/');
-    return `${base}/words/${encoded}`;
-  }
+  const defaultDesc = descEl.textContent || 'Слова и разделы, сохранённые для повторения';
 
-  function createRemoveButton(label, onRemove) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-favorite-remove';
-    btn.setAttribute('aria-label', `Убрать из избранного: ${label}`);
-    btn.title = 'Убрать из избранного';
-    btn.innerHTML =
-      '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    btn.addEventListener('click', (event) => {
-      event.preventDefault();
-      onRemove();
-    });
-    return btn;
-  }
-
-  function renderFavoriteWord(entry) {
-    const item = document.createElement('div');
-    item.className = 'favorites-item favorites-item--word';
-    item.setAttribute('role', 'listitem');
-    item.dataset.slug = entry.slug;
-
-    const main = document.createElement('div');
-    main.className = 'favorites-item-main';
-
-    if (entry.href) {
-      const link = document.createElement('a');
-      link.className = 'favorites-item-link';
-      link.href = wordPageHref(entry.href);
-      link.innerHTML = `<span class="favorites-item-label">${entry.label}</span>${
-        entry.primaryGreek
-          ? `<span class="favorites-item-greek greek">${entry.primaryGreek}</span>`
-          : ''
-      }`;
-      main.appendChild(link);
-    } else {
-      const label = document.createElement('span');
-      label.className = 'favorites-item-label';
-      label.textContent = entry.label;
-      main.appendChild(label);
-    }
-
-    item.appendChild(main);
-    item.appendChild(
-      createRemoveButton(entry.label, () => fav.removeSlug(entry.slug)),
-    );
-    return item;
-  }
-
-  function renderFavoriteSection(entry) {
-    const item = document.createElement('div');
-    item.className = 'favorites-item favorites-item--section';
-    item.setAttribute('role', 'listitem');
-    item.dataset.sectionId = entry.id;
-
-    const main = document.createElement('div');
-    main.className = 'favorites-item-main';
-
-    const label = document.createElement('span');
-    label.className = 'favorites-item-label';
-    label.textContent = entry.label;
-
-    const meta = document.createElement('span');
-    meta.className = 'favorites-item-meta';
-    meta.textContent = `${entry.count} слов · раздел`;
-
-    main.append(label, meta);
-    item.appendChild(main);
-    item.appendChild(
-      createRemoveButton(entry.label, () => fav.removeSection(entry.id)),
-    );
-    return item;
+  function pluralize(n, one, few, many) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 19) return many;
+    if (mod10 === 1) return one;
+    if (mod10 >= 2 && mod10 <= 4) return few;
+    return many;
   }
 
   function render() {
     const state = fav.readState();
     const hasFavorites = fav.hasAnyFavorites(state);
-    const entries = fav.getFavoriteEntries(catalog, state);
+    if (!hasFavorites) {
+      descEl.textContent = defaultDesc;
+      return;
+    }
+
     const favoriteWords = fav.getFavoriteWords(catalog, state);
+    const sectionsCount = state.sections.length;
+    const wordsCount = favoriteWords.length;
 
-    if (sectionEl) {
-      sectionEl.classList.toggle('hidden', !hasFavorites);
-      sectionEl.toggleAttribute('hidden', !hasFavorites);
+    let text = `${wordsCount} ${pluralize(wordsCount, 'слово', 'слова', 'слов')}`;
+    if (sectionsCount > 0) {
+      text += ` · ${sectionsCount} ${pluralize(sectionsCount, 'раздел', 'раздела', 'разделов')}`;
     }
-
-    if (hintEl && hasFavorites) {
-      hintEl.textContent = `Обучение на главной: ${favoriteWords.length} избранных слов`;
-    }
-
-    if (!listEl) return;
-
-    listEl.replaceChildren();
-    for (const entry of entries) {
-      if (entry.kind === 'section') {
-        listEl.appendChild(renderFavoriteSection(entry));
-      } else {
-        listEl.appendChild(renderFavoriteWord(entry));
-      }
-    }
-
-    if (emptyEl) {
-      const showEmpty = hasFavorites && entries.length === 0;
-      emptyEl.classList.toggle('hidden', !showEmpty);
-      emptyEl.toggleAttribute('hidden', !showEmpty);
-    }
+    descEl.textContent = text;
   }
 
   fav.onChange(render);

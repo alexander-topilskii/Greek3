@@ -409,10 +409,17 @@
 }
 
 .verb-person-form .verb-aux {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.verb-person-form .verb-part {
+  color: var(--text);
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 
-.verb-person-form .verb-part,
 .verb-person-empty {
   color: var(--text-muted);
   font-size: 0.75rem;

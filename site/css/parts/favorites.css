@@ -208,8 +208,51 @@
   display: none;
 }
 
+.favorites-group-title {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
+}
+
+.favorites-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.btn-clear-favorites {
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.75rem;
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.btn-clear-favorites:hover {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.favorites-sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 1.5rem;
+}
+
 @media (min-width: 640px) {
-  .favorites-list {
+  .favorites-list,
+  .favorites-sublist {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

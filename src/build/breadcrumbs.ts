@@ -75,6 +75,11 @@ export function breadcrumbsForIndex(
     return crumbs;
   }
 
+  if (category === 'favorites') {
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
   if (category && CATEGORY_LABELS[category]) {
     crumbs.push({ label: 'Словарь', href: sitePath('words/index.html') });
   }

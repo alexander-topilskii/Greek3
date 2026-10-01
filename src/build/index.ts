@@ -15,6 +15,7 @@ import {
   renderSong,
   renderSongLine,
   songLineBreadcrumbLabel,
+  renderFavorites,
   renderHome,
   renderIndex,
   renderSearch,
@@ -272,6 +273,9 @@ function main(): void {
 
   writeHtml('index.html', renderHome([...HOME_SECTIONS], globalCatalog));
   console.log('  🏠 index.html');
+
+  writeHtml('words/favorites/index.html', renderFavorites(globalCatalog));
+  console.log('  ★ words/favorites/index.html');
 
   const searchIndex = buildSearchIndex(globalWords);
   writeHtml('search.html', renderSearch(searchIndex));
