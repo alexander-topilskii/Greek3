@@ -14,9 +14,10 @@ import {
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
 import { renderPronounCubeHub } from '../pronoun-cube';
-import { renderCasesCubeHub } from '../cases-cube';
+import { renderCasesCubeHub, renderCasesThemesHub, renderCaseThemeCube } from '../cases-cube';
 import { renderAdverbsThemesHub, renderAdverbThemeCube } from '../adverbs-cube';
 import { getParadigmForSubDir } from '../../adverbs-data';
+import { getParadigmForCaseSubDir } from '../../cases-data';
 
 function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
@@ -351,7 +352,7 @@ export function renderCasesIndex(
     <section class="verbs-list-page cases-page" data-deck-id="cases">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Три основных падежа: именительный (подлежащее), родительный (принадлежность), винительный (дополнение). Изучите правила выше — затем откройте тренировку для практики артиклей, окончаний и переводов.</p>'}
+        ${intro || '<p class="page-intro">Три основных падежа современного греческого языка (именительный, винительный, родительный), артикли, слияние с предлогами и управление глаголов. Выберите тематический раздел с интерактивным 3D-кубом или запустите общую тренировку.</p>'}
         <div class="cases-practice-launch fade-in">
           <div class="list-practice-actions cases-practice-actions">
             <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
@@ -361,7 +362,13 @@ export function renderCasesIndex(
         </div>
       </div>
 
-      ${renderCasesCubeHub()}
+      ${renderCasesThemesHub()}
+
+      ${casesCheatSheetMarkup()}
+
+      <div class="cases-category-words-head fade-in">
+        <h2>Все материалы раздела</h2>
+      </div>
 
       <section class="links-list" id="verbs-links">
         ${links}
@@ -369,7 +376,7 @@ export function renderCasesIndex(
       ${catalogJson}
     </section>`;
 
-  const scripts: string[] = ['assets/js/cases-cube.js'];
+  const scripts: string[] = [];
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);
@@ -378,6 +385,70 @@ export function renderCasesIndex(
     ? {
         showSettings: true,
         settingsHref: settingsButtonHref({ deck: 'cases', from: fromPath }),
+        bodyEnd: examplesDialogMarkup(),
+      }
+    : {};
+
+  return layout(content, page.title, breadcrumbs, scripts, layoutOptions);
+}
+
+export function renderCasesCategoryIndex(
+  page: IndexPage,
+  pageOutputDir: string,
+  breadcrumbs: { label: string; href?: string }[],
+  catalog: VerbCatalog | undefined,
+): string {
+  const links = renderGroupedLinks(page, pageOutputDir, catalog);
+  const intro = page.intro
+    ? `<p class="page-intro">${escapeHtml(page.intro).replace(/\n/g, '<br>')}</p>`
+    : '';
+
+  const catalogJson = catalog
+    ? `<script type="application/json" id="verbs-catalog">${embedJson(catalog)}</script>`
+    : '';
+
+  const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const deckId = catalog?.deckId || pageOutputDir.replace(/^words\/?/, '').replace(/\//g, '-');
+  const paradigm = getParadigmForCaseSubDir(pageOutputDir);
+  const cubeHtml = paradigm ? renderCaseThemeCube(paradigm) : '';
+
+  const content = `
+    <section class="verbs-list-page cases-category-page" data-deck-id="${escapeHtml(deckId)}">
+      <div class="page-head fade-in list-head">
+        <div class="cases-category-back">
+          <a href="${escapeHtml(sitePath('words/cases/index.html'))}" class="cases-back-to-hub">← Все разделы падежей</a>
+        </div>
+        <h1>${escapeHtml(page.title)}</h1>
+        ${intro}
+        <div class="cases-practice-launch fade-in">
+          <div class="list-practice-actions cases-practice-actions">
+            <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
+            ${hasWords ? copyWordsListButtonMarkup() : ''}
+          </div>
+        </div>
+      </div>
+
+      ${cubeHtml}
+
+      <div class="cases-category-words-head fade-in">
+        <h2>Материалы и правила раздела</h2>
+      </div>
+
+      <section class="links-list" id="verbs-links">
+        ${links}
+      </section>
+      ${catalogJson}
+    </section>`;
+
+  const scripts: string[] = [];
+  if (cubeHtml) scripts.push('assets/js/cases-cube.js');
+  if (hasWords) scripts.push('assets/js/list-practice.js');
+
+  const fromPath = pageOutputDir ? `${pageOutputDir}/index.html` : 'index.html';
+  const layoutOptions = hasWords
+    ? {
+        showSettings: true,
+        settingsHref: settingsButtonHref({ deck: deckId, from: fromPath }),
         bodyEnd: examplesDialogMarkup(),
       }
     : {};

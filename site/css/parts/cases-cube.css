@@ -507,6 +507,241 @@
   color: var(--text-muted);
 }
 
+/* Transformation styles (nominative -> accusative / genitive) */
+.cases-item-trans {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.cases-trans-from {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.cases-trans-arrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: bold;
+  opacity: 0.85;
+}
+
+.cases-trans-to {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.cases-cube-face--accusative .cases-trans-arrow {
+  color: #059669;
+}
+
+.cases-cube-face--genitive .cases-trans-arrow {
+  color: #d97706;
+}
+
+.cases-item-rule {
+  font-size: 0.625rem;
+  font-weight: 600;
+  display: inline-block;
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.cases-cube-face--accusative .cases-item-rule {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.cases-cube-face--genitive .cases-item-rule {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+/* Cases Themes Hub Section */
+.cases-themes-hub {
+  margin-bottom: 2rem;
+}
+
+.cases-themes-intro {
+  margin-bottom: 1.25rem;
+}
+
+.cases-themes-intro p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cases-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.cases-theme-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.cases-theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 6px 16px rgba(0, 0, 0, 0.08));
+  border-color: var(--accent);
+}
+
+.cases-theme-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.cases-theme-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.cases-theme-card-badges {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.cases-theme-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.cases-theme-badge--cube {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.25);
+  color: var(--accent);
+}
+
+.cases-theme-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.cases-theme-desc {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.cases-theme-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.cases-theme-tag {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.cases-theme-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.cases-theme-arrow {
+  transition: transform var(--transition);
+}
+
+.cases-theme-card:hover .cases-theme-arrow {
+  transform: translateX(4px);
+}
+
+/* Category Page Header & Navigation */
+.cases-category-back {
+  margin-bottom: 0.75rem;
+}
+
+.cases-back-to-hub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.cases-back-to-hub:hover {
+  text-decoration: underline;
+}
+
+.cases-category-words-head {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.cases-category-words-head h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text);
+}
+
+.cases-theme-back-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.cases-theme-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cases-theme-back-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .cases-item-hint {
     display: none;

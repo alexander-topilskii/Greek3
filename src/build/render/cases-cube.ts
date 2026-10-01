@@ -1,7 +1,9 @@
 import type { WordEntry } from '../types';
 import { embedJson, escapeHtml } from './html';
+import { sitePath } from '../site-path';
 import {
   ALL_CASE_PARADIGMS,
+  ALL_CASE_THEMES,
   NOUNS_CASE_PARADIGM,
   CaseCell,
   CaseFace,
@@ -9,6 +11,7 @@ import {
   CaseRow,
   CaseType,
   CaseVariant,
+  getCaseThemeInfo,
   getParadigmForCaseWordSlug,
 } from '../cases-data';
 
@@ -34,6 +37,16 @@ function renderCell(cell: CaseCell, highlightForm?: string): string {
         cell.label.toLowerCase().includes(highlightForm.toLowerCase())),
   );
 
+  const formsContent = cell.from && cell.to
+    ? `
+      <div class="cases-item-trans">
+        <span class="cases-trans-from greek">${escapeHtml(cell.from)}</span>
+        <span class="cases-trans-arrow" aria-hidden="true">→</span>
+        <span class="cases-trans-to greek">${escapeHtml(cell.to)}</span>
+      </div>`
+    : `
+      <span class="cases-item-greek greek">${escapeHtml(cell.greek)}</span>`;
+
   return `
     <div class="cases-item${isCurrent ? ' is-current' : ''}${isEmpty ? ' is-empty' : ''}" data-greek="${escapeHtml(cell.greek)}">
       <div class="cases-item-info">
@@ -41,7 +54,8 @@ function renderCell(cell: CaseCell, highlightForm?: string): string {
         ${cell.hint ? `<span class="cases-item-hint">${escapeHtml(cell.hint)}</span>` : ''}
       </div>
       <div class="cases-item-forms">
-        <span class="cases-item-greek greek">${escapeHtml(cell.greek)}</span>
+        ${formsContent}
+        ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
         ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : ''}
       </div>
     </div>`;
@@ -203,9 +217,14 @@ export function renderCasesCube(word: WordEntry): {
     return { html: '', interactive: false };
   }
 
+  const theme = getCaseThemeInfo(word.slug);
+  const themeLink = theme
+    ? `<div class="cases-theme-back-wrap"><a href="${escapeHtml(sitePath(`words/cases/${theme.subDir}/index.html`))}" class="cases-theme-back-link">← Раздел «${escapeHtml(theme.title)}»</a></div>`
+    : `<div class="cases-theme-back-wrap"><a href="${escapeHtml(sitePath('words/cases/index.html'))}" class="cases-theme-back-link">← Все разделы падежей</a></div>`;
+
   const lookup = getParadigmForCaseWordSlug(word.slug);
   if (!lookup) {
-    const html = renderCubeInner(
+    const html = themeLink + renderCubeInner(
       NOUNS_CASE_PARADIGM,
       'nominative',
       'endings',
@@ -214,13 +233,58 @@ export function renderCasesCube(word: WordEntry): {
     return { html, interactive: true };
   }
 
-  const html = renderCubeInner(
+  const html = themeLink + renderCubeInner(
     lookup.paradigm,
     lookup.initialCase,
     lookup.initialVariant,
     lookup.highlightForm,
   );
   return { html, interactive: true };
+}
+
+export function renderCaseThemeCube(paradigm: CaseParadigm): string {
+  const initialVariant = paradigm.defaultVariant || paradigm.variants[0]?.id || 'default';
+  const initialCase = paradigm.defaultCase || 'nominative';
+  return renderCubeInner(
+    paradigm,
+    initialCase,
+    initialVariant,
+    undefined,
+    undefined,
+  );
+}
+
+export function renderCasesThemesHub(): string {
+  const cardsHtml = ALL_CASE_THEMES.map((theme) => {
+    const tagsHtml = theme.sampleTags
+      .map((tag) => `<span class="cases-theme-tag greek">${escapeHtml(tag)}</span>`)
+      .join('');
+
+    return `
+      <a href="${escapeHtml(sitePath(`words/cases/${theme.subDir}/index.html`))}" class="cases-theme-card">
+        <div class="cases-theme-card-top">
+          <span class="cases-theme-icon" aria-hidden="true">${theme.icon}</span>
+          <div class="cases-theme-card-badges">
+            <span class="cases-theme-badge cases-theme-badge--cube">3D-куб</span>
+          </div>
+        </div>
+        <h3 class="cases-theme-title">${escapeHtml(theme.title)}</h3>
+        <p class="cases-theme-desc">${escapeHtml(theme.description)}</p>
+        <div class="cases-theme-tags">${tagsHtml}</div>
+        <div class="cases-theme-action">
+          <span>Перейти к разделу</span>
+          <span class="cases-theme-arrow" aria-hidden="true">→</span>
+        </div>
+      </a>`;
+  }).join('');
+
+  return `
+    <section class="cases-themes-hub fade-in" aria-label="Тематические разделы падежей">
+      <div class="cases-themes-intro">
+        <p>Падежный блок разделён на 4 тематические страницы: в каждой свой 3D-куб, где для каждого падежа наглядно показано исходное окончание из именительного и формула трансформации в винительный или родительный.</p>
+      </div>
+      <div class="cases-themes-grid">${cardsHtml}</div>
+    </section>`;
 }
 
 export function renderCasesCubeHub(): string {

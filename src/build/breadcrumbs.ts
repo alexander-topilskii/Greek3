@@ -2,6 +2,7 @@ import { CATEGORY_LABELS } from './constants';
 import { sitePath } from './site-path';
 import type { WordEntry } from './types';
 import { getAdverbThemeInfo } from './adverbs-data';
+import { getCaseThemeInfo } from './cases-data';
 
 export function breadcrumbsForWord(entry: WordEntry) {
   const crumbs: { label: string; href?: string }[] = [
@@ -21,6 +22,16 @@ export function breadcrumbsForWord(entry: WordEntry) {
       crumbs.push({
         label: theme.title,
         href: sitePath(`words/adverbs/${theme.subDir}/index.html`),
+      });
+    }
+  }
+
+  if (entry.category === 'cases') {
+    const theme = getCaseThemeInfo(entry.slug);
+    if (theme) {
+      crumbs.push({
+        label: theme.title,
+        href: sitePath(`words/cases/${theme.subDir}/index.html`),
       });
     }
   }
@@ -97,6 +108,16 @@ export function breadcrumbsForIndex(
   if (category === 'adverbs') {
     if (relativePath.toLowerCase() !== 'adverbs/readme.md') {
       crumbs.push({ label: 'Наречия', href: sitePath('words/adverbs/index.html') });
+    } else {
+      crumbs.push({ label: 'Словарь', href: sitePath('words/index.html') });
+    }
+    crumbs.push({ label: title });
+    return crumbs;
+  }
+
+  if (category === 'cases') {
+    if (relativePath.toLowerCase() !== 'cases/readme.md') {
+      crumbs.push({ label: 'Падежи', href: sitePath('words/cases/index.html') });
     } else {
       crumbs.push({ label: 'Словарь', href: sitePath('words/index.html') });
     }

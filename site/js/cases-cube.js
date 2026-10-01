@@ -97,6 +97,16 @@
           cell.label.toLowerCase().includes(highlightForm.toLowerCase()))
     );
 
+    const formsContent = cell.from && cell.to
+      ? `
+        <div class="cases-item-trans">
+          <span class="cases-trans-from greek">${escapeHtml(cell.from)}</span>
+          <span class="cases-trans-arrow" aria-hidden="true">→</span>
+          <span class="cases-trans-to greek">${escapeHtml(cell.to)}</span>
+        </div>`
+      : `
+        <span class="cases-item-greek greek">${escapeHtml(cell.greek || '')}</span>`;
+
     return `
       <div class="cases-item${isCurrent ? ' is-current' : ''}${isEmpty ? ' is-empty' : ''}" data-greek="${escapeHtml(cell.greek || '')}">
         <div class="cases-item-info">
@@ -104,7 +114,8 @@
           ${cell.hint ? `<span class="cases-item-hint">${escapeHtml(cell.hint)}</span>` : ''}
         </div>
         <div class="cases-item-forms">
-          <span class="cases-item-greek greek">${escapeHtml(cell.greek || '')}</span>
+          ${formsContent}
+          ${cell.rule ? `<span class="cases-item-rule">${escapeHtml(cell.rule)}</span>` : ''}
           ${cell.ru ? `<span class="cases-item-ru">${escapeHtml(cell.ru)}</span>` : ''}
         </div>
       </div>`;
