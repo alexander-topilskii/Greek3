@@ -14,6 +14,7 @@ import {
 import { buildPageSectionId } from '../../favorites-id';
 import { renderGroupedLinks } from '../index-links';
 import { renderPronounCubeHub } from '../pronoun-cube';
+import { renderCasesCubeHub } from '../cases-cube';
 
 function isLessonPage(pageDir: string): boolean {
   return /^words\/lessons\/\d+$/i.test(pageDir.replace(/\/$/, ''));
@@ -358,7 +359,7 @@ export function renderCasesIndex(
         </div>
       </div>
 
-      ${casesCheatSheetMarkup()}
+      ${renderCasesCubeHub()}
 
       <section class="links-list" id="verbs-links">
         ${links}
@@ -366,7 +367,7 @@ export function renderCasesIndex(
       ${catalogJson}
     </section>`;
 
-  const scripts: string[] = [];
+  const scripts: string[] = ['assets/js/cases-cube.js'];
   if (catalog && catalog.words.length > 0) scripts.push('assets/js/list-practice.js');
 
   const hasDeckPractice = Boolean(catalog && catalog.words.length > 0);

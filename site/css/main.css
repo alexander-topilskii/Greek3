@@ -3825,6 +3825,523 @@ body.practice-immersive-open {
 }
 
 
+/* 3D Cases Cube & Paradigm Explorer */
+
+.cases-paradigm {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1rem 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+/* Master category tabs on Cases Hub */
+.cases-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.2rem 0.2rem 0.6rem;
+  margin-bottom: 0.85rem;
+  scrollbar-width: none;
+}
+
+.cases-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cases-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.cases-tab:hover {
+  color: var(--text);
+  border-color: #cbd5e1;
+}
+
+.cases-tab.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* Variant segmented switcher (Схема окончаний / Примеры слов / etc.) */
+.cases-aspect {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr));
+  gap: 0;
+  padding: 4px;
+  margin-bottom: 1.15rem;
+  border-radius: 12px;
+  background: rgba(226, 232, 240, 0.85);
+}
+
+.cases-aspect-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--n, 2));
+  border-radius: 8px;
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(26, 26, 46, 0.08);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.cases-aspect-btn {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: clamp(0.6875rem, 2.7vw, 0.8125rem);
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0.55rem 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+
+.cases-aspect-btn.is-active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.cases-aspect-btn:focus-visible,
+.cases-cube-nav:focus-visible,
+.cases-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Toolbar */
+.cases-cube-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.cases-cube-heading {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem 0.35rem;
+  text-align: center;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+  transition: opacity 0.3s ease;
+}
+
+.cases-cube-heading:active {
+  cursor: grabbing;
+}
+
+.cases-cube-heading.is-fading {
+  opacity: 0;
+}
+
+.cases-cube-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.cases-cube-subtitle {
+  margin: 0.1rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.cases-cube-nav {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+
+.cases-cube-nav:hover {
+  color: var(--text);
+  background: rgba(26, 26, 46, 0.04);
+}
+
+.cases-cube-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+  background: transparent;
+}
+
+/* Timeline navigation dots */
+.cases-cube-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0 0 0.85rem;
+}
+
+.cases-cube-timeline-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.cases-cube-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: width 0.3s ease, background 0.3s ease;
+  cursor: pointer;
+}
+
+.cases-cube-dot.is-active {
+  width: 1.6rem;
+}
+
+.cases-cube-dot.is-active[data-dot='nominative'] {
+  background: #3b82f6;
+}
+
+.cases-cube-dot.is-active[data-dot='accusative'] {
+  background: #10b981;
+}
+
+.cases-cube-dot.is-active[data-dot='genitive'] {
+  background: #f59e0b;
+}
+
+/* 3D Scene and Cube */
+.cases-cube-clip {
+  overflow: hidden;
+  width: 100%;
+}
+
+.cases-cube-scene {
+  min-height: 18rem;
+  perspective: 1000px;
+  touch-action: pan-y;
+  user-select: none;
+  position: relative;
+  width: 100%;
+}
+
+.cases-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--cases-tz, 150px) * -1)) rotateY(0deg);
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.cases-cube-face {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-card);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.cases-cube-face--nominative {
+  transform: rotateY(-90deg) translateZ(var(--cases-tz, 150px));
+}
+
+.cases-cube-face--accusative {
+  transform: rotateY(0deg) translateZ(var(--cases-tz, 150px));
+}
+
+.cases-cube-face--genitive {
+  transform: rotateY(90deg) translateZ(var(--cases-tz, 150px));
+}
+
+/* Grid within faces */
+.cases-cube-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.65rem;
+  align-content: start;
+}
+
+.cases-col-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cases-cube-face--nominative .cases-col-label {
+  color: #2563eb;
+  border-bottom-color: #bfdbfe;
+}
+
+.cases-cube-face--accusative .cases-col-label {
+  color: #059669;
+  border-bottom-color: #a7f3d0;
+}
+
+.cases-cube-face--genitive .cases-col-label {
+  color: #d97706;
+  border-bottom-color: #fde68a;
+}
+
+/* Items / Cells */
+.cases-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-height: 2.85rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.cases-cube-face--nominative .cases-item {
+  background: rgba(37, 99, 235, 0.05);
+  border-color: rgba(37, 99, 235, 0.12);
+}
+
+.cases-cube-face--accusative .cases-item {
+  background: rgba(5, 150, 105, 0.05);
+  border-color: rgba(5, 150, 105, 0.12);
+}
+
+.cases-cube-face--genitive .cases-item {
+  background: rgba(217, 119, 6, 0.05);
+  border-color: rgba(217, 119, 6, 0.12);
+}
+
+.cases-item:hover {
+  transform: translateY(-1px);
+}
+
+.cases-cube-face--nominative .cases-item:hover {
+  background: rgba(37, 99, 235, 0.09);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.cases-cube-face--accusative .cases-item:hover {
+  background: rgba(5, 150, 105, 0.09);
+  border-color: rgba(5, 150, 105, 0.25);
+}
+
+.cases-cube-face--genitive .cases-item:hover {
+  background: rgba(217, 119, 6, 0.09);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.cases-item:active {
+  transform: translateY(0);
+  opacity: 0.7;
+}
+
+.cases-item.is-empty {
+  cursor: default;
+  opacity: 0.35;
+  background: transparent !important;
+  border-color: var(--border) !important;
+}
+
+.cases-item.is-empty:hover {
+  transform: none;
+}
+
+/* Active Highlight for current case */
+.cases-item.is-current {
+  font-weight: 700;
+}
+
+.cases-cube-face--nominative .cases-item.is-current {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.14);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+.cases-cube-face--accusative .cases-item.is-current {
+  border-color: #059669;
+  background: rgba(5, 150, 105, 0.14);
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.3);
+}
+
+.cases-cube-face--genitive .cases-item.is-current {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.14);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3);
+}
+
+.cases-item-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+  max-width: 48%;
+}
+
+.cases-item-label {
+  color: var(--text-muted);
+  font-size: 0.725rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cases-item-hint {
+  font-size: 0.625rem;
+  color: #94a3b8;
+  font-style: italic;
+  line-height: 1.1;
+}
+
+.cases-item-forms {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.cases-item-greek {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.cases-item-ru {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.15;
+}
+
+/* Extra usage notes card */
+.cases-extra {
+  margin-top: 1rem;
+}
+
+.cases-extra-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.cases-extra-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cases-extra-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.cases-extra-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cases-extra-example {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-left: 3px solid var(--accent);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.cases-extra-example:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.cases-extra-example:active {
+  opacity: 0.6;
+}
+
+.cases-extra-greek {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cases-extra-ru {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .cases-item-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cases-cube,
+  .cases-aspect-slider,
+  .cases-cube-heading,
+  .cases-cube-dot {
+    transition: none;
+  }
+}
+
 /* Cases practice page */
 .cases-practice-launch {
   margin-top: 1.25rem;

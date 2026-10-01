@@ -14,6 +14,7 @@ const CSS_PARTS = [
   'practice.css',
   'favorites.css',
   'cases.css',
+  'cases-cube.css',
   'cases-practice.css',
   'learning-ladder.css',
   'essays.css',
