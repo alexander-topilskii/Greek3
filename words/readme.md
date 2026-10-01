@@ -6,6 +6,7 @@
 [Глаголы](verbs/readme.md)
 [Существительные](nouns/readme.md)
 [Прилагательные](adjectives/readme.md)
+[Наречия](adverbs/readme.md)
 [Местоимения](pronouns/readme.md)
 [Фразы](phrases/readme.md)
 [Числа](numbers/readme.md)

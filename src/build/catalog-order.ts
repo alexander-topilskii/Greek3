@@ -62,6 +62,7 @@ export const CATEGORY_ORDER = [
   'verbs',
   'nouns',
   'adjectives',
+  'adverbs',
   'pronouns',
   'phrases',
   'numbers',

@@ -50,6 +50,7 @@ npm run dev:pages    # как на GitHub Pages → http://localhost:3000/Greek3
 - [Глаголы](words/verbs/readme.md)
 - [Существительные](words/nouns/readme.md)
 - [Прилагательные](words/adjectives/readme.md)
+- [Наречия](words/adverbs/readme.md)
 - [Местоимения](words/pronouns/readme.md)
 - [Числа](words/numbers/readme.md)
 - [Падежи и управление](words/cases/readme.md)
