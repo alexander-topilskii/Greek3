@@ -96,7 +96,7 @@ export function renderIndex(
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
-          ${flashcardMarkup('list-flashcard-root')}
+          ${flashcardMarkup('list-flashcard-root', 'word-link')}
           ${practiceCompleteMarkup()}
         </div>
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
@@ -487,7 +487,7 @@ export function renderAdverbsIndex(
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
-          ${flashcardMarkup('list-flashcard-root')}
+          ${flashcardMarkup('list-flashcard-root', 'word-link')}
           ${practiceCompleteMarkup()}
         </div>
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>
@@ -560,7 +560,7 @@ export function renderAdverbCategoryIndex(
 
       <section class="list-practice hidden" id="list-practice" aria-hidden="true">
         <div class="practice-panel practice-panel--wide fade-in">
-          ${flashcardMarkup('list-flashcard-root')}
+          ${flashcardMarkup('list-flashcard-root', 'word-link')}
           ${practiceCompleteMarkup()}
         </div>
         <button type="button" class="btn btn-secondary btn-close-practice" id="btn-close-practice">← К списку</button>

@@ -2690,6 +2690,9 @@ body.progress-fullscreen-open {
 }
 
 .practice-controls .btn-word-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
   text-align: center;
 }

@@ -67,7 +67,10 @@
     practiceComplete?.toggleAttribute('hidden', !visible);
     practiceControls?.classList.toggle('hidden', visible);
     practiceControls?.toggleAttribute('hidden', visible);
-    if (visible) hideExamplesButton();
+    if (visible) {
+      hideExamplesButton();
+      hideWordLink();
+    }
   }
 
   function initFlashcard() {
@@ -91,9 +94,88 @@
 
   const practiceControls = practiceSection?.querySelector('.practice-controls');
   const btnRandom = practiceControls?.querySelector('.btn-random');
+  const btnWordLink = practiceControls?.querySelector('.btn-word-link');
   const btnLang = practiceControls?.querySelector('.btn-lang');
   const btnExamples = practiceControls?.querySelector('.btn-examples');
   const examples = window.GreekExamples;
+  const SESSION_KEY = `greek3:list-practice-session:${deckId}`;
+
+  function isPracticeOpen() {
+    return Boolean(practiceSection && !practiceSection.classList.contains('hidden'));
+  }
+
+  function saveSessionState() {
+    if (!isPracticeOpen() || !practiceDirection) return;
+    try {
+      const payload = { active: true, direction: practiceDirection };
+      if (currentPick?.word?.slug) {
+        payload.slug = currentPick.word.slug;
+      }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.warn('Could not save list practice session state', err);
+    }
+  }
+
+  function clearSessionState() {
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+    } catch (err) {
+      console.warn('Could not clear list practice session state', err);
+    }
+  }
+
+  function readSessionState() {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.active || !parsed?.direction) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function siteBasePrefix() {
+    const logoHref = document.querySelector('.logo')?.getAttribute('href') ?? '/';
+    return logoHref.replace(/\/?index\.html$/, '').replace(/\/$/, '');
+  }
+
+  function wordPageHref(href) {
+    const base = siteBasePrefix();
+    const encoded = href
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+    return `${base}/words/${encoded}`;
+  }
+
+  function syncWordLink(pick) {
+    if (!btnWordLink) return;
+    if (!pick?.word?.href) {
+      btnWordLink.classList.add('hidden');
+      btnWordLink.setAttribute('hidden', '');
+      btnWordLink.setAttribute('aria-disabled', 'true');
+      btnWordLink.removeAttribute('href');
+      return;
+    }
+    const domLink = pick.word.slug
+      ? document.querySelector(`#verbs-links .word-link[data-word-slug="${pick.word.slug}"]`)?.getAttribute('href')
+      : null;
+    btnWordLink.href = domLink || wordPageHref(pick.word.href);
+    btnWordLink.classList.remove('hidden');
+    btnWordLink.removeAttribute('hidden');
+    btnWordLink.removeAttribute('aria-disabled');
+  }
+
+  function hideWordLink() {
+    if (!btnWordLink) return;
+    btnWordLink.classList.add('hidden');
+    btnWordLink.setAttribute('hidden', '');
+    btnWordLink.setAttribute('aria-disabled', 'true');
+    btnWordLink.removeAttribute('href');
+  }
 
   function syncExamplesButton(word) {
     examples?.syncButton(btnExamples, word);
@@ -196,15 +278,17 @@
           : 'Все слова пройдены!',
       );
       hideExamplesButton();
+      hideWordLink();
       setPracticeComplete(true);
       return;
     }
 
     await showCardContent(currentPick);
     syncExamplesButton(currentPick.word);
+    syncWordLink(currentPick);
   }
 
-  async function openPractice(direction) {
+  async function openPractice(direction, resumePick = null) {
     const card = initFlashcard();
     if (!card) return;
 
@@ -219,15 +303,26 @@
     practiceActions?.classList.add('hidden');
     navBack()?.push(PRACTICE_NAV_ID, () => closePractice(true));
     syncCardDisplay();
-    pickAndShowNext();
+
+    if (resumePick) {
+      currentPick = resumePick;
+      await showCardContent(currentPick);
+      syncExamplesButton(currentPick.word);
+      syncWordLink(currentPick);
+      return;
+    }
+
+    await pickAndShowNext();
   }
 
   function closePractice(fromNav = false) {
     srs.endSession(db);
+    clearSessionState();
     practiceSection?.classList.add('hidden');
     practiceSection?.setAttribute('aria-hidden', 'true');
     linksSection?.classList.remove('hidden');
     practiceActions?.classList.remove('hidden');
+    hideWordLink();
     setPracticeComplete(false);
     updateProgressUI();
     if (!fromNav) navBack()?.dismiss(PRACTICE_NAV_ID);
@@ -248,12 +343,49 @@
 
   btnRandom?.addEventListener('click', pickAndShowNext);
 
+  btnWordLink?.addEventListener('click', (event) => {
+    if (!currentPick?.word?.href) {
+      event.preventDefault();
+      return;
+    }
+    saveSessionState();
+  });
+
   btnExamples?.addEventListener('click', () => {
     if (currentPick?.word) examples?.show(currentPick.word);
   });
 
-  db.init().then(() => {
+  async function tryRestorePractice() {
+    const state = readSessionState();
+    if (!state) return;
+
+    clearSessionState();
+
+    let resumePick = null;
+    if (state.slug) {
+      const word = catalog.words.find((w) => w.slug === state.slug);
+      if (word) {
+        resumePick = {
+          word,
+          type: 'summary',
+          direction: state.direction,
+          isNew: false,
+        };
+      }
+    }
+
+    await openPractice(state.direction, resumePick);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveSessionState();
+    }
+  });
+
+  db.init().then(async () => {
     sortWordLinksAlphabetically();
     updateProgressUI();
+    await tryRestorePractice();
   });
 })();

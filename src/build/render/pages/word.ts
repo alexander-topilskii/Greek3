@@ -153,7 +153,7 @@ export function renderWord(
       ${adverbParadigm.html}
 
       <section class="practice-panel practice-panel--wide fade-in">
-        ${flashcardMarkup('flashcard-root')}
+        ${flashcardMarkup('flashcard-root', 'random')}
       </section>
 
       ${

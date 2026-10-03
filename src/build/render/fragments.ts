@@ -171,7 +171,7 @@ export function flashcardPrimaryControl(kind: FlashcardControls): string {
   return `<button type="button" class="btn btn-primary btn-random">Случайная</button>`;
 }
 
-export function flashcardMarkup(id = 'flashcard-root', controls: FlashcardControls = 'random'): string {
+export function flashcardMarkup(id = 'flashcard-root', controls: FlashcardControls = 'word-link'): string {
   return `
     <div class="flashcard-root" id="${id}">
       <div class="flashcard-hints" aria-hidden="true">
