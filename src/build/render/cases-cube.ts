@@ -295,9 +295,6 @@ export function renderCasesThemesHub(): string {
       <a href="${escapeHtml(sitePath(`words/cases/${theme.subDir}/index.html`))}" class="cases-theme-card">
         <div class="cases-theme-card-top">
           <span class="cases-theme-icon" aria-hidden="true">${theme.icon}</span>
-          <div class="cases-theme-card-badges">
-            <span class="cases-theme-badge cases-theme-badge--cube">3D-куб</span>
-          </div>
         </div>
         <h3 class="cases-theme-title">${escapeHtml(theme.title)}</h3>
         <p class="cases-theme-desc">${escapeHtml(theme.description)}</p>
@@ -311,9 +308,6 @@ export function renderCasesThemesHub(): string {
 
   return `
     <section class="cases-themes-hub fade-in" aria-label="Тематические разделы падежей">
-      <div class="cases-themes-intro">
-        <p>Падежный блок разделён на 4 тематические страницы: в каждой свой 3D-куб, где для каждого падежа наглядно показано исходное окончание из именительного и формула трансформации в винительный или родительный.</p>
-      </div>
       <div class="cases-themes-grid">${cardsHtml}</div>
     </section>`;
 }

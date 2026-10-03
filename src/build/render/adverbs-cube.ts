@@ -244,7 +244,6 @@ export function renderAdverbThemeCube(paradigm: AdverbParadigm): string {
 
 export function renderAdverbsThemesHub(): string {
   const cardsHtml = ALL_ADVERB_THEMES.map((theme) => {
-    const hasCube = Boolean(theme.paradigm);
     const tagsHtml = theme.sampleTags
       .map((tag) => `<span class="adverbs-theme-tag greek">${escapeHtml(tag)}</span>`)
       .join('');
@@ -255,7 +254,6 @@ export function renderAdverbsThemesHub(): string {
           <span class="adverbs-theme-icon" aria-hidden="true">${theme.icon}</span>
           <div class="adverbs-theme-card-badges">
             <span class="adverbs-theme-badge">${theme.wordCount} слов</span>
-            ${hasCube ? '<span class="adverbs-theme-badge adverbs-theme-badge--cube">3D-куб</span>' : ''}
           </div>
         </div>
         <h3 class="adverbs-theme-title">${escapeHtml(theme.title)}</h3>

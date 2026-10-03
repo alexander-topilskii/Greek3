@@ -352,13 +352,12 @@ export function renderCasesIndex(
     <section class="verbs-list-page cases-page" data-deck-id="cases">
       <div class="page-head fade-in list-head">
         <h1>${escapeHtml(page.title)}</h1>
-        ${intro || '<p class="page-intro">Три основных падежа современного греческого языка (именительный, винительный, родительный), артикли, слияние с предлогами и управление глаголов. Выберите тематический раздел с интерактивным 3D-кубом или запустите общую тренировку.</p>'}
+        ${intro}
         <div class="cases-practice-launch fade-in">
           <div class="list-practice-actions cases-practice-actions">
             <a href="${escapeHtml(sitePath('words/cases/practice.html'))}" class="btn btn-primary cases-practice-launch-btn">Тренировать падежи</a>
             ${hasWords ? copyWordsListButtonMarkup() : ''}
           </div>
-          <p class="cases-practice-launch-hint">Артикли, окончания, переводы и сопоставление форм — в отдельной тренировке с прогрессом.</p>
         </div>
       </div>
 
