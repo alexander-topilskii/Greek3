@@ -145,19 +145,22 @@ function hasAspectAcrossVerb(paradigm: VerbParadigm, tense: VerbTense, aspect: V
   return Boolean(paradigm.conjugations[tense]?.[aspect]?.some(Boolean));
 }
 
-function renderCell(cell: FormCell): string {
-  const formatted = formatVerbHtml(cell.form, cell.aspect);
-  const wideClass = cell.wide ? ' verb-form-cell--wide' : '';
+function renderColLabel(cell: FormCell, wide = false): string {
+  const isWide = wide || cell.wide;
+  const wideClass = isWide ? ' verb-col-label--wide' : '';
   const sublabelHtml = cell.sublabel
-    ? `<span class="verb-form-sublabel">${escapeHtml(cell.sublabel)}</span>`
+    ? `<span class="verb-col-label-el greek">${escapeHtml(cell.sublabel)}</span>`
     : '';
+  return `<div class="verb-col-label${wideClass}"><span class="verb-col-label-ru">${escapeHtml(cell.label)}</span>${sublabelHtml}</div>`;
+}
+
+function renderCell(cell: FormCell, overrideWide?: boolean): string {
+  const formatted = formatVerbHtml(cell.form, cell.aspect);
+  const isWide = overrideWide !== undefined ? overrideWide : cell.wide;
+  const wideClass = isWide ? ' verb-form-cell--wide' : '';
 
   return `
                 <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}">
-                  <div class="verb-form-meta">
-                    <span class="verb-form-label">${escapeHtml(cell.label)}</span>
-                    ${sublabelHtml}
-                  </div>
                   <span class="verb-form-value greek">${formatted}</span>
                 </div>`;
 }
@@ -169,6 +172,37 @@ function renderTenseBlock(
   cells: FormCell[],
 ): string {
   if (!cells.length) return '';
+
+  const regularCells = cells.filter((c) => !c.wide);
+  const wideCells = cells.filter((c) => c.wide);
+
+  const htmlParts: string[] = [];
+
+  for (let i = 0; i < regularCells.length; i += 2) {
+    const pair = regularCells.slice(i, i + 2);
+    if (pair.length === 2) {
+      htmlParts.push(renderColLabel(pair[0]));
+      htmlParts.push(renderColLabel(pair[1]));
+      htmlParts.push(renderCell(pair[0]));
+      htmlParts.push(renderCell(pair[1]));
+    } else {
+      const single = { ...pair[0], wide: true };
+      const showLabel = !(cells.length === 1 && single.label.toLowerCase() === title.toLowerCase());
+      if (showLabel) {
+        htmlParts.push(renderColLabel(single, true));
+      }
+      htmlParts.push(renderCell(single, true));
+    }
+  }
+
+  for (const wideCell of wideCells) {
+    const showLabel = !(cells.length === 1 && wideCell.label.toLowerCase() === title.toLowerCase());
+    if (showLabel) {
+      htmlParts.push(renderColLabel(wideCell, true));
+    }
+    htmlParts.push(renderCell(wideCell, true));
+  }
+
   return `
             <div class="verb-tense-block verb-tense-block--${tenseClass}">
               <div class="verb-tense-heading">
@@ -176,7 +210,7 @@ function renderTenseBlock(
                 <span class="verb-tense-greek">${escapeHtml(greekTitle)}</span>
               </div>
               <div class="verb-tense-grid">
-                ${cells.map(renderCell).join('')}
+                ${htmlParts.join('\n')}
               </div>
             </div>`;
 }
