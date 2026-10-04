@@ -135,32 +135,22 @@ function chevron(direction: 'prev' | 'next'): string {
 
 interface FormCell {
   aspect: VerbAspect | 'general';
-  label: string;
-  sublabel?: string;
   form: string;
   wide?: boolean;
+  title?: string;
 }
 
 function hasAspectAcrossVerb(paradigm: VerbParadigm, tense: VerbTense, aspect: VerbAspect): boolean {
   return Boolean(paradigm.conjugations[tense]?.[aspect]?.some(Boolean));
 }
 
-function renderColLabel(cell: FormCell, wide = false): string {
-  const isWide = wide || cell.wide;
-  const wideClass = isWide ? ' verb-col-label--wide' : '';
-  const sublabelHtml = cell.sublabel
-    ? `<span class="verb-col-label-el greek">${escapeHtml(cell.sublabel)}</span>`
-    : '';
-  return `<div class="verb-col-label${wideClass}"><span class="verb-col-label-ru">${escapeHtml(cell.label)}</span>${sublabelHtml}</div>`;
-}
-
-function renderCell(cell: FormCell, overrideWide?: boolean): string {
+function renderCell(cell: FormCell): string {
   const formatted = formatVerbHtml(cell.form, cell.aspect);
-  const isWide = overrideWide !== undefined ? overrideWide : cell.wide;
-  const wideClass = isWide ? ' verb-form-cell--wide' : '';
+  const wideClass = cell.wide ? ' verb-form-cell--wide' : '';
+  const titleAttr = cell.title ? ` title="${escapeHtml(cell.title)}"` : '';
 
   return `
-                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}">
+                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}"${titleAttr}>
                   <span class="verb-form-value greek">${formatted}</span>
                 </div>`;
 }
@@ -173,36 +163,6 @@ function renderTenseBlock(
 ): string {
   if (!cells.length) return '';
 
-  const regularCells = cells.filter((c) => !c.wide);
-  const wideCells = cells.filter((c) => c.wide);
-
-  const htmlParts: string[] = [];
-
-  for (let i = 0; i < regularCells.length; i += 2) {
-    const pair = regularCells.slice(i, i + 2);
-    if (pair.length === 2) {
-      htmlParts.push(renderColLabel(pair[0]));
-      htmlParts.push(renderColLabel(pair[1]));
-      htmlParts.push(renderCell(pair[0]));
-      htmlParts.push(renderCell(pair[1]));
-    } else {
-      const single = { ...pair[0], wide: true };
-      const showLabel = !(cells.length === 1 && single.label.toLowerCase() === title.toLowerCase());
-      if (showLabel) {
-        htmlParts.push(renderColLabel(single, true));
-      }
-      htmlParts.push(renderCell(single, true));
-    }
-  }
-
-  for (const wideCell of wideCells) {
-    const showLabel = !(cells.length === 1 && wideCell.label.toLowerCase() === title.toLowerCase());
-    if (showLabel) {
-      htmlParts.push(renderColLabel(wideCell, true));
-    }
-    htmlParts.push(renderCell(wideCell, true));
-  }
-
   return `
             <div class="verb-tense-block verb-tense-block--${tenseClass}">
               <div class="verb-tense-heading">
@@ -210,7 +170,7 @@ function renderTenseBlock(
                 <span class="verb-tense-greek">${escapeHtml(greekTitle)}</span>
               </div>
               <div class="verb-tense-grid">
-                ${htmlParts.join('\n')}
+                ${cells.map(renderCell).join('')}
               </div>
             </div>`;
 }
@@ -235,16 +195,16 @@ function renderPersonFace(
   const pastPerfForm = paradigm.conjugations.past?.perfect?.[idx] || '';
 
   if (pastSimpleExist && pastContExist) {
-    pastCells.push({ aspect: 'simple', label: 'Разовое', sublabel: 'Αόριστος', form: pastSimpleForm });
-    pastCells.push({ aspect: 'continuous', label: 'Длительное', sublabel: 'Παρατατικός', form: pastContForm });
+    pastCells.push({ aspect: 'simple', form: pastSimpleForm, title: 'Разовое (Αόριστος)' });
+    pastCells.push({ aspect: 'continuous', form: pastContForm, title: 'Длительное (Παρατατικός)' });
   } else if (pastSimpleExist) {
-    pastCells.push({ aspect: 'simple', label: 'Разовое', sublabel: 'Αόριστος', form: pastSimpleForm, wide: !pastPerfExist });
+    pastCells.push({ aspect: 'simple', form: pastSimpleForm, title: 'Разовое (Αόριστος)', wide: !pastPerfExist });
   } else if (pastContExist) {
-    pastCells.push({ aspect: 'continuous', label: 'Длительное', sublabel: 'Παρατατικός', form: pastContForm, wide: !pastPerfExist });
+    pastCells.push({ aspect: 'continuous', form: pastContForm, title: 'Длительное (Παρατατικός)', wide: !pastPerfExist });
   }
 
   if (pastPerfExist) {
-    pastCells.push({ aspect: 'perfect', label: 'Завершённое', sublabel: 'Υπερσυντέλικος', form: pastPerfForm, wide: true });
+    pastCells.push({ aspect: 'perfect', form: pastPerfForm, title: 'Завершённое (Υπερσυντέλικος)', wide: true });
   }
 
   // Present
@@ -258,14 +218,13 @@ function renderPersonFace(
   const presPerfForm = paradigm.conjugations.present?.perfect?.[idx] || '';
 
   if (presSimpleExist && presContExist && presSimpleForm !== presContForm) {
-    presCells.push({ aspect: 'simple', label: 'Разовое', form: presSimpleForm });
-    presCells.push({ aspect: 'continuous', label: 'Длительное', sublabel: 'Ενεστώτας', form: presContForm });
+    presCells.push({ aspect: 'simple', form: presSimpleForm, title: 'Разовое' });
+    presCells.push({ aspect: 'continuous', form: presContForm, title: 'Длительное (Ενεστώτας)' });
   } else if (presContExist || presSimpleExist) {
     presCells.push({
       aspect: 'continuous',
-      label: 'Настоящее',
-      sublabel: 'Ενεστώτας',
       form: presContForm || presSimpleForm,
+      title: 'Настоящее (Ενεστώτας)',
       wide: !presPerfExist,
     });
   }
@@ -273,9 +232,8 @@ function renderPersonFace(
   if (presPerfExist) {
     presCells.push({
       aspect: 'perfect',
-      label: 'Завершённое',
-      sublabel: 'Παρακείμενος',
       form: presPerfForm,
+      title: 'Завершённое (Παρακείμενος)',
       wide: presCells.length === 0,
     });
   }
@@ -291,16 +249,16 @@ function renderPersonFace(
   const futPerfForm = paradigm.conjugations.future?.perfect?.[idx] || '';
 
   if (futSimpleExist && futContExist) {
-    futCells.push({ aspect: 'simple', label: 'Разовое', sublabel: 'Συνοπτικός', form: futSimpleForm });
-    futCells.push({ aspect: 'continuous', label: 'Длительное', sublabel: 'Εξακολουθητικός', form: futContForm });
+    futCells.push({ aspect: 'simple', form: futSimpleForm, title: 'Разовое (Συνοπτικός)' });
+    futCells.push({ aspect: 'continuous', form: futContForm, title: 'Длительное (Εξακολουθητικός)' });
   } else if (futSimpleExist) {
-    futCells.push({ aspect: 'simple', label: 'Разовое', sublabel: 'Συνοπτικός', form: futSimpleForm, wide: !futPerfExist });
+    futCells.push({ aspect: 'simple', form: futSimpleForm, title: 'Разовое (Συνοπτικός)', wide: !futPerfExist });
   } else if (futContExist) {
-    futCells.push({ aspect: 'continuous', label: 'Длительное', sublabel: 'Εξακολουθητικός', form: futContForm, wide: !futPerfExist });
+    futCells.push({ aspect: 'continuous', form: futContForm, title: 'Длительное (Εξακολουθητικός)', wide: !futPerfExist });
   }
 
   if (futPerfExist) {
-    futCells.push({ aspect: 'perfect', label: 'Завершённое', sublabel: 'Συντελεσμένος', form: futPerfForm, wide: true });
+    futCells.push({ aspect: 'perfect', form: futPerfForm, title: 'Завершённое (Συντελεσμένος)', wide: true });
   }
 
   return `
