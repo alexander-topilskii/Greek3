@@ -12,112 +12,55 @@
     return;
   }
 
-  const aspects = data.aspects || [];
-  const titles = data.titles || {};
-  const conjugations = data.conjugations || {};
-  const imperative = data.imperative || [];
+  const persons = data.persons || [];
+  if (!persons.length) return;
 
   const cube = root.querySelector('.verb-cube');
   const scene = root.querySelector('.verb-cube-scene');
-  const switcher = root.querySelector('[data-verb-aspect]');
   const heading = root.querySelector('.verb-cube-heading');
   const titleEl = root.querySelector('.verb-cube-title');
   const subtitleEl = root.querySelector('.verb-cube-subtitle');
   const btnPrev = root.querySelector('[data-cube-dir="-1"]');
   const btnNext = root.querySelector('[data-cube-dir="1"]');
+  const tabs = root.querySelectorAll('.verb-person-tab');
+  const faces = root.querySelectorAll('.verb-cube-face');
+
   if (!cube || !scene || !heading || !titleEl || !subtitleEl) return;
 
-  const escapeHtml = window.GreekUtils ? window.GreekUtils.escapeHtml : (text) => String(text);
-
-  let currentFaceIndex = 0;
-  let currentAspect = root.getAttribute('data-aspect') || aspects[0] || 'simple';
+  let currentFaceIndex = typeof data.initialIndex === 'number' ? data.initialIndex : 0;
   let titleTimer = 0;
   let ready = false;
 
-  function tenseFromIndex(index) {
-    if (index === -1) return 'past';
-    if (index === 1) return 'future';
-    return 'present';
-  }
-
-  function tenseKey() {
-    return tenseFromIndex(currentFaceIndex);
-  }
-
   function rotationFor(index) {
-    return index * -90;
-  }
-
-  function formatVerb(text, aspect) {
-    const value = String(text || '').trim();
-    if (!value) return '<span class="verb-person-empty">—</span>';
-    if (aspect === 'perfect') {
-      const bits = value.split(/\s+/);
-      const aux = new Set(['έχω', 'έχουμε', 'έχεις', 'έχετε', 'έχει', 'έχουν', 'είχα', 'είχαμε', 'είχες', 'είχατε', 'είχε', 'είχαν']);
-      let auxEnd = (bits[0] || '').toLowerCase() === 'θα' ? 1 : 0;
-      if (aux.has((bits[auxEnd] || '').toLowerCase()) && bits.length > auxEnd + 1) {
-        const head = bits.slice(0, auxEnd + 1).join(' ');
-        const tail = bits.slice(auxEnd + 1).join(' ');
-        return `<span class="verb-aux">${escapeHtml(head)}</span><span class="verb-part">${escapeHtml(tail)}</span>`;
-      }
-    }
-    return `<span class="verb-main">${escapeHtml(value)}</span>`;
-  }
-
-  function pickImperative(aspect) {
-    return (
-      imperative.find((item) => item.aspect === aspect) ||
-      imperative.find((item) => item.aspect === 'default') ||
-      (imperative.length === 1 ? imperative[0] : null)
-    );
+    return index * -60;
   }
 
   function syncGeometry() {
     const width = scene.getBoundingClientRect().width;
     if (!width) return;
-    const tz = `${Math.round(width / 2)}px`;
+    // Regular hexagonal prism radius (distance from center to face): width / (2 * tan(30deg)) = width * sqrt(3) / 2
+    const tz = `${Math.round(width * 0.866025)}px`;
     const prev = cube.style.getPropertyValue('--verb-tz');
     if (prev !== tz) {
       cube.style.transition = 'none';
       cube.style.setProperty('--verb-tz', tz);
-      scene.style.perspective = `${Math.max(800, Math.round(width * 2.4))}px`;
+      scene.style.perspective = `${Math.max(1000, Math.round(width * 2.5))}px`;
       void cube.offsetWidth;
       if (ready && !drag) cube.style.transition = '';
     }
 
     let max = 0;
-    root.querySelectorAll('.verb-cube-grid').forEach((grid) => {
-      max = Math.max(max, grid.scrollHeight);
+    faces.forEach((face) => {
+      max = Math.max(max, face.scrollHeight);
     });
     if (max > 0) {
-      const nextHeight = `${Math.ceil(max + 2)}px`;
+      const nextHeight = `${Math.ceil(max + 4)}px`;
       if (scene.style.height !== nextHeight) scene.style.height = nextHeight;
     }
   }
 
-  function updateFaces() {
-    ['present', 'past', 'future'].forEach((tense) => {
-      const forms = (conjugations[tense] && conjugations[tense][currentAspect]) || [];
-      const face = root.querySelector(`.verb-cube-face[data-tense="${tense}"]`);
-      if (!face) return;
-      face.querySelectorAll('.verb-person-form').forEach((el, index) => {
-        el.innerHTML = formatVerb(forms[index] || '', currentAspect);
-      });
-    });
-    syncGeometry();
-  }
-
-  function updateImperative() {
-    const sg = root.querySelector('[data-imp="sg"]');
-    const pl = root.querySelector('[data-imp="pl"]');
-    if (!sg || !pl) return;
-    const item = pickImperative(currentAspect);
-    sg.textContent = item && item.sg ? item.sg : '—';
-    pl.textContent = item && item.pl ? item.pl : '—';
-  }
-
   function updateTitle(animate) {
-    const meta = (titles[tenseKey()] || {})[currentAspect];
+    const meta = persons[currentFaceIndex];
     if (!meta) return;
     const apply = () => {
       titleEl.textContent = meta.title;
@@ -134,15 +77,19 @@
   }
 
   function paintChrome(index) {
-    if (btnPrev) btnPrev.disabled = index === -1;
-    if (btnNext) btnNext.disabled = index === 1;
+    if (btnPrev) btnPrev.disabled = index === 0;
+    if (btnNext) btnNext.disabled = index === persons.length - 1;
 
-    const active = tenseFromIndex(index);
-    root.querySelectorAll('.verb-cube-dot').forEach((dot) => {
-      dot.classList.toggle('is-active', dot.getAttribute('data-dot') === active);
+    tabs.forEach((tab) => {
+      const tabIdx = Number(tab.getAttribute('data-person-index'));
+      const active = tabIdx === index;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-    root.querySelectorAll('.verb-cube-face').forEach((face) => {
-      face.setAttribute('aria-hidden', face.getAttribute('data-tense') === active ? 'false' : 'true');
+
+    faces.forEach((face) => {
+      const faceIdx = Number(face.getAttribute('data-person-index'));
+      face.setAttribute('aria-hidden', faceIdx === index ? 'false' : 'true');
     });
   }
 
@@ -161,34 +108,24 @@
     paintChrome(currentFaceIndex);
   }
 
-  function rotateCube(direction) {
-    let next = currentFaceIndex + direction;
-    if (next < -1) next = -1;
-    if (next > 1) next = 1;
+  function goToPerson(index) {
+    const maxIdx = persons.length - 1;
+    let next = Math.max(0, Math.min(maxIdx, index));
     if (next === currentFaceIndex) return;
     currentFaceIndex = next;
     updateTitle(true);
     updateChrome();
   }
 
-  function setAspect(aspect) {
-    const index = aspects.indexOf(aspect);
-    if (index < 0 || aspect === currentAspect) return;
-    currentAspect = aspect;
-    root.setAttribute('data-aspect', aspect);
-    if (switcher) switcher.style.setProperty('--i', String(index));
-    root.querySelectorAll('.verb-aspect-btn').forEach((btn) => {
-      const active = btn.getAttribute('data-aspect') === aspect;
-      btn.classList.toggle('is-active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    updateFaces();
-    updateImperative();
-    updateTitle(true);
+  function rotateCube(direction) {
+    goToPerson(currentFaceIndex + direction);
   }
 
-  root.querySelectorAll('.verb-aspect-btn').forEach((btn) => {
-    btn.addEventListener('click', () => setAspect(btn.getAttribute('data-aspect')));
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const idx = Number(tab.getAttribute('data-person-index'));
+      if (!Number.isNaN(idx)) goToPerson(idx);
+    });
   });
 
   if (btnPrev) btnPrev.addEventListener('click', () => rotateCube(-1));
@@ -208,11 +145,11 @@
   let blockSpeak = false;
 
   function greekToSpeak(node) {
-    const cell = node.closest('.verb-person, .verb-extra-row, .verb-participle');
+    const cell = node.closest('.verb-form-cell, .verb-extra-row, .verb-participle');
     if (!cell || !root.contains(cell)) return '';
     const face = cell.closest('.verb-cube-face');
     if (face && face.getAttribute('aria-hidden') === 'true') return '';
-    const greek = cell.querySelector('.verb-person-form, .verb-extra-form');
+    const greek = cell.querySelector('.verb-form-value, .verb-extra-form');
     if (!greek) return '';
     const bits = [...greek.querySelectorAll('.verb-aux, .verb-part, .verb-main')];
     const text = (bits.length ? bits.map((el) => el.textContent.trim()).filter(Boolean).join(' ') : greek.textContent || '')
@@ -234,16 +171,18 @@
   });
 
   function rubberBand(degrees) {
-    if (degrees > 90) return 90 + (degrees - 90) * 0.22;
-    if (degrees < -90) return -90 + (degrees + 90) * 0.22;
+    const minDeg = (persons.length - 1) * -60;
+    if (degrees > 0) return degrees * 0.22;
+    if (degrees < minDeg) return minDeg + (degrees - minDeg) * 0.22;
     return degrees;
   }
 
   function followFinger(dx) {
     const width = scene.getBoundingClientRect().width || 1;
-    const degrees = rubberBand(rotationFor(currentFaceIndex) + (dx / width) * 90);
+    const degrees = rubberBand(rotationFor(currentFaceIndex) + (dx / width) * 60);
     applyRotation(degrees, false);
-    const nearest = Math.max(-1, Math.min(1, Math.round(-degrees / 90)));
+    const maxIdx = persons.length - 1;
+    const nearest = Math.max(0, Math.min(maxIdx, Math.round(-degrees / 60)));
     if (drag && nearest !== drag.shown) {
       drag.shown = nearest;
       const previous = currentFaceIndex;
@@ -268,9 +207,10 @@
     const width = scene.getBoundingClientRect().width || 1;
     const dx = event.clientX - state.startX;
     const ratio = dx / width;
+    const maxIdx = persons.length - 1;
     let next = currentFaceIndex;
-    if (ratio <= -0.22 || (state.vx < -0.45 && dx <= -16)) next = Math.min(1, currentFaceIndex + 1);
-    else if (ratio >= 0.22 || (state.vx > 0.45 && dx >= 16)) next = Math.max(-1, currentFaceIndex - 1);
+    if (ratio <= -0.18 || (state.vx < -0.4 && dx <= -16)) next = Math.min(maxIdx, currentFaceIndex + 1);
+    else if (ratio >= 0.18 || (state.vx > 0.4 && dx >= 16)) next = Math.max(0, currentFaceIndex - 1);
 
     if (next !== currentFaceIndex) {
       currentFaceIndex = next;

@@ -89,4 +89,17 @@ assert(word.extraSections.some((section) => section.title.toLowerCase() === 'к�
 assert(!word.extraSections.some((section) => section.title.toLowerCase() === 'спряжение'), 'conjugation not extra');
 assert(!word.extraSections.some((section) => section.title.toLowerCase() === 'повелительное'), 'imperative not extra');
 
+const { renderVerbParadigm } = await import('../dist/build/render/verb-cube.js');
+const rendered = renderVerbParadigm(word);
+assert(rendered.interactive, 'rendered is interactive');
+assert(rendered.html.includes('verb-person-tabs'), 'has person tabs');
+assert(rendered.html.includes('data-person-index="0"'), 'has tab 0');
+assert(rendered.html.includes('data-person-index="5"'), 'has tab 5');
+assert(rendered.html.includes('verb-cube-face--0'), 'has face 0');
+assert(rendered.html.includes('verb-cube-face--5'), 'has face 5');
+assert(rendered.html.includes('verb-tense-block--future'), 'has future tense block');
+assert(rendered.html.includes('θα γίνω'), 'face 0 has 1s form');
+assert(rendered.html.includes('θα γίνεις'), 'face 1 has 2s form');
+
 console.log('verb paradigm ok');
+
