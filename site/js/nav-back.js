@@ -94,10 +94,66 @@
     root.querySelectorAll('dialog').forEach(bindDialog);
   }
 
+  function hasSameOriginReferrer() {
+    if (!document.referrer) return false;
+    try {
+      const refUrl = new URL(document.referrer, window.location.href);
+      if (window.location.protocol === 'file:') {
+        return refUrl.protocol === 'file:';
+      }
+      return refUrl.origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  function canNavigateBack() {
+    return Boolean(history.state && history.state.canGoBack) || hasSameOriginReferrer();
+  }
+
+  function goBack(fallbackHref) {
+    if (layers.length > 0) {
+      dismiss(layers[layers.length - 1].id);
+      return;
+    }
+
+    if (canNavigateBack() && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    if (fallbackHref && fallbackHref !== '#') {
+      try {
+        window.location.replace(fallbackHref);
+      } catch {
+        window.location.href = fallbackHref;
+      }
+    } else {
+      window.history.back();
+    }
+  }
+
+  function handleCrumbBackClick(e) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return;
+    }
+    e.preventDefault();
+    const fallbackHref = e.currentTarget.getAttribute('href');
+    goBack(fallbackHref);
+  }
+
+  function bindCrumbBack(root = document) {
+    root.querySelectorAll('.btn-crumb-back').forEach((btn) => {
+      if (btn.dataset.navBackBound) return;
+      btn.dataset.navBackBound = '1';
+      btn.addEventListener('click', handleCrumbBackClick);
+    });
+  }
+
   function isStandalone() {
     return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true
+      Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      Boolean(window.navigator && window.navigator.standalone === true)
     );
   }
 
@@ -107,12 +163,14 @@
   }
 
   function init() {
+    const internalReferrer = hasSameOriginReferrer();
     if (!history.state || history.state.greek3Nav === undefined) {
-      history.replaceState({ greek3Nav: ROOT }, '');
+      history.replaceState({ greek3Nav: ROOT, canGoBack: internalReferrer }, '');
     }
 
     seedStandaloneGuard();
     bindDialogs();
+    bindCrumbBack();
     window.addEventListener('popstate', onPopstate);
   }
 
@@ -129,5 +187,8 @@
     hasLayers: () => layers.length > 0,
     bindDialog,
     bindDialogs,
+    bindCrumbBack,
+    goBack,
+    canNavigateBack,
   };
 })(window);

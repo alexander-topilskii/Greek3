@@ -50,11 +50,11 @@
     }
 
     let max = 0;
-    faces.forEach((face) => {
-      max = Math.max(max, face.scrollHeight);
+    root.querySelectorAll('.verb-face-tenses').forEach((el) => {
+      max = Math.max(max, el.offsetHeight, el.scrollHeight);
     });
     if (max > 0) {
-      const nextHeight = `${Math.ceil(max + 4)}px`;
+      const nextHeight = `${Math.ceil(max)}px`;
       if (scene.style.height !== nextHeight) scene.style.height = nextHeight;
     }
   }
@@ -276,7 +276,16 @@
   ready = true;
 
   if (window.ResizeObserver) {
-    const observer = new ResizeObserver(() => syncGeometry());
+    let lastW = 0;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect ? entry.contentRect.width : scene.getBoundingClientRect().width;
+        if (Math.abs(w - lastW) > 1) {
+          lastW = w;
+          syncGeometry();
+        }
+      }
+    });
     observer.observe(scene);
   } else {
     window.addEventListener('resize', syncGeometry);

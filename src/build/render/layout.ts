@@ -24,6 +24,19 @@ export function layout(
     )
     .join('<span class="crumb-sep">/</span>') ?? '';
 
+  const lastCrumbWithHref = breadcrumbs ? [...breadcrumbs].reverse().find((c) => c.href)?.href : undefined;
+  const fallbackHref = lastCrumbWithHref || sitePath('index.html');
+  const breadcrumbsMarkup = crumbs
+    ? `<div class="breadcrumbs-bar">
+      <a href="${escapeHtml(fallbackHref)}" class="btn-crumb-back" id="btn-crumb-back" aria-label="Назад" title="Назад">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <nav class="breadcrumbs" aria-label="Навигация">${crumbs}</nav>
+    </div>`
+    : '';
+
   const scripts = [...SHARED_SCRIPTS, ...extraScripts]
     .map((s) => `<script src="${sitePath(s)}?v=${ASSET_VERSION}" defer></script>`)
     .join('\n  ');
@@ -72,7 +85,7 @@ export function layout(
     </div>
   </header>
   <main class="site-main container">
-    ${crumbs ? `<nav class="breadcrumbs" aria-label="Навигация">${crumbs}</nav>` : ''}
+    ${breadcrumbsMarkup}
     ${content}
   </main>
   <footer class="site-footer">

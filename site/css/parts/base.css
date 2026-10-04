@@ -86,6 +86,19 @@ body.dialog-open {
   padding: 1.5rem 1rem 3rem;
 }
 
+.breadcrumbs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumbs-bar .breadcrumbs {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .breadcrumbs {
   display: flex;
   flex-wrap: wrap;
@@ -94,6 +107,58 @@ body.dialog-open {
   font-size: 0.8125rem;
   color: var(--text-muted);
   margin-bottom: 1.5rem;
+}
+
+.btn-crumb-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition), border-color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-crumb-back::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.btn-crumb-back:hover {
+  color: var(--accent);
+  border-color: rgba(37, 99, 235, 0.35);
+  background: var(--accent-soft);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
+.btn-crumb-back:active {
+  transform: scale(0.92);
+}
+
+.btn-crumb-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-crumb-back svg {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  transition: transform var(--transition);
+}
+
+.btn-crumb-back:hover svg {
+  transform: translateX(-1.5px);
 }
 
 .crumb-link {
