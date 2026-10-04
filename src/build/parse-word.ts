@@ -84,6 +84,7 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
   let verbType = '';
   let baseForms: string[] = [];
   let forms: WordForm[] = [];
+  let formExamples: Record<string, WordExample> = {};
   let conjugationLines: string[] = [];
   let imperativeLines: string[] = [];
   let participleLines: string[] = [];
@@ -107,6 +108,9 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       verbType = section.lines.map((l) => l.trim()).find(Boolean) ?? '';
     } else if (key === SECTION_FORMS) {
       forms = parseForms(section.lines);
+    } else if (key === 'примеры к формам') {
+      formExamples = parseFormExamples(section.lines);
+      extraSections.push(section);
     } else if (key === 'спряжение') {
       conjugationLines = section.lines;
     } else if (key === 'повелительное' || key === 'повелительное наклонение') {
@@ -133,6 +137,7 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       participle: participleLines,
     }),
     forms,
+    formExamples,
     extraSections,
     sourcePath: relativePath,
     meta,
@@ -176,3 +181,32 @@ export function parseContextExamples(word: WordEntry): WordExample[] {
 
   return examples;
 }
+
+/** Парсит секцию «Примеры к формам»: `- форма: **греч.** — перевод` */
+export function parseFormExamples(lines: string[]): Record<string, WordExample> {
+  const result: Record<string, WordExample> = {};
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || !trimmed.startsWith('-')) continue;
+    const match = trimmed.match(/^-\s*([^:]+):\s*\*\*(.+?)\*\*\s*[—–-]\s*(.+)$/);
+    if (!match) continue;
+    const form = match[1].trim();
+    const greek = match[2].trim();
+    const translation = match[3].trim();
+    if (form && greek && translation) {
+      result[form] = { greek, translation };
+    }
+  }
+  return result;
+}
+
+/** Возвращает словарь примеров к формам глагола */
+export function parseVerbFormExamples(word: WordEntry): Record<string, WordExample> {
+  if (word.formExamples && Object.keys(word.formExamples).length > 0) {
+    return word.formExamples;
+  }
+  const section = getSpecialSection(word, 'примеры к формам');
+  if (!section) return {};
+  return parseFormExamples(section.lines);
+}
+

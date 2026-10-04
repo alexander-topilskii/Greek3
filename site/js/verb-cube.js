@@ -25,6 +25,19 @@
   const tabs = root.querySelectorAll('.verb-person-tab');
   const faces = root.querySelectorAll('.verb-cube-face');
 
+  const dialog = root.querySelector('.verb-dialog');
+  const dialogTitle = dialog ? dialog.querySelector('#verb-dialog-title') : null;
+  const dialogSpeak = dialog ? dialog.querySelector('.verb-dialog-speak') : null;
+  const dialogClose = dialog ? dialog.querySelector('.verb-dialog-close') : null;
+  const dialogBadges = dialog ? dialog.querySelector('.verb-dialog-badges') : null;
+  const dialogLemma = dialog ? dialog.querySelector('.verb-dialog-lemma') : null;
+  const dialogLemmaVal = dialog ? dialog.querySelector('.verb-dialog-lemma-val') : null;
+  const dialogExample = dialog ? dialog.querySelector('.verb-dialog-example') : null;
+  const dialogExampleSpeak = dialog ? dialog.querySelector('.verb-dialog-example-speak') : null;
+  const dialogExampleGreek = dialog ? dialog.querySelector('.verb-dialog-example-greek') : null;
+  const dialogExampleRu = dialog ? dialog.querySelector('.verb-dialog-example-ru') : null;
+  const dialogNoExample = dialog ? dialog.querySelector('.verb-dialog-no-example') : null;
+
   if (!cube || !scene || !heading || !titleEl || !subtitleEl) return;
 
   let currentFaceIndex = typeof data.initialIndex === 'number' ? data.initialIndex : 0;
@@ -143,6 +156,40 @@
 
   let drag = null;
   let blockSpeak = false;
+  let currentDialogForm = '';
+  let currentDialogSentence = '';
+
+  if (dialogSpeak) {
+    dialogSpeak.addEventListener('click', () => {
+      if (currentDialogForm && window.GreekSpeak?.speakGreek) {
+        window.GreekSpeak.speakGreek(currentDialogForm);
+      }
+    });
+  }
+
+  if (dialogExampleSpeak) {
+    dialogExampleSpeak.addEventListener('click', () => {
+      if (currentDialogSentence && window.GreekSpeak?.speakGreek) {
+        window.GreekSpeak.speakGreek(currentDialogSentence);
+      }
+    });
+  }
+
+  if (dialogClose) {
+    dialogClose.addEventListener('click', () => {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    });
+  }
+
+  if (dialog) {
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) {
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+      }
+    });
+  }
 
   function greekToSpeak(node) {
     const cell = node.closest('.verb-form-cell, .verb-extra-row, .verb-participle');
@@ -159,15 +206,146 @@
     return text;
   }
 
+  function openFormDialog(cell) {
+    const form = (cell.getAttribute('data-form') || greekToSpeak(cell) || '').trim();
+    if (!form || form === '—' || form === '-') return;
+
+    if (!dialog) {
+      if (window.GreekSpeak?.speakGreek) window.GreekSpeak.speakGreek(form);
+      return;
+    }
+
+    currentDialogForm = form;
+    if (dialogTitle) dialogTitle.textContent = form;
+
+    if (dialogLemmaVal) {
+      if (data.lemma && (data.lemma.translation || data.lemma.greek)) {
+        const greekPart = data.lemma.greek ? `${data.lemma.greek} — ` : '';
+        dialogLemmaVal.textContent = `${greekPart}${data.lemma.translation || ''}`;
+        if (dialogLemma) dialogLemma.style.display = '';
+      } else if (dialogLemma) {
+        dialogLemma.style.display = 'none';
+      }
+    }
+
+    if (dialogBadges) {
+      dialogBadges.innerHTML = '';
+      if (cell.classList.contains('verb-form-cell')) {
+        const block = cell.closest('.verb-tense-block');
+        const tenseClass = block ? block.getAttribute('data-tense') : '';
+        const tenseTitle = block ? block.getAttribute('data-tense-title') : '';
+        const tenseGreek = block ? block.getAttribute('data-tense-greek') : '';
+        if (tenseTitle) {
+          const badge = document.createElement('span');
+          badge.className = `verb-dialog-badge verb-dialog-badge--tense verb-dialog-badge--${tenseClass || 'default'}`;
+          badge.textContent = tenseGreek ? `${tenseTitle} · ${tenseGreek}` : tenseTitle;
+          dialogBadges.appendChild(badge);
+        }
+
+        const aspectTitle = cell.getAttribute('title') || '';
+        if (aspectTitle) {
+          const badge = document.createElement('span');
+          badge.className = 'verb-dialog-badge verb-dialog-badge--aspect';
+          badge.textContent = aspectTitle;
+          dialogBadges.appendChild(badge);
+        }
+
+        const face = cell.closest('.verb-cube-face');
+        const personIdx = face ? Number(face.getAttribute('data-person-index')) : -1;
+        const p = data.persons && personIdx >= 0 ? data.persons[personIdx] : null;
+        if (p) {
+          const badge = document.createElement('span');
+          badge.className = 'verb-dialog-badge verb-dialog-badge--person';
+          badge.textContent = `${p.subtitle} · ${p.ru} (${p.el})`;
+          dialogBadges.appendChild(badge);
+        }
+      } else if (cell.classList.contains('verb-extra-row')) {
+        const badgeMood = document.createElement('span');
+        badgeMood.className = 'verb-dialog-badge verb-dialog-badge--mood';
+        badgeMood.textContent = 'Повелительное';
+        dialogBadges.appendChild(badgeMood);
+
+        const aspectLabel = cell.getAttribute('data-aspect-label');
+        if (aspectLabel) {
+          const badge = document.createElement('span');
+          badge.className = 'verb-dialog-badge verb-dialog-badge--aspect';
+          badge.textContent = aspectLabel;
+          dialogBadges.appendChild(badge);
+        }
+
+        const numLabel = cell.getAttribute('data-num');
+        if (numLabel) {
+          const badge = document.createElement('span');
+          badge.className = 'verb-dialog-badge verb-dialog-badge--person';
+          badge.textContent = numLabel;
+          dialogBadges.appendChild(badge);
+        }
+      } else if (cell.classList.contains('verb-participle')) {
+        const badgeMood = document.createElement('span');
+        badgeMood.className = 'verb-dialog-badge verb-dialog-badge--mood';
+        badgeMood.textContent = 'Причастие';
+        dialogBadges.appendChild(badgeMood);
+
+        const label = cell.getAttribute('data-label');
+        if (label) {
+          const badge = document.createElement('span');
+          badge.className = 'verb-dialog-badge verb-dialog-badge--aspect';
+          badge.textContent = label;
+          dialogBadges.appendChild(badge);
+        }
+      }
+    }
+
+    const examples = data.examples || {};
+    let example = examples[form] || null;
+    if (!example) {
+      const firstPart = form.split(/[\s,]+/)[0];
+      if (firstPart && examples[firstPart]) {
+        example = examples[firstPart];
+      }
+    }
+
+    if (example && example.greek) {
+      currentDialogSentence = example.greek;
+      if (dialogExampleGreek) dialogExampleGreek.textContent = example.greek;
+      if (dialogExampleRu) dialogExampleRu.textContent = example.translation || '';
+      if (dialogExample) dialogExample.style.display = '';
+      if (dialogNoExample) dialogNoExample.style.display = 'none';
+    } else {
+      currentDialogSentence = '';
+      if (dialogExample) dialogExample.style.display = 'none';
+      if (dialogNoExample) dialogNoExample.style.display = '';
+    }
+
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+
+    const speak = window.GreekSpeak;
+    if (speak?.isSupported?.()) {
+      speak.speakGreek(form);
+    }
+  }
+
   root.addEventListener('click', (event) => {
+    if (event.target.closest('.verb-dialog')) return;
     if (blockSpeak) {
       blockSpeak = false;
       return;
     }
-    const text = greekToSpeak(event.target);
-    if (!text) return;
-    const speak = window.GreekSpeak;
-    if (speak?.isSupported?.()) speak.speakGreek(text);
+    const cell = event.target.closest('.verb-form-cell, .verb-extra-row, .verb-participle');
+    if (!cell || !root.contains(cell)) return;
+
+    const face = cell.closest('.verb-cube-face');
+    if (face && face.getAttribute('aria-hidden') === 'true') return;
+
+    if (cell.classList.contains('verb-form-cell') && cell.querySelector('.verb-person-empty')) {
+      return;
+    }
+
+    openFormDialog(cell);
   });
 
   function rubberBand(degrees) {

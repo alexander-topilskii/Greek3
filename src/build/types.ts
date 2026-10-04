@@ -49,6 +49,7 @@ export interface WordEntry {
   /** Спряжение для куба времён; null, если секции нет. */
   paradigm: VerbParadigm | null;
   forms: WordForm[];
+  formExamples?: Record<string, WordExample>;
   extraSections: { title: string; lines: string[] }[];
   sourcePath: string;
   meta: WordMeta;

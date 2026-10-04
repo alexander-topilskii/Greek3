@@ -148,9 +148,12 @@ function renderCell(cell: FormCell): string {
   const formatted = formatVerbHtml(cell.form, cell.aspect);
   const wideClass = cell.wide ? ' verb-form-cell--wide' : '';
   const titleAttr = cell.title ? ` title="${escapeHtml(cell.title)}"` : '';
+  const formAttr = cell.form && cell.form !== '—' && cell.form !== '-'
+    ? ` data-form="${escapeHtml(cell.form)}"`
+    : '';
 
   return `
-                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}"${titleAttr}>
+                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}"${formAttr}${titleAttr}>
                   <span class="verb-form-value greek">${formatted}</span>
                 </div>`;
 }
@@ -164,7 +167,7 @@ function renderTenseBlock(
   if (!cells.length) return '';
 
   return `
-            <div class="verb-tense-block verb-tense-block--${tenseClass}">
+            <div class="verb-tense-block verb-tense-block--${tenseClass}" data-tense="${tenseClass}" data-tense-title="${escapeHtml(title)}" data-tense-greek="${escapeHtml(greekTitle)}">
               <div class="verb-tense-heading">
                 <span class="verb-tense-badge">${escapeHtml(title)}</span>
                 <span class="verb-tense-greek">${escapeHtml(greekTitle)}</span>
@@ -302,12 +305,15 @@ function renderImperatives(paradigm: VerbParadigm): string {
     .map((item) => {
       const label =
         item.aspect === 'default' ? '' : `<p class="verb-extra-aspect">${ASPECT_LABELS[item.aspect]}</p>`;
+      const aspectLabel = item.aspect === 'default' ? 'Повелительное' : `${ASPECT_LABELS[item.aspect]} (Повелительное)`;
+      const sgFormAttr = item.sg && item.sg !== '—' && item.sg !== '-' ? ` data-form="${escapeHtml(item.sg)}"` : '';
+      const plFormAttr = item.pl && item.pl !== '—' && item.pl !== '-' ? ` data-form="${escapeHtml(item.pl)}"` : '';
       return `${label}
-          <div class="verb-extra-row">
+          <div class="verb-extra-row"${sgFormAttr} data-mood="imperative" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Единственное число (ты)">
             <span class="verb-extra-label">ед.ч.</span>
             <span class="verb-extra-form greek">${escapeHtml(item.sg || '—')}</span>
           </div>
-          <div class="verb-extra-row">
+          <div class="verb-extra-row"${plFormAttr} data-mood="imperative" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Множественное число (вы)">
             <span class="verb-extra-label">мн.ч.</span>
             <span class="verb-extra-form greek">${escapeHtml(item.pl || '—')}</span>
           </div>`;
@@ -327,7 +333,8 @@ function renderParticipleCard(paradigm: VerbParadigm): string {
       const label = item.label
         ? `<span class="verb-extra-label">${escapeHtml(item.label)}</span>`
         : '';
-      return `<div class="verb-participle">${label}<span class="verb-extra-form greek">${escapeHtml(item.form)}</span></div>`;
+      const formAttr = item.form && item.form !== '—' && item.form !== '-' ? ` data-form="${escapeHtml(item.form)}"` : '';
+      return `<div class="verb-participle"${formAttr} data-mood="participle" data-label="${escapeHtml(item.label || 'Причастие')}">${label}<span class="verb-extra-form greek">${escapeHtml(item.form)}</span></div>`;
     })
     .join('');
   return `
@@ -335,6 +342,51 @@ function renderParticipleCard(paradigm: VerbParadigm): string {
           <h3>Причастие</h3>
           ${rows}
         </div>`;
+}
+
+function renderVerbDialog(): string {
+  return `
+        <dialog class="verb-dialog" id="verb-dialog" aria-labelledby="verb-dialog-title">
+          <div class="verb-dialog-card">
+            <div class="verb-dialog-header">
+              <div class="verb-dialog-title-wrap">
+                <h3 class="verb-dialog-form greek" id="verb-dialog-title"></h3>
+                <button type="button" class="verb-dialog-speak" aria-label="Озвучить форму" title="Озвучить форму">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                  </svg>
+                </button>
+              </div>
+              <button type="button" class="verb-dialog-close" aria-label="Закрыть диалог" title="Закрыть">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="verb-dialog-badges"></div>
+            <div class="verb-dialog-lemma">
+              <span class="verb-dialog-lemma-label">Глагол:</span>
+              <span class="verb-dialog-lemma-val"></span>
+            </div>
+            <div class="verb-dialog-example">
+              <div class="verb-dialog-example-head">
+                <span class="verb-dialog-example-label">Пример</span>
+                <button type="button" class="verb-dialog-example-speak" aria-label="Озвучить пример" title="Озвучить пример">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  </svg>
+                </button>
+              </div>
+              <p class="verb-dialog-example-greek greek"></p>
+              <p class="verb-dialog-example-ru"></p>
+            </div>
+            <p class="verb-dialog-no-example" style="display: none;">Пример для этой формы пока не добавлен.</p>
+          </div>
+        </dialog>`;
 }
 
 export function renderVerbParadigm(word: WordEntry): { html: string; interactive: boolean } {
@@ -355,13 +407,19 @@ export function renderVerbParadigm(word: WordEntry): { html: string; interactive
 
   const payload = {
     initialIndex,
+    lemma: {
+      translation: word.translation || word.title,
+      greek: word.primaryGreek || word.baseForms[0] || '',
+    },
     persons: PERSON_DEFINITIONS.map((p, idx) => ({
       index: idx,
       title: p.title,
       subtitle: p.subtitle,
       ru: p.ru,
       el: p.el,
+      shortRu: p.shortRu,
     })),
+    examples: word.formExamples || {},
   };
 
   const initialRotation = initialIndex * -60;
@@ -386,6 +444,7 @@ export function renderVerbParadigm(word: WordEntry): { html: string; interactive
           </div>
         </div>
         ${extraHtml}
+        ${renderVerbDialog()}
       </section>`;
 
   return { html, interactive: true };

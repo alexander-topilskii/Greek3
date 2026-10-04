@@ -44,7 +44,7 @@ export function renderWord(
   const showVerbSummary = word.baseForms.length > 0 && word.category !== 'numbers' && !isPhrase;
   const metaBadges = renderMetaBadges(word);
   const contextSection = getSpecialSection(word, 'контекст');
-  const skipTitles = new Set(['контекст', 'уровень']);
+  const skipTitles = new Set(['контекст', 'уровень', 'примеры к формам']);
 
   const favoriteBtn = favoriteButtonMarkup({
     kind: 'word',

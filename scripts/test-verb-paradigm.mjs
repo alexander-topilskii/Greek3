@@ -81,6 +81,10 @@ fs.writeFileSync(
 
 # Контекст
 - **Γίνομαι γιατρός.** — Я становлюсь врачом.
+
+# Примеры к формам
+- θα γίνω: **Θα γίνω καλύτερος άνθρωπος.** — Я стану лучшим человеком.
+- θα γίνεις: **Θα γίνεις σπουδαίος επιστήμονας.** — Ты станешь великим учёным.
 `,
 );
 const word = parseWordFile(file, words);
@@ -88,6 +92,9 @@ assert(word.paradigm.conjugations.future.simple[0] === 'θα γίνω', 'file fu
 assert(word.extraSections.some((section) => section.title.toLowerCase() === 'контекст'), 'context kept');
 assert(!word.extraSections.some((section) => section.title.toLowerCase() === 'спряжение'), 'conjugation not extra');
 assert(!word.extraSections.some((section) => section.title.toLowerCase() === 'повелительное'), 'imperative not extra');
+assert(word.formExamples && word.formExamples['θα γίνω'], 'formExamples parsed');
+assert(word.formExamples['θα γίνω'].greek === 'Θα γίνω καλύτερος άνθρωπος.', 'example greek');
+assert(word.formExamples['θα γίνω'].translation === 'Я стану лучшим человеком.', 'example translation');
 
 const { renderVerbParadigm } = await import('../dist/build/render/verb-cube.js');
 const rendered = renderVerbParadigm(word);
@@ -100,6 +107,10 @@ assert(rendered.html.includes('verb-cube-face--5'), 'has face 5');
 assert(rendered.html.includes('verb-tense-block--future'), 'has future tense block');
 assert(rendered.html.includes('θα γίνω'), 'face 0 has 1s form');
 assert(rendered.html.includes('θα γίνεις'), 'face 1 has 2s form');
+assert(rendered.html.includes('data-form="θα γίνω"'), 'cell has data-form attribute');
+assert(rendered.html.includes('id="verb-dialog"'), 'renders verb dialog modal');
+assert(rendered.html.includes('verb-dialog-example'), 'dialog has example container');
+assert(rendered.html.includes('Θα γίνω καλύτερος άνθρωπος.'), 'embedded payload includes example');
 
 console.log('verb paradigm ok');
 
