@@ -58,6 +58,18 @@ const FALLBACK_GRAMMAR_WORDS: Record<string, { translation: string; category: st
   'πιτ': { translation: 'Пит (рыжий кот)', category: 'имя' },
   'πετρόνιος': { translation: 'Петроний (полное имя кота)', category: 'имя' },
   'νταν': { translation: 'Дэн (Дэниел, инженер)', category: 'имя' },
+  'ντάνιελ': { translation: 'Дэниел (Дэн)', category: 'имя' },
+  'μάιλς': { translation: 'Майлс (партнёр)', category: 'имя' },
+  'μπέλα': { translation: 'Белла (секретарь)', category: 'имя' },
+  'σάλι': { translation: 'Салли (робот)', category: 'имя' },
+  'κονέκτικατ': { translation: 'Коннектикут', category: 'имя' },
+  'λος': { translation: 'Лос', category: 'имя' },
+  'άντζελες': { translation: 'Анджелес', category: 'имя' },
+  'τσάρλι': { translation: 'Чарли', category: 'имя' },
+  'φρεντερίκα': { translation: 'Фредерика (Рикки)', category: 'имя' },
+  'ρίκι': { translation: 'Рикки', category: 'имя' },
+  'τζον': { translation: 'Джон', category: 'имя' },
+  'τζέικ': { translation: 'Джейк', category: 'имя' },
 };
 
 function cleanToken(token: string): string {
@@ -227,6 +239,7 @@ export function renderBookChapter(
   chapter: BookChapter,
   words: WordEntry[],
   breadcrumbs: { label: string; href?: string }[],
+  nav?: { prev?: { href: string; label: string }; next?: { href: string; label: string } },
 ): string {
   const lookup = buildReaderWordMap(words);
 
@@ -313,8 +326,17 @@ export function renderBookChapter(
 
     <!-- Chapter Navigation -->
     <nav class="reader-nav-footer">
-      <a href="${sitePath('books/index.html')}" class="btn btn-secondary">← Все книги</a>
-      <span class="text-muted">Конец Главы 1</span>
+      ${
+        nav?.prev
+          ? `<a href="${nav.prev.href}" class="btn btn-secondary">← ${escapeHtml(nav.prev.label)}</a>`
+          : `<a href="${sitePath('books/index.html')}" class="btn btn-secondary">← Все книги</a>`
+      }
+      <span class="text-muted">${escapeHtml(chapter.chapterTitle)}</span>
+      ${
+        nav?.next
+          ? `<a href="${nav.next.href}" class="btn btn-primary">${escapeHtml(nav.next.label)} →</a>`
+          : `<a href="${sitePath('books/index.html')}" class="btn btn-secondary">В каталог книг →</a>`
+      }
     </nav>
 
     <!-- Floating Word Tooltip / Card -->

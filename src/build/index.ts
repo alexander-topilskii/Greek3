@@ -311,36 +311,81 @@ function main(): void {
 
   // Build Books
   const booksSummaries = [];
-  const dverChapter1 = path.join(BOOKS_DIR, 'dver-v-leto', 'glava-01.md');
-  if (fs.existsSync(dverChapter1)) {
-    const chapter = parseBookChapter(dverChapter1, 'dver-v-leto', '1');
-    const chapterCrumbs = [
-      { label: 'Книги', href: sitePath('books/index.html') },
-      { label: 'Дверь в лето', href: sitePath('books/dver-v-leto/index.html') },
-      { label: 'Глава 1' },
-    ];
-    const chapterHtml = renderBookChapter(chapter, words, chapterCrumbs);
-    writeHtml('books/dver-v-leto/index.html', chapterHtml);
-    writeHtml('books/dver-v-leto/glava-01.html', chapterHtml);
-    console.log('  📖 books/dver-v-leto/index.html');
+  const dverDir = path.join(BOOKS_DIR, 'dver-v-leto');
+  if (fs.existsSync(dverDir)) {
+    const chapterFiles = fs
+      .readdirSync(dverDir)
+      .filter((f) => /^glava-\d+\.md$/i.test(f))
+      .sort((a, b) => {
+        const numA = parseInt(a.match(/\d+/)![0], 10);
+        const numB = parseInt(b.match(/\d+/)![0], 10);
+        return numA - numB;
+      });
 
-    booksSummaries.push({
-      id: 'dver-v-leto',
-      title: 'Роберт Хайнлайн — «Дверь в лето»',
-      author: 'Роберт Хайнлайн',
-      greekTitle: 'Η Πόρτα για το Καλοκαίρι',
-      level: 'A1–A2',
-      description:
-        'Знаменитый научно-фантастический роман о коте Пите, инженере Дэне и поисках Двери в Лето, адаптированный простыми и чистыми греческими конструкциями строго на базе словаря проекта Greek3.',
-      chapters: [
-        {
-          id: '1',
-          num: 1,
-          title: 'Глава 1: Дверь в лето (Κεφάλαιο 1)',
-          href: sitePath('books/dver-v-leto/index.html'),
-        },
-      ],
-    });
+    if (chapterFiles.length > 0) {
+      const parsedChapters = chapterFiles.map((file) => {
+        const num = parseInt(file.match(/\d+/)![0], 10);
+        const filePath = path.join(dverDir, file);
+        const parsed = parseBookChapter(filePath, 'dver-v-leto', String(num));
+        return { num, file, parsed };
+      });
+
+      const bookChaptersSummary = [];
+
+      for (let i = 0; i < parsedChapters.length; i++) {
+        const current = parsedChapters[i];
+        const numStr = String(current.num).padStart(2, '0');
+        const chapterHtmlName = `glava-${numStr}.html`;
+        const chapterHref = sitePath(`books/dver-v-leto/${chapterHtmlName}`);
+
+        const prev =
+          i > 0
+            ? {
+                href: sitePath(`books/dver-v-leto/glava-${String(parsedChapters[i - 1].num).padStart(2, '0')}.html`),
+                label: `Глава ${parsedChapters[i - 1].num}`,
+              }
+            : undefined;
+
+        const next =
+          i < parsedChapters.length - 1
+            ? {
+                href: sitePath(`books/dver-v-leto/glava-${String(parsedChapters[i + 1].num).padStart(2, '0')}.html`),
+                label: `Глава ${parsedChapters[i + 1].num}`,
+              }
+            : undefined;
+
+        const chapterCrumbs = [
+          { label: 'Книги', href: sitePath('books/index.html') },
+          { label: 'Дверь в лето', href: sitePath('books/dver-v-leto/index.html') },
+          { label: `Глава ${current.num}` },
+        ];
+
+        const chapterHtml = renderBookChapter(current.parsed, words, chapterCrumbs, { prev, next });
+        writeHtml(`books/dver-v-leto/${chapterHtmlName}`, chapterHtml);
+        if (current.num === 1) {
+          writeHtml('books/dver-v-leto/index.html', chapterHtml);
+        }
+        console.log(`  📖 books/dver-v-leto/${chapterHtmlName}`);
+
+        bookChaptersSummary.push({
+          id: String(current.num),
+          num: current.num,
+          title: current.parsed.chapterTitle,
+          href: current.num === 1 ? sitePath('books/dver-v-leto/index.html') : chapterHref,
+        });
+      }
+
+      booksSummaries.push({
+        id: 'dver-v-leto',
+        title: 'Роберт Хайнлайн — «Дверь в лето»',
+        author: 'Роберт Хайнлайн',
+        greekTitle: 'Η Πόρτα για το Καλοκαίρι',
+        level: 'A1–A2',
+        description:
+          'Знаменитый научно-фантастический роман о коте Пите, инженере Дэне и поисках Двери в Лето, адаптированный простыми и чистыми греческими конструкциями строго на базе словаря проекта Greek3.',
+        chapters: bookChaptersSummary,
+      });
+    }
   }
 
   if (booksSummaries.length > 0) {

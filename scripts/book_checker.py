@@ -51,6 +51,7 @@ CORE_GRAMMAR_WORDS = {
     "μου", "σου", "του",
     # Allowed proper names in book
     "πιτ", "πετρόνιος", "πετρονιος", "νταν", "ντάνιελ", "ντανιελ", "κονέκτικατ", "σαν", "σουσί",
+    "λος", "άντζελες", "μάιλς", "μαιλς", "μπέλα", "μπελα", "σάλι", "σαλι", "τσάρλι", "τσαρλι",
 }
 
 def strip_accents(text: str) -> str:
@@ -90,6 +91,16 @@ class ProjectDictionary:
 
         self.exact_map.setdefault(lower, []).append(card_info)
         self.norm_map.setdefault(norm, []).append(card_info)
+
+        if category == "adjectives" and norm.endswith("ος"):
+            stem = norm[:-2]
+            for ending in ["η", "ο", "οι", "ες", "α", "ους"]:
+                self.norm_map.setdefault(stem + ending, []).append(card_info)
+        elif category == "nouns":
+            if norm.endswith("ας") or norm.endswith("ης") or norm.endswith("ος"):
+                stem = norm[:-2]
+                for ending in ["α", "ο", "ες", "ους"]:
+                    self.norm_map.setdefault(stem + ending, []).append(card_info)
 
     def load(self):
         # 1. Load from dist/catalog.json if available
@@ -203,23 +214,89 @@ class EPUBExtractor:
             if self.in_p:
                 self.cur.append(data)
 
+    CHAPTER_FILE_MAP = {
+        1: ['OPS/ch1-2.xhtml'],
+        2: ['OPS/ch1-3.xhtml', 'OPS/ch1-4.xhtml'],
+        3: ['OPS/ch1-5.xhtml'],
+        4: ['OPS/ch1-6.xhtml'],
+        5: ['OPS/ch1-7.xhtml'],
+        6: ['OPS/ch1-8.xhtml'],
+        7: ['OPS/ch1-9.xhtml'],
+        8: ['OPS/ch1-10.xhtml'],
+        9: ['OPS/ch1-11.xhtml'],
+        10: ['OPS/ch1-12.xhtml'],
+        11: ['OPS/ch1-13.xhtml'],
+        12: ['OPS/ch1-14.xhtml'],
+    }
+
     def get_chapter_paragraphs(self, chapter_num: int):
         with zipfile.ZipFile(self.epub_path, "r") as z:
-            name = f"OPS/ch1-{chapter_num + 1}.xhtml" if chapter_num > 0 else "OPS/ch1.xhtml"
-            if name not in z.namelist():
-                name = f"OPS/ch{chapter_num}.xhtml"
-            if name not in z.namelist():
-                raise FileNotFoundError(f"Chapter file for {chapter_num} not found in EPUB")
-            raw = z.read(name).decode("utf-8")
-            parser = self.SimpleHTMLParser()
-            parser.feed(raw)
-            return parser.paragraphs
+            files = self.CHAPTER_FILE_MAP.get(chapter_num)
+            if not files:
+                name = f"OPS/ch1-{chapter_num + 1}.xhtml" if chapter_num > 0 else "OPS/ch1.xhtml"
+                if name not in z.namelist():
+                    name = f"OPS/ch{chapter_num}.xhtml"
+                files = [name]
+            paragraphs = []
+            for f in files:
+                if f not in z.namelist():
+                    continue
+                raw = z.read(f).decode("utf-8")
+                parser = self.SimpleHTMLParser()
+                parser.feed(raw)
+                paragraphs.extend(parser.paragraphs)
+            return paragraphs
+
+def generate_vocab_markdown(text: str, dict_idx: ProjectDictionary) -> str:
+    tokens = re.findall(r"[\w\u0370-\u03ff\u1f00-\u1fff]+", text)
+    greek_tokens = [t for t in tokens if is_greek(t)]
+    
+    seen_slugs = set()
+    cards_by_cat = {}
+    
+    for t in greek_tokens:
+        found, cards, is_grammar = dict_idx.lookup(t)
+        if cards:
+            card = cards[0]
+            slug = card.get("slug")
+            if slug and slug not in seen_slugs:
+                seen_slugs.add(slug)
+                cat = card.get("category", "other")
+                cards_by_cat.setdefault(cat, []).append(card)
+
+    cat_titles = [
+        ("verbs", "Глаголы (Ρήματα)"),
+        ("nouns", "Существительные (Ουσιαστικά)"),
+        ("adjectives", "Прилагательные (Επίθετα)"),
+        ("adverbs", "Наречия (Επιρρήματα)"),
+        ("pronouns", "Местоимения (Αντωνυμίες)"),
+        ("particles", "Частицы и союзы (Μόρια & Σύνδεσμοι)"),
+        ("numbers", "Числительные (Αριθμοί)"),
+    ]
+
+    lines = ["---", "### 📚 Словарь главы (ссылки на карточки проекта)", ""]
+    for cat_key, cat_title in cat_titles:
+        cat_cards = cards_by_cat.get(cat_key, [])
+        if not cat_cards:
+            continue
+        lines.append(f"#### {cat_title}")
+        # Sort cards by translation or greek
+        sorted_cards = sorted(cat_cards, key=lambda c: c.get("translation", "") or c.get("slug", ""))
+        for c in sorted_cards:
+            slug = c.get("slug", "")
+            base_name = slug.split("/")[-1]
+            tr = c.get("translation", "")
+            lines.append(f"- [{base_name}](../../words/{slug}.md) — {tr}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Greek3 Book Extractor & Vocabulary Checker")
     parser.add_argument("--chapter", type=int, help="Extract paragraphs from given chapter number")
     parser.add_argument("--check", type=str, help="Check text or file against project dictionary")
+    parser.add_argument("--vocab", type=str, help="Generate vocabulary markdown for text file")
     args = parser.parse_args()
 
     extractor = EPUBExtractor()
@@ -234,10 +311,16 @@ if __name__ == "__main__":
     if args.check:
         text = args.check
         if os.path.exists(text):
-            text = Path(text).read_text(encoding="utf-8")
+            raw = Path(text).read_text(encoding="utf-8")
+            el_lines = re.findall(r"- \*\*EL:\*\*(.*)", raw)
+            text = "\n".join(el_lines) if el_lines else raw
         res = check_text(text, dict_idx)
         print(f"Checked: {res['known']}/{res['total']} words ({res['percent']}%)")
         if res["unknown"]:
             print(f"Unknown words ({len(res['unknown'])}): {', '.join(res['unknown'])}")
         else:
             print("100% of words matched the project dictionary!")
+
+    if args.vocab:
+        text = Path(args.vocab).read_text(encoding="utf-8")
+        print(generate_vocab_markdown(text, dict_idx))
