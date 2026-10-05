@@ -5,6 +5,7 @@ const ROOT = path.resolve(__dirname, '../..');
 export const WORDS_DIR = path.join(ROOT, 'words');
 export const SITE_DIR = path.join(ROOT, 'site');
 export const DIST_DIR = path.join(ROOT, 'dist');
+export const BOOKS_DIR = path.join(ROOT, 'books');
 
 const CSS_PARTS = [
   'tokens.css',
@@ -19,6 +20,7 @@ const CSS_PARTS = [
   'cases-practice.css',
   'learning-ladder.css',
   'essays.css',
+  'reader.css',
   'misc.css',
 ];
 

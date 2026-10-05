@@ -15,6 +15,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   topics: 'Темы',
   levels: 'Уровни',
   favorites: 'Избранное',
+  books: 'Книги',
 };
 
 export const RECORD_TYPE_LABELS: Record<string, string> = {
@@ -45,6 +46,7 @@ export const HOME_SECTIONS = [
   { title: 'Частицы', href: 'words/particles/index.html', description: 'Связки для письма: и, но, поэтому, потом…' },
   { title: 'Сочинения', href: 'words/essays/index.html', description: 'Темы для письма: вопросы, лексика и образцы' },
   { title: 'Песни', href: 'words/songs/index.html', description: 'Тексты песен с переводом строка за строкой' },
+  { title: 'Книги', href: 'books/index.html', description: 'Адаптированные книги для чтения с параллельным переводом' },
   { title: 'Темы', href: 'words/topics/index.html', description: 'Группировка по темам из метаданных' },
   { title: 'Уровни', href: 'words/levels/index.html', description: 'A1 → B2 по шкале CEFR' },
 ] as const;

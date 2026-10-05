@@ -18,6 +18,8 @@ import {
   renderSong,
   renderSongLine,
   songLineBreadcrumbLabel,
+  renderBookChapter,
+  renderBooksIndex,
   renderFavorites,
   renderHome,
   renderIndex,
@@ -27,6 +29,7 @@ import {
   sitePath,
   wordOutputPath,
 } from './render';
+import { parseBookChapter } from './parse-book';
 import { writeManifest, writeServiceWorker } from './pwa';
 import { enrichWordEntry, buildLevelAggregates, buildTopicAggregates } from './meta';
 import type { CatalogWord, EssayTopic, Song, VerbCatalog, WordEntry } from './types';
@@ -45,6 +48,7 @@ import { buildGreekFormLookup } from './greek-lookup';
 import { buildSongCatalog, songCatalogPageDir } from './build-song-catalog';
 import { songLineOutputPath } from './song-line-path';
 import {
+  BOOKS_DIR,
   DIST_DIR,
   SITE_DIR,
   WORDS_DIR,
@@ -304,6 +308,46 @@ function main(): void {
   const searchIndex = buildSearchIndex(globalWords);
   writeHtml('search.html', renderSearch(searchIndex));
   console.log(`  🔍 search.html (${searchIndex.length} words)`);
+
+  // Build Books
+  const booksSummaries = [];
+  const dverChapter1 = path.join(BOOKS_DIR, 'dver-v-leto', 'glava-01.md');
+  if (fs.existsSync(dverChapter1)) {
+    const chapter = parseBookChapter(dverChapter1, 'dver-v-leto', '1');
+    const chapterCrumbs = [
+      { label: 'Книги', href: sitePath('books/index.html') },
+      { label: 'Дверь в лето', href: sitePath('books/dver-v-leto/index.html') },
+      { label: 'Глава 1' },
+    ];
+    const chapterHtml = renderBookChapter(chapter, words, chapterCrumbs);
+    writeHtml('books/dver-v-leto/index.html', chapterHtml);
+    writeHtml('books/dver-v-leto/glava-01.html', chapterHtml);
+    console.log('  📖 books/dver-v-leto/index.html');
+
+    booksSummaries.push({
+      id: 'dver-v-leto',
+      title: 'Роберт Хайнлайн — «Дверь в лето»',
+      author: 'Роберт Хайнлайн',
+      greekTitle: 'Η Πόρτα για το Καλοκαίρι',
+      level: 'A1–A2',
+      description:
+        'Знаменитый научно-фантастический роман о коте Пите, инженере Дэне и поисках Двери в Лето, адаптированный простыми и чистыми греческими конструкциями строго на базе словаря проекта Greek3.',
+      chapters: [
+        {
+          id: '1',
+          num: 1,
+          title: 'Глава 1: Дверь в лето (Κεφάλαιο 1)',
+          href: sitePath('books/dver-v-leto/index.html'),
+        },
+      ],
+    });
+  }
+
+  if (booksSummaries.length > 0) {
+    const booksIndexCrumbs = [{ label: 'Книги' }];
+    writeHtml('books/index.html', renderBooksIndex(booksSummaries, booksIndexCrumbs));
+    console.log('  📚 books/index.html');
+  }
 
   writeHtml('settings.html', renderSettings(deckCatalogs));
   console.log('  ⚙️  settings.html');

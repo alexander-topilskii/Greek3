@@ -25,6 +25,8 @@ export {
 export { renderEssay } from './pages/essay';
 export { renderSong } from './pages/song';
 export { renderSongLine, songLineBreadcrumbLabel } from './pages/song-line';
+export { renderBookChapter } from './pages/book-reader';
+export { renderBooksIndex } from './pages/books-index';
 export { buildSearchIndex, renderSearch } from './pages/search';
 export { renderSettings } from './pages/settings';
 export type { SearchIndexEntry } from './pages/search';

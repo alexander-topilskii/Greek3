@@ -13,5 +13,6 @@
 [Падежи и управление](cases/readme.md)
 [Частицы](particles/readme.md)
 [Песни](songs/readme.md)
+[Книги](../books/index.html)
 [Темы](topics/readme.md)
 [Уровни](levels/readme.md)
