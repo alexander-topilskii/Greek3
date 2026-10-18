@@ -288,3 +288,11 @@ export function favoriteButtonMarkup(options: {
   const extraClass = options.className ? ` ${options.className}` : '';
   return `<button type="button" class="btn-favorite${extraClass}" data-favorite-kind="${escapeHtml(options.kind)}" data-favorite-id="${escapeHtml(options.id)}" data-favorite-label="${escapeHtml(options.label)}" aria-pressed="false" aria-label="Добавить в избранное: ${escapeHtml(options.label)}" title="Добавить в избранное">${FAVORITE_ICON}</button>`;
 }
+
+export function compactViewButtonMarkup(): string {
+  return `<button type="button" class="btn btn-secondary list-control-btn list-control-btn--compact" id="btn-view-compact" role="checkbox" aria-checked="false" aria-pressed="false" aria-label="Компактный вид" title="Компактный вид"><span class="checkbox-indicator" aria-hidden="true"><svg class="checkbox-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><svg class="icon-compact" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>`;
+}
+
+export function groupingToggleButtonMarkup(): string {
+  return `<button type="button" class="btn btn-secondary list-control-btn list-control-btn--toggle" id="btn-toggle-grouping" role="switch" aria-checked="false" aria-pressed="false" aria-label="По алфавиту без групп" title="По алфавиту без групп"><svg class="icon-sort-az" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 4 4 4-4"></path><path d="M7 20V4"></path><path d="M20 8h-5"></path><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"></path><path d="M15 14h5l-5 6h5"></path></svg><span class="toggle-indicator" aria-hidden="true"><span class="toggle-indicator-track"><span class="toggle-indicator-thumb"></span></span></span></button>`;
+}

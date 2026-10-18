@@ -3,16 +3,18 @@ import { sitePath } from '../../site-path';
 import { escapeHtml, embedJson } from '../html';
 import { layout } from '../layout';
 import {
+  compactViewButtonMarkup,
   copyWordsListButtonMarkup,
   examplesDialogMarkup,
   favoriteButtonMarkup,
   flashcardMarkup,
+  groupingToggleButtonMarkup,
   homePracticePanelMarkup,
   practiceCompleteMarkup,
   settingsButtonHref,
 } from '../fragments';
 import { buildPageSectionId } from '../../favorites-id';
-import { renderGroupedLinks } from '../index-links';
+import { renderGroupedLinks, reverseLessonsIndex } from '../index-links';
 import { renderPronounCubeHub } from '../pronoun-cube';
 import { renderCasesCubeHub, renderCasesThemesHub, renderCaseThemeCube } from '../cases-cube';
 import { renderAdverbsThemesHub, renderAdverbThemeCube } from '../adverbs-cube';
@@ -43,6 +45,14 @@ export function renderIndex(
     : '';
 
   const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const displayPage = reverseLessonsIndex(page);
+  const displaySections =
+    displayPage.sections.length > 0
+      ? displayPage.sections.filter((s) => s.links.length > 0)
+      : [{ title: '', links: displayPage.links }];
+  const hasGroups =
+    displaySections.length > 1 ||
+    (displaySections.length === 1 && Boolean(displaySections[0].title));
   const pageId = catalog?.pageId ?? pageOutputDir.replace(/^words\/?/, '').replace(/\/$/, '');
   const lessonPage = isLessonPage(pageOutputDir);
   const blockPage = isBlockPage(pageOutputDir);
@@ -88,7 +98,8 @@ export function renderIndex(
           ${lessonLearnBtn}
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
-          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
+          ${hasGroups ? groupingToggleButtonMarkup() : ''}
+          ${compactViewButtonMarkup()}
         </div>` : ''}
       </div>
 
@@ -481,7 +492,8 @@ export function renderAdverbsIndex(
           ${copyWordsListButtonMarkup()}
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
-          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
+          ${groupingToggleButtonMarkup()}
+          ${compactViewButtonMarkup()}
         </div>` : ''}
       </div>
 
@@ -538,6 +550,13 @@ export function renderAdverbCategoryIndex(
     : '';
 
   const hasWords = Boolean(catalog && catalog.words.length > 0);
+  const displaySections =
+    page.sections.length > 0
+      ? page.sections.filter((s) => s.links.length > 0)
+      : [{ title: '', links: page.links }];
+  const hasCategoryGroups =
+    displaySections.length > 1 ||
+    (displaySections.length === 1 && Boolean(displaySections[0].title));
   const deckId = catalog?.deckId || pageOutputDir.replace(/^words\/?/, '').replace(/\//g, '-');
   const paradigm = getParadigmForSubDir(pageOutputDir);
   const cubeHtml = paradigm ? renderAdverbThemeCube(paradigm) : '';
@@ -554,7 +573,8 @@ export function renderAdverbCategoryIndex(
           ${copyWordsListButtonMarkup()}
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-el" data-practice-direction="ru-el" aria-pressed="false">Ру → Ελ</button>
           <button type="button" class="btn btn-secondary list-practice-btn" id="btn-practice-ru" data-practice-direction="el-ru" aria-pressed="false">Ελ → Ру</button>
-          <button type="button" class="btn btn-secondary" id="btn-view-compact" aria-pressed="false">Компактно</button>
+          ${hasCategoryGroups ? groupingToggleButtonMarkup() : ''}
+          ${compactViewButtonMarkup()}
         </div>` : ''}
       </div>
 

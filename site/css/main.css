@@ -7560,3 +7560,153 @@ body.cases-progress-open {
 .hub-page .page-head h1 {
   margin-bottom: 1.25rem;
 }
+
+/* List controls: compact view checkbox & alphabetical toggle */
+.list-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 42px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.list-control-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.list-control-btn.is-active,
+.list-control-btn[aria-checked="true"],
+.list-control-btn[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.list-control-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Checkbox indicator */
+.checkbox-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: transparent;
+  flex-shrink: 0;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.list-control-btn:hover .checkbox-indicator {
+  border-color: var(--accent);
+}
+
+.list-control-btn.is-active .checkbox-indicator,
+.list-control-btn[aria-checked="true"] .checkbox-indicator,
+.list-control-btn[aria-pressed="true"] .checkbox-indicator {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.checkbox-check-icon {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  transform: scale(0.6);
+  opacity: 0;
+  transition:
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.15s ease;
+}
+
+.list-control-btn.is-active .checkbox-check-icon,
+.list-control-btn[aria-checked="true"] .checkbox-check-icon,
+.list-control-btn[aria-pressed="true"] .checkbox-check-icon {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.icon-compact {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Toggle switch indicator */
+.toggle-indicator {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toggle-indicator-track {
+  display: block;
+  width: 1.75rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  transition: background var(--transition);
+}
+
+.toggle-indicator-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  transition: transform var(--transition);
+}
+
+.list-control-btn:hover .toggle-indicator-track {
+  background: #cbd5e1;
+}
+
+.list-control-btn.is-active .toggle-indicator-track,
+.list-control-btn[aria-checked="true"] .toggle-indicator-track,
+.list-control-btn[aria-pressed="true"] .toggle-indicator-track {
+  background: var(--accent);
+}
+
+.list-control-btn.is-active .toggle-indicator-thumb,
+.list-control-btn[aria-checked="true"] .toggle-indicator-thumb,
+.list-control-btn[aria-pressed="true"] .toggle-indicator-thumb {
+  transform: translateX(12px);
+}
+
+.icon-sort-az {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Flat list container */
+.links-flat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
