@@ -6,16 +6,26 @@
 
   function lockBodyScroll() {
     if (document.body.classList.contains('dialog-open')) return;
-    lockedScrollY = window.scrollY;
+    lockedScrollY = window.scrollY || window.pageYOffset || document.documentElement?.scrollTop || 0;
     document.body.classList.add('dialog-open');
     document.body.style.top = `-${lockedScrollY}px`;
   }
 
   function unlockBodyScroll() {
     if (document.querySelector('dialog[open]')) return;
+    const scrollY = lockedScrollY;
+    lockedScrollY = 0;
+    const html = document.documentElement;
+    const prevScrollBehavior = html?.style?.scrollBehavior;
+    if (html?.style) html.style.scrollBehavior = 'auto';
     document.body.classList.remove('dialog-open');
     document.body.style.top = '';
-    window.scrollTo(0, lockedScrollY);
+    try {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, scrollY);
+    }
+    if (html?.style) html.style.scrollBehavior = prevScrollBehavior || '';
   }
 
   function syncBodyScrollLock() {

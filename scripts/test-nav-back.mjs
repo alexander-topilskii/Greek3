@@ -38,14 +38,19 @@ function setupTestEnv({ referrer = '', historyLength = 1, state = null, href = '
   };
 
   const listeners = new Map();
+  const bodyClasses = new Set();
   const document = {
     referrer,
     readyState: 'complete',
+    documentElement: {
+      style: {},
+      scrollTop: 0,
+    },
     body: {
       classList: {
-        contains: () => false,
-        add: () => {},
-        remove: () => {},
+        contains: (cls) => bodyClasses.has(cls),
+        add: (cls) => bodyClasses.add(cls),
+        remove: (cls) => bodyClasses.delete(cls),
       },
       style: {},
     },
@@ -56,12 +61,15 @@ function setupTestEnv({ referrer = '', historyLength = 1, state = null, href = '
     },
   };
 
+  const scrollToCalls = [];
   const window = {
     location,
     history,
     document,
     scrollY: 0,
-    scrollTo: () => {},
+    scrollTo: (...args) => {
+      scrollToCalls.push(args);
+    },
     matchMedia: () => ({ matches: false }),
     addEventListener(type, handler) {
       listeners.set(type, handler);
@@ -83,9 +91,11 @@ function setupTestEnv({ referrer = '', historyLength = 1, state = null, href = '
 
   return {
     window,
+    document,
     GreekNavBack: window.GreekNavBack,
     getBackCalls: () => backCalls,
     getReplaceCalls: () => replaceCalls,
+    getScrollToCalls: () => scrollToCalls,
   };
 }
 
@@ -220,6 +230,53 @@ console.log('Testing button click binding with modifiers...');
   assert.strictEqual(prevented, true, 'Should prevent default on normal click');
   assert.strictEqual(env.getBackCalls(), 1, 'Should call history.back() on normal click');
   console.log('✓ Button click binding and modifier handling ok');
+}
+
+// Test 7: Dialog open locks scroll, close restores scroll instantly without smooth behavior
+console.log('Testing dialog scroll lock and instant restoration...');
+{
+  const env = setupTestEnv();
+  env.window.scrollY = 350;
+  let dialogCloseHandler = null;
+
+  const fakeDialog = {
+    id: 'test-dialog',
+    dataset: {},
+    open: false,
+    showModal() {
+      this.open = true;
+    },
+    close() {
+      this.open = false;
+      if (dialogCloseHandler) dialogCloseHandler();
+    },
+    addEventListener(event, handler) {
+      if (event === 'close') dialogCloseHandler = handler;
+    },
+  };
+
+  env.document.querySelector = (sel) => {
+    if (sel === 'dialog[open]') return fakeDialog.open ? fakeDialog : null;
+    return null;
+  };
+
+  env.GreekNavBack.bindDialog(fakeDialog);
+
+  fakeDialog.showModal();
+  assert(env.document.body.classList.contains('dialog-open'), 'Body should have dialog-open class');
+  assert.strictEqual(env.document.body.style.top, '-350px', 'Body top should be set to negative scrollY');
+
+  fakeDialog.close();
+  assert(!env.document.body.classList.contains('dialog-open'), 'Body should not have dialog-open class');
+  assert.strictEqual(env.document.body.style.top, '', 'Body top should be cleared');
+
+  const scrollToCalls = env.getScrollToCalls();
+  assert.strictEqual(scrollToCalls.length, 1, 'Should call scrollTo once');
+  const scrollArg = scrollToCalls[0][0];
+  assert.strictEqual(scrollArg.top, 350, 'Should restore scrollY');
+  assert.strictEqual(scrollArg.left, 0, 'Should restore left 0');
+  assert.strictEqual(scrollArg.behavior, 'instant', 'Should use behavior: instant');
+  console.log('✓ Dialog scroll lock and instant restoration ok');
 }
 
 console.log('\nAll nav-back tests passed! 🎉');
