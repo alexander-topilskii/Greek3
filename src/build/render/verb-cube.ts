@@ -1,4 +1,4 @@
-import type { VerbAspect, VerbImperative, VerbParadigm, VerbTense, WordEntry } from '../types';
+import type { VerbAspect, VerbImperative, VerbParadigm, VerbPersonForms, VerbTense, VerbVoiceParadigm, WordEntry } from '../types';
 import { embedJson, escapeHtml } from './html';
 
 export interface PersonMeta {
@@ -101,10 +101,13 @@ function formatVerbHtml(text: string, aspect: VerbAspect | 'general'): string {
   return `<span class="verb-main">${escapeHtml(value)}</span>`;
 }
 
-function hasConjugations(paradigm: VerbParadigm): boolean {
+function hasConjugations(
+  target?: { conjugations: Partial<Record<VerbTense, Partial<Record<VerbAspect, VerbPersonForms>>>> } | null,
+): boolean {
+  if (!target || !target.conjugations) return false;
   return (['past', 'present', 'future'] as VerbTense[]).some((tense) =>
     (['simple', 'continuous', 'perfect'] as VerbAspect[]).some((aspect) =>
-      paradigm.conjugations[tense]?.[aspect]?.some(Boolean),
+      target.conjugations[tense]?.[aspect]?.some(Boolean),
     ),
   );
 }
@@ -112,7 +115,7 @@ function hasConjugations(paradigm: VerbParadigm): boolean {
 function defaultPersonIndex(paradigm: VerbParadigm): number {
   const has1s = (['present', 'past', 'future'] as VerbTense[]).some((t) =>
     (['simple', 'continuous', 'perfect'] as VerbAspect[]).some((a) =>
-      Boolean(paradigm.conjugations[t]?.[a]?.[0]),
+      Boolean(paradigm.conjugations[t]?.[a]?.[0] || paradigm.passive?.conjugations[t]?.[a]?.[0]),
     ),
   );
   if (has1s) return 0;
@@ -120,7 +123,7 @@ function defaultPersonIndex(paradigm: VerbParadigm): number {
     const formIdx = PERSON_DEFINITIONS[i].formIndex;
     const hasForms = (['present', 'past', 'future'] as VerbTense[]).some((t) =>
       (['simple', 'continuous', 'perfect'] as VerbAspect[]).some((a) =>
-        Boolean(paradigm.conjugations[t]?.[a]?.[formIdx]),
+        Boolean(paradigm.conjugations[t]?.[a]?.[formIdx] || paradigm.passive?.conjugations[t]?.[a]?.[formIdx]),
       ),
     );
     if (hasForms) return i;
@@ -140,11 +143,7 @@ interface FormCell {
   title?: string;
 }
 
-function hasAspectAcrossVerb(paradigm: VerbParadigm, tense: VerbTense, aspect: VerbAspect): boolean {
-  return Boolean(paradigm.conjugations[tense]?.[aspect]?.some(Boolean));
-}
-
-function renderCell(cell: FormCell): string {
+function renderCell(cell: FormCell, voice: 'active' | 'passive'): string {
   const formatted = formatVerbHtml(cell.form, cell.aspect);
   const wideClass = cell.wide ? ' verb-form-cell--wide' : '';
   const titleAttr = cell.title ? ` title="${escapeHtml(cell.title)}"` : '';
@@ -153,7 +152,7 @@ function renderCell(cell: FormCell): string {
     : '';
 
   return `
-                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}"${formAttr}${titleAttr}>
+                <div class="verb-form-cell${wideClass}" data-aspect="${cell.aspect}" data-voice="${voice}"${formAttr}${titleAttr}>
                   <span class="verb-form-value greek">${formatted}</span>
                 </div>`;
 }
@@ -163,39 +162,38 @@ function renderTenseBlock(
   greekTitle: string,
   tenseClass: string,
   cells: FormCell[],
+  voice: 'active' | 'passive',
 ): string {
   if (!cells.length) return '';
 
   return `
-            <div class="verb-tense-block verb-tense-block--${tenseClass}" data-tense="${tenseClass}" data-tense-title="${escapeHtml(title)}" data-tense-greek="${escapeHtml(greekTitle)}">
+            <div class="verb-tense-block verb-tense-block--${tenseClass}" data-tense="${tenseClass}" data-tense-title="${escapeHtml(title)}" data-tense-greek="${escapeHtml(greekTitle)}" data-voice="${voice}">
               <div class="verb-tense-heading">
                 <span class="verb-tense-badge">${escapeHtml(title)}</span>
                 <span class="verb-tense-greek">${escapeHtml(greekTitle)}</span>
               </div>
               <div class="verb-tense-grid">
-                ${cells.map(renderCell).join('')}
+                ${cells.map((c) => renderCell(c, voice)).join('')}
               </div>
             </div>`;
 }
 
-function renderPersonFace(
-  paradigm: VerbParadigm,
+function renderTensesForVoice(
+  conjugations: Partial<Record<VerbTense, Partial<Record<VerbAspect, VerbPersonForms>>>>,
   person: PersonMeta,
-  faceIndex: number,
-  initialIndex: number,
+  voice: 'active' | 'passive',
 ): string {
   const idx = person.formIndex;
-  const isInitial = faceIndex === initialIndex;
 
   // Past
-  const pastSimpleExist = hasAspectAcrossVerb(paradigm, 'past', 'simple');
-  const pastContExist = hasAspectAcrossVerb(paradigm, 'past', 'continuous');
-  const pastPerfExist = hasAspectAcrossVerb(paradigm, 'past', 'perfect');
+  const pastSimpleExist = Boolean(conjugations.past?.simple?.some(Boolean));
+  const pastContExist = Boolean(conjugations.past?.continuous?.some(Boolean));
+  const pastPerfExist = Boolean(conjugations.past?.perfect?.some(Boolean));
   const pastCells: FormCell[] = [];
 
-  const pastSimpleForm = paradigm.conjugations.past?.simple?.[idx] || '';
-  const pastContForm = paradigm.conjugations.past?.continuous?.[idx] || '';
-  const pastPerfForm = paradigm.conjugations.past?.perfect?.[idx] || '';
+  const pastSimpleForm = conjugations.past?.simple?.[idx] || '';
+  const pastContForm = conjugations.past?.continuous?.[idx] || '';
+  const pastPerfForm = conjugations.past?.perfect?.[idx] || '';
 
   if (pastSimpleExist && pastContExist) {
     pastCells.push({ aspect: 'simple', form: pastSimpleForm, title: 'Разовое (Αόριστος)' });
@@ -211,14 +209,14 @@ function renderPersonFace(
   }
 
   // Present
-  const presSimpleExist = hasAspectAcrossVerb(paradigm, 'present', 'simple');
-  const presContExist = hasAspectAcrossVerb(paradigm, 'present', 'continuous');
-  const presPerfExist = hasAspectAcrossVerb(paradigm, 'present', 'perfect');
+  const presSimpleExist = Boolean(conjugations.present?.simple?.some(Boolean));
+  const presContExist = Boolean(conjugations.present?.continuous?.some(Boolean));
+  const presPerfExist = Boolean(conjugations.present?.perfect?.some(Boolean));
   const presCells: FormCell[] = [];
 
-  const presSimpleForm = paradigm.conjugations.present?.simple?.[idx] || '';
-  const presContForm = paradigm.conjugations.present?.continuous?.[idx] || '';
-  const presPerfForm = paradigm.conjugations.present?.perfect?.[idx] || '';
+  const presSimpleForm = conjugations.present?.simple?.[idx] || '';
+  const presContForm = conjugations.present?.continuous?.[idx] || '';
+  const presPerfForm = conjugations.present?.perfect?.[idx] || '';
 
   if (presSimpleExist && presContExist && presSimpleForm !== presContForm) {
     presCells.push({ aspect: 'simple', form: presSimpleForm, title: 'Разовое' });
@@ -242,14 +240,14 @@ function renderPersonFace(
   }
 
   // Future
-  const futSimpleExist = hasAspectAcrossVerb(paradigm, 'future', 'simple');
-  const futContExist = hasAspectAcrossVerb(paradigm, 'future', 'continuous');
-  const futPerfExist = hasAspectAcrossVerb(paradigm, 'future', 'perfect');
+  const futSimpleExist = Boolean(conjugations.future?.simple?.some(Boolean));
+  const futContExist = Boolean(conjugations.future?.continuous?.some(Boolean));
+  const futPerfExist = Boolean(conjugations.future?.perfect?.some(Boolean));
   const futCells: FormCell[] = [];
 
-  const futSimpleForm = paradigm.conjugations.future?.simple?.[idx] || '';
-  const futContForm = paradigm.conjugations.future?.continuous?.[idx] || '';
-  const futPerfForm = paradigm.conjugations.future?.perfect?.[idx] || '';
+  const futSimpleForm = conjugations.future?.simple?.[idx] || '';
+  const futContForm = conjugations.future?.continuous?.[idx] || '';
+  const futPerfForm = conjugations.future?.perfect?.[idx] || '';
 
   if (futSimpleExist && futContExist) {
     futCells.push({ aspect: 'simple', form: futSimpleForm, title: 'Разовое (Συνοπτικός)' });
@@ -265,13 +263,47 @@ function renderPersonFace(
   }
 
   return `
+              <div class="verb-face-tenses verb-face-tenses--${voice}" data-voice="${voice}">
+                ${renderTenseBlock('Прошедшее', 'Παρελθόν', 'past', pastCells, voice)}
+                ${renderTenseBlock('Настоящее', 'Ενεστώτας', 'present', presCells, voice)}
+                ${renderTenseBlock('Будущее', 'Μέλλοντας', 'future', futCells, voice)}
+              </div>`;
+}
+
+function renderPersonFace(
+  paradigm: VerbParadigm,
+  person: PersonMeta,
+  faceIndex: number,
+  initialIndex: number,
+): string {
+  const isInitial = faceIndex === initialIndex;
+  const activeTenses = renderTensesForVoice(paradigm.conjugations, person, 'active');
+  const hasPassive = Boolean(paradigm.passive && hasConjugations(paradigm.passive));
+  const passiveTenses = hasPassive
+    ? renderTensesForVoice(paradigm.passive!.conjugations, person, 'passive')
+    : '';
+
+  return `
           <div class="verb-cube-face verb-cube-face--${faceIndex}" data-person-index="${faceIndex}" aria-hidden="${isInitial ? 'false' : 'true'}">
-            <div class="verb-face-tenses">
-              ${renderTenseBlock('Прошедшее', 'Παρελθόν', 'past', pastCells)}
-              ${renderTenseBlock('Настоящее', 'Ενεστώτας', 'present', presCells)}
-              ${renderTenseBlock('Будущее', 'Μέλλοντας', 'future', futCells)}
-            </div>
+            ${activeTenses}
+            ${passiveTenses}
           </div>`;
+}
+
+function renderVoiceSwitch(): string {
+  return `
+        <div class="verb-voice-toolbar">
+          <div class="verb-voice-switch" role="group" aria-label="Залог глагола">
+            <button type="button" class="verb-voice-btn is-active" data-voice="active" aria-pressed="true">
+              <span class="verb-voice-btn-ru">Действительный</span>
+              <span class="verb-voice-btn-el greek">Ενεργητική</span>
+            </button>
+            <button type="button" class="verb-voice-btn" data-voice="passive" aria-pressed="false">
+              <span class="verb-voice-btn-ru">Страдательный</span>
+              <span class="verb-voice-btn-el greek">Παθητική</span>
+            </button>
+          </div>
+        </div>`;
 }
 
 function renderPersonTabs(initialIndex: number): string {
@@ -300,29 +332,55 @@ function renderPersonTabs(initialIndex: number): string {
 }
 
 function renderImperatives(paradigm: VerbParadigm): string {
-  if (!paradigm.imperative.length) return '';
-  const blocks = paradigm.imperative
-    .map((item) => {
-      const label =
-        item.aspect === 'default' ? '' : `<p class="verb-extra-aspect">${ASPECT_LABELS[item.aspect]}</p>`;
-      const aspectLabel = item.aspect === 'default' ? 'Повелительное' : `${ASPECT_LABELS[item.aspect]} (Повелительное)`;
-      const sgFormAttr = item.sg && item.sg !== '—' && item.sg !== '-' ? ` data-form="${escapeHtml(item.sg)}"` : '';
-      const plFormAttr = item.pl && item.pl !== '—' && item.pl !== '-' ? ` data-form="${escapeHtml(item.pl)}"` : '';
-      return `${label}
-          <div class="verb-extra-row"${sgFormAttr} data-mood="imperative" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Единственное число (ты)">
-            <span class="verb-extra-label">ед.ч.</span>
-            <span class="verb-extra-form greek">${escapeHtml(item.sg || '—')}</span>
-          </div>
-          <div class="verb-extra-row"${plFormAttr} data-mood="imperative" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Множественное число (вы)">
-            <span class="verb-extra-label">мн.ч.</span>
-            <span class="verb-extra-form greek">${escapeHtml(item.pl || '—')}</span>
-          </div>`;
-    })
-    .join('');
+  const activeItems = paradigm.imperative;
+  const passiveItems = paradigm.passive?.imperative ?? [];
+  if (!activeItems.length && !passiveItems.length) return '';
+
+  const renderItemsList = (items: VerbImperative[], voice: 'active' | 'passive') => {
+    if (!items.length) {
+      return voice === 'passive'
+        ? '<p class="verb-extra-empty">У страдательного залога нет форм повелительного наклонения.</p>'
+        : '';
+    }
+    return items
+      .map((item) => {
+        const label =
+          item.aspect === 'default' ? '' : `<p class="verb-extra-aspect">${ASPECT_LABELS[item.aspect]}</p>`;
+        const aspectLabel = item.aspect === 'default' ? 'Повелительное' : `${ASPECT_LABELS[item.aspect]} (Повелительное)`;
+        const sgFormAttr = item.sg && item.sg !== '—' && item.sg !== '-' ? ` data-form="${escapeHtml(item.sg)}"` : '';
+        const plFormAttr = item.pl && item.pl !== '—' && item.pl !== '-' ? ` data-form="${escapeHtml(item.pl)}"` : '';
+        return `${label}
+            <div class="verb-extra-row"${sgFormAttr} data-mood="imperative" data-voice="${voice}" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Единственное число (ты)">
+              <span class="verb-extra-label">ед.ч.</span>
+              <span class="verb-extra-form greek">${escapeHtml(item.sg || '—')}</span>
+            </div>
+            <div class="verb-extra-row"${plFormAttr} data-mood="imperative" data-voice="${voice}" data-aspect-label="${escapeHtml(aspectLabel)}" data-num="Множественное число (вы)">
+              <span class="verb-extra-label">мн.ч.</span>
+              <span class="verb-extra-form greek">${escapeHtml(item.pl || '—')}</span>
+            </div>`;
+      })
+      .join('');
+  };
+
+  const hasPassive = Boolean(paradigm.passive && (hasConjugations(paradigm.passive) || passiveItems.length > 0));
+
+  if (!hasPassive) {
+    return `
+        <div class="verb-extra-card">
+          <h3>Повелительное</h3>
+          ${renderItemsList(activeItems, 'active')}
+        </div>`;
+  }
+
   return `
         <div class="verb-extra-card">
           <h3>Повелительное</h3>
-          ${blocks}
+          <div class="verb-imperatives-group verb-imperatives-group--active">
+            ${renderItemsList(activeItems, 'active')}
+          </div>
+          <div class="verb-imperatives-group verb-imperatives-group--passive">
+            ${renderItemsList(passiveItems, 'passive')}
+          </div>
         </div>`;
 }
 
@@ -393,7 +451,10 @@ export function renderVerbParadigm(word: WordEntry): { html: string; interactive
   const paradigm = word.paradigm;
   if (!paradigm) return { html: '', interactive: false };
 
-  const interactive = hasConjugations(paradigm);
+  const hasActive = hasConjugations(paradigm);
+  const hasPassive = Boolean(paradigm.passive && hasConjugations(paradigm.passive));
+  const interactive = hasActive || hasPassive;
+
   const extra = `${renderImperatives(paradigm)}${renderParticipleCard(paradigm)}`;
   const extraHtml = extra.trim() ? `<div class="verb-extra">${extra}</div>` : '';
 
@@ -407,6 +468,7 @@ export function renderVerbParadigm(word: WordEntry): { html: string; interactive
 
   const payload = {
     initialIndex,
+    hasPassive,
     lemma: {
       translation: word.translation || word.title,
       greek: word.primaryGreek || word.baseForms[0] || '',
@@ -427,6 +489,7 @@ export function renderVerbParadigm(word: WordEntry): { html: string; interactive
   const html = `
       <section class="verb-paradigm" data-verb-cube>
         <script type="application/json" data-verb-paradigm>${embedJson(payload)}</script>
+        ${hasPassive ? renderVoiceSwitch() : ''}
         ${renderPersonTabs(initialIndex)}
         <div class="verb-cube-toolbar">
           <button type="button" class="verb-cube-nav" data-cube-dir="-1" aria-label="Предыдущее лицо"${initialIndex === 0 ? ' disabled' : ''}>${chevron('prev')}</button>

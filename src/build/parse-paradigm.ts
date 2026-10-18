@@ -5,6 +5,7 @@ import type {
   VerbParticiple,
   VerbPersonForms,
   VerbTense,
+  VerbVoiceParadigm,
 } from './types';
 
 const PERSON_INDEX: Record<string, number> = {
@@ -255,13 +256,27 @@ export function parseVerbParadigm(input: {
   conjugation?: string[];
   imperative?: string[];
   participle?: string[];
+  passiveConjugation?: string[];
+  passiveImperative?: string[];
 }): VerbParadigm | null {
   const conjugations = parseConjugation(input.conjugation ?? []);
   const imperative = parseImperative(input.imperative ?? []);
   const participles = parseParticiples(input.participle ?? []);
+
+  const passiveConjugations = parseConjugation(input.passiveConjugation ?? []);
+  const passiveImperative = parseImperative(input.passiveImperative ?? []);
+
+  const hasPassiveConjugation = Object.values(passiveConjugations).some((bucket) =>
+    Object.values(bucket ?? {}).some((forms) => forms?.some(Boolean)),
+  );
+  const hasPassive = hasPassiveConjugation || passiveImperative.length > 0;
+  const passive: VerbVoiceParadigm | null = hasPassive
+    ? { conjugations: passiveConjugations, imperative: passiveImperative }
+    : null;
+
   const hasConjugation = Object.values(conjugations).some((bucket) =>
     Object.values(bucket ?? {}).some((forms) => forms?.some(Boolean)),
   );
-  if (!hasConjugation && imperative.length === 0 && participles.length === 0) return null;
-  return { conjugations, imperative, participles };
+  if (!hasConjugation && !hasPassive && imperative.length === 0 && participles.length === 0) return null;
+  return { conjugations, imperative, participles, passive };
 }

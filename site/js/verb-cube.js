@@ -24,6 +24,7 @@
   const btnNext = root.querySelector('[data-cube-dir="1"]');
   const tabs = root.querySelectorAll('.verb-person-tab');
   const faces = root.querySelectorAll('.verb-cube-face');
+  const voiceButtons = root.querySelectorAll('.verb-voice-btn');
 
   const dialog = root.querySelector('.verb-dialog');
   const dialogTitle = dialog ? dialog.querySelector('#verb-dialog-title') : null;
@@ -41,6 +42,7 @@
   if (!cube || !scene || !heading || !titleEl || !subtitleEl) return;
 
   let currentFaceIndex = typeof data.initialIndex === 'number' ? data.initialIndex : 0;
+  let currentVoice = 'active';
   let titleTimer = 0;
   let ready = false;
 
@@ -63,7 +65,10 @@
     }
 
     let max = 0;
-    root.querySelectorAll('.verb-face-tenses').forEach((el) => {
+    const selector = currentVoice === 'passive' ? '.verb-face-tenses--passive' : '.verb-face-tenses--active';
+    let visibleTenses = root.querySelectorAll(selector);
+    if (!visibleTenses.length) visibleTenses = root.querySelectorAll('.verb-face-tenses');
+    visibleTenses.forEach((el) => {
       max = Math.max(max, el.offsetHeight, el.scrollHeight);
     });
     if (max > 0) {
@@ -71,6 +76,25 @@
       if (scene.style.height !== nextHeight) scene.style.height = nextHeight;
     }
   }
+
+  function setVoice(voice) {
+    if (voice !== 'active' && voice !== 'passive') return;
+    currentVoice = voice;
+    root.classList.toggle('is-passive-voice', voice === 'passive');
+    voiceButtons.forEach((btn) => {
+      const active = btn.getAttribute('data-voice') === voice;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    syncGeometry();
+  }
+
+  voiceButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const voice = btn.getAttribute('data-voice');
+      if (voice) setVoice(voice);
+    });
+  });
 
   function updateTitle(animate) {
     const meta = persons[currentFaceIndex];
@@ -231,6 +255,14 @@
     if (dialogBadges) {
       dialogBadges.innerHTML = '';
       if (cell.classList.contains('verb-form-cell')) {
+        const cellVoice = cell.getAttribute('data-voice') || (root.classList.contains('is-passive-voice') ? 'passive' : 'active');
+        if (data.hasPassive || voiceButtons.length > 0) {
+          const voiceBadge = document.createElement('span');
+          voiceBadge.className = `verb-dialog-badge verb-dialog-badge--voice verb-dialog-badge--${cellVoice}`;
+          voiceBadge.textContent = cellVoice === 'passive' ? 'Страдательный (Παθητική)' : 'Действительный (Ενεργητική)';
+          dialogBadges.appendChild(voiceBadge);
+        }
+
         const block = cell.closest('.verb-tense-block');
         const tenseClass = block ? block.getAttribute('data-tense') : '';
         const tenseTitle = block ? block.getAttribute('data-tense-title') : '';
@@ -260,6 +292,14 @@
           dialogBadges.appendChild(badge);
         }
       } else if (cell.classList.contains('verb-extra-row')) {
+        const cellVoice = cell.getAttribute('data-voice') || (root.classList.contains('is-passive-voice') ? 'passive' : 'active');
+        if (data.hasPassive || voiceButtons.length > 0) {
+          const voiceBadge = document.createElement('span');
+          voiceBadge.className = `verb-dialog-badge verb-dialog-badge--voice verb-dialog-badge--${cellVoice}`;
+          voiceBadge.textContent = cellVoice === 'passive' ? 'Страдательный (Παθητική)' : 'Действительный (Ενεργητική)';
+          dialogBadges.appendChild(voiceBadge);
+        }
+
         const badgeMood = document.createElement('span');
         badgeMood.className = 'verb-dialog-badge verb-dialog-badge--mood';
         badgeMood.textContent = 'Повелительное';

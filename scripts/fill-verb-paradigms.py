@@ -72,6 +72,8 @@ def penalty(form: str, past: bool = False) -> int:
         score += 4
     if form.endswith("σαστε"):
         score += 3
+    if "σθ" in form:
+        score += 4
     if past and form.endswith("μαστε") and not form.endswith("μασταν"):
         score += 2
     if not past and form.endswith(("μασταν", "σασταν")):
@@ -361,6 +363,75 @@ def build_block(lemma: str, data: dict, base_forms: list[str], modal: bool) -> t
             pair = simple_imp or cont_imp
             imp_lines.append(f"{pair[0] or '—'} | {pair[1] or '—'}")
 
+    # Passive voice for verbs whose primary paradigm is active
+    pass_lines = []
+    pass_imp_lines = []
+    if not lemma.endswith("μαι"):
+        pass_pres = six_forms(data.get("present") or {}, "passive")
+        pass_impf = six_forms(data.get("paratatikos") or {}, "passive", past=True)
+        pass_aor = six_forms(data.get("aorist") or {}, "passive", past=True)
+        pass_fut_conj = six_forms(data.get("conjunctive") or {}, "passive")
+        pass_fut_simple = with_tha(pass_fut_conj)
+        pass_fut_cont = with_tha(pass_pres)
+        pass_stem = pass_fut_conj[4] if pass_fut_conj and len(pass_fut_conj) > 4 and pass_fut_conj[4] else ""
+
+        pass_sections: list[tuple[str, list[tuple[str, list[str]]]]] = []
+        pass_pres_aspects = []
+        if filled(pass_pres):
+            pass_pres_aspects.append(("длительное", pass_pres))
+        if pass_stem:
+            pass_pres_aspects.append(("завершённое", perfect_rows(["έχω", "έχουμε", "έχεις", "έχετε", "έχει", "έχουν"], pass_stem, modal)))
+        if pass_pres_aspects:
+            pass_sections.append(("настоящее", pass_pres_aspects))
+
+        pass_past_aspects = []
+        if filled(pass_aor):
+            pass_past_aspects.append(("разовое", pass_aor))
+        if filled(pass_impf):
+            pass_past_aspects.append(("длительное", pass_impf))
+        if pass_stem:
+            pass_past_aspects.append(("завершённое", perfect_rows(["είχα", "είχαμε", "είχες", "είχατε", "είχε", "είχαν"], pass_stem, modal)))
+        if pass_past_aspects:
+            pass_sections.append(("прошедшее", pass_past_aspects))
+
+        pass_fut_aspects = []
+        if filled(pass_fut_simple):
+            pass_fut_aspects.append(("разовое", pass_fut_simple))
+        if filled(pass_fut_cont):
+            pass_fut_aspects.append(("длительное", pass_fut_cont))
+        if pass_stem:
+            pass_fut_aspects.append(
+                ("завершённое", perfect_rows(["θα έχω", "θα έχουμε", "θα έχεις", "θα έχετε", "θα έχει", "θα έχουν"], pass_stem, modal))
+            )
+        if pass_fut_aspects:
+            pass_sections.append(("будущее", pass_fut_aspects))
+
+        if pass_sections:
+            pass_lines = ["# Пассивное спряжение", ""]
+            for tense, aspects in pass_sections:
+                pass_lines.append(f"## {tense}")
+                for aspect, forms in aspects:
+                    pass_lines.append(f"### {aspect}")
+                    pass_lines.extend(rows(forms))
+                    pass_lines.append("")
+
+            # Passive imperatives
+            p_simple_imp = imperative_pair(data.get("conjunctive") or {}, "passive")
+            p_cont_imp = imperative_pair(data.get("present") or {}, "passive")
+            if p_simple_imp and p_cont_imp and p_simple_imp == p_cont_imp:
+                p_cont_imp = None
+            if p_simple_imp or p_cont_imp:
+                pass_imp_lines.append("# Повелительное (пассив)")
+                if p_simple_imp and p_cont_imp:
+                    pass_imp_lines.append("## разовое")
+                    pass_imp_lines.append(f"{p_simple_imp[0] or '—'} | {p_simple_imp[1] or '—'}")
+                    pass_imp_lines.append("")
+                    pass_imp_lines.append("## длительное")
+                    pass_imp_lines.append(f"{p_cont_imp[0] or '—'} | {p_cont_imp[1] or '—'}")
+                else:
+                    pair = p_simple_imp or p_cont_imp
+                    pass_imp_lines.append(f"{pair[0] or '—'} | {pair[1] or '—'}")
+
     part_lines = []
     active = as_list((data.get("act_pres_participle")))
     active_form = pick_form(active)
@@ -376,6 +447,10 @@ def build_block(lemma: str, data: dict, base_forms: list[str], modal: bool) -> t
     chunks = [text]
     if imp_lines:
         chunks.append("\n".join(imp_lines))
+    if pass_lines:
+        chunks.append("\n".join(pass_lines).rstrip())
+    if pass_imp_lines:
+        chunks.append("\n".join(pass_imp_lines))
     if part_lines:
         chunks.append("\n".join(part_lines))
     return "\n\n".join(chunks).rstrip() + "\n", warnings
@@ -484,6 +559,14 @@ def replace_perfect_stem(block: str, stem: str) -> str:
     if not stem:
         return block
 
+    cutoff = block.find("# Пассивное спряжение")
+    if cutoff >= 0:
+        active_part = block[:cutoff]
+        passive_part = block[cutoff:]
+    else:
+        active_part = block
+        passive_part = ""
+
     def repl(line: str) -> str:
         if not re.search(r"(έχ|είχ)", line):
             return line
@@ -493,7 +576,8 @@ def replace_perfect_stem(block: str, stem: str) -> str:
             line,
         )
 
-    return "\n".join(repl(line) for line in block.splitlines())
+    updated_active = "\n".join(repl(line) for line in active_part.splitlines())
+    return (updated_active + "\n" + passive_part) if passive_part else updated_active
 
 
 def card_imperatives(text: str) -> tuple[list[str], list[str]]:
@@ -729,7 +813,8 @@ def main() -> int:
     failed: list[str] = []
     mismatched: list[str] = []
 
-    for path in sorted(VERBS.glob("*.md")):
+    targets = [Path(arg) for arg in sys.argv[1:]] if len(sys.argv) > 1 else sorted(VERBS.glob("*.md"))
+    for path in targets:
         if path.name == "readme.md":
             continue
         original = path.read_text(encoding="utf-8")

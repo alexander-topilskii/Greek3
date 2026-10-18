@@ -88,6 +88,8 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
   let conjugationLines: string[] = [];
   let imperativeLines: string[] = [];
   let participleLines: string[] = [];
+  let passiveConjugationLines: string[] = [];
+  let passiveImperativeLines: string[] = [];
   const extraSections: { title: string; lines: string[] }[] = [];
 
   const meta: WordMeta = {
@@ -115,6 +117,10 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       conjugationLines = section.lines;
     } else if (key === 'повелительное' || key === 'повелительное наклонение') {
       imperativeLines = section.lines;
+    } else if (key === 'пассивное спряжение' || key === 'спряжение (пассив)' || key === 'пассив') {
+      passiveConjugationLines = section.lines;
+    } else if (key === 'повелительное (пассив)' || key === 'пассивное повелительное') {
+      passiveImperativeLines = section.lines;
     } else if (key === 'причастие' || key === 'причастия') {
       participleLines = section.lines;
     } else if (key === 'уровень' && !meta.level) {
@@ -135,6 +141,8 @@ export function parseWordFile(filePath: string, wordsRoot: string): WordEntry {
       conjugation: conjugationLines,
       imperative: imperativeLines,
       participle: participleLines,
+      passiveConjugation: passiveConjugationLines,
+      passiveImperative: passiveImperativeLines,
     }),
     forms,
     formExamples,

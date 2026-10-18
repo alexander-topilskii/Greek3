@@ -112,5 +112,69 @@ assert(rendered.html.includes('id="verb-dialog"'), 'renders verb dialog modal');
 assert(rendered.html.includes('verb-dialog-example'), 'dialog has example container');
 assert(rendered.html.includes('Θα γίνω καλύτερος άνθρωπος.'), 'embedded payload includes example');
 
+const passiveParadigm = parseVerbParadigm({
+  conjugation: ['## настоящее', '### длительное', 'αγοράζω | αγοράζουμε', 'αγοράζεις | αγοράζετε', 'αγοράζει | αγοράζουν'],
+  imperative: ['αγόρασε | αγοράστε'],
+  passiveConjugation: [
+    '## настоящее',
+    '### длительное',
+    'αγοράζομαι | αγοραζόμαστε',
+    'αγοράζεσαι | αγοράζεστε',
+    'αγοράζεται | αγοράζονται',
+    '## прошедшее',
+    '### разовое',
+    'αγοράστηκα | αγοραστήκαμε',
+    'αγοράστηκες | αγοραστήκατε',
+    'αγοράστηκε | αγοράστηκαν',
+  ],
+  passiveImperative: ['αγοράσου | αγοραστείτε'],
+});
+
+assert(passiveParadigm, 'passiveParadigm parsed');
+assert(passiveParadigm.passive, 'has passive property');
+assert(passiveParadigm.passive.conjugations.present.continuous[0] === 'αγοράζομαι', 'passive present 1s');
+assert(passiveParadigm.passive.conjugations.past.simple[0] === 'αγοράστηκα', 'passive past simple 1s');
+assert(passiveParadigm.passive.imperative[0].sg === 'αγοράσου', 'passive imperative sg');
+
+const passiveFile = path.join(words, 'verbs', 'покупаю αγοράζω.md');
+fs.writeFileSync(
+  passiveFile,
+  `# База
+покупаю : αγόρασα - αγοράζω - θα αγοράσω
+
+# Спряжение
+## настоящее
+### длительное
+αγοράζω | αγοράζουμε
+αγοράζεις | αγοράζετε
+αγοράζει | αγοράζουν
+
+# Пассивное спряжение
+## настоящее
+### длительное
+αγοράζομαι | αγοραζόμαστε
+αγοράζεσαι | αγοράζεστε
+αγοράζεται | αγοράζονται
+
+# Повелительное
+αγόρασε | αγοράστε
+
+# Повелительное (пассив)
+αγοράσου | αγοραστείτε
+`,
+);
+
+const passiveWord = parseWordFile(passiveFile, words);
+assert(passiveWord.paradigm.passive, 'passiveWord has passive paradigm');
+assert(passiveWord.paradigm.passive.conjugations.present.continuous[0] === 'αγοράζομαι', 'passiveWord present 1s');
+assert(passiveWord.paradigm.passive.imperative[0].sg === 'αγοράσου', 'passiveWord imperative sg');
+
+const passiveRendered = renderVerbParadigm(passiveWord);
+assert(passiveRendered.html.includes('verb-voice-toolbar'), 'has verb-voice-toolbar');
+assert(passiveRendered.html.includes('data-voice="passive"'), 'has data-voice="passive" button');
+assert(passiveRendered.html.includes('verb-face-tenses--passive'), 'has passive face tenses');
+assert(passiveRendered.html.includes('αγοράζομαι'), 'has passive form in html');
+assert(passiveRendered.html.includes('αγοράσου'), 'has passive imperative form in html');
+
 console.log('verb paradigm ok');
 

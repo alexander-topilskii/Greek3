@@ -16,10 +16,17 @@ export interface VerbParticiple {
   form: string;
 }
 
+export interface VerbVoiceParadigm {
+  conjugations: Partial<Record<VerbTense, Partial<Record<VerbAspect, VerbPersonForms>>>>;
+  imperative: VerbImperative[];
+}
+
 export interface VerbParadigm {
   conjugations: Partial<Record<VerbTense, Partial<Record<VerbAspect, VerbPersonForms>>>>;
   imperative: VerbImperative[];
   participles: VerbParticiple[];
+  /** Страдательный (пассивный) залог, если задан */
+  passive?: VerbVoiceParadigm | null;
 }
 
 export interface WordForm {
