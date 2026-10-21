@@ -95,6 +95,18 @@ assert(themeCubeHtml.includes('cases-section'), 'theme cube has cases-section');
 assert(themeCubeHtml.includes('cases-item-trans'), 'theme cube has transformation markup');
 assert(themeCubeHtml.includes('cases-face-tabs'), 'nouns theme cube has gender face tabs');
 
+const adjThemeCubeHtml = renderCaseThemeCube(adjTheme);
+assert(adjThemeCubeHtml.includes('cases-face-tabs'), 'adjectives theme cube has gender face tabs');
+assert(adjThemeCubeHtml.includes('cases-cube-face--masc_sg'), 'adjectives theme cube has masc_sg');
+assert(adjThemeCubeHtml.includes('cases-cube-face--fem_sg'), 'adjectives theme cube has fem_sg');
+assert(adjThemeCubeHtml.includes('cases-cube-face--neut_sg'), 'adjectives theme cube has neut_sg');
+
+const artThemeCubeHtml = renderCaseThemeCube(artTheme);
+assert(artThemeCubeHtml.includes('cases-face-tabs'), 'articles theme cube has gender face tabs');
+assert(artThemeCubeHtml.includes('cases-cube-face--masc_sg'), 'articles theme cube has masc_sg');
+assert(artThemeCubeHtml.includes('cases-cube-face--fem_sg'), 'articles theme cube has fem_sg');
+assert(artThemeCubeHtml.includes('cases-cube-face--neut_sg'), 'articles theme cube has neut_sg');
+
 const themesHubHtml = renderCasesThemesHub();
 assert(themesHubHtml.includes('cases-themes-hub'), 'hub has cases-themes-hub');
 assert(themesHubHtml.includes('words/cases/nouns/index.html'), 'hub links to nouns');
@@ -129,6 +141,7 @@ const distAdj = path.join(process.cwd(), 'dist', 'words', 'cases', 'adjectives',
 if (fs.existsSync(distAdj)) {
   const content = fs.readFileSync(distAdj, 'utf-8');
   assert(content.includes('data-cases-cube'), 'dist cases/adjectives/index.html has cases cube');
+  assert(content.includes('cases-face-tabs'), 'dist cases/adjectives/index.html has gender tabs');
   assert(content.includes('assets/js/cases-cube.js'), 'dist cases/adjectives/index.html includes cases-cube.js');
 }
 
@@ -136,6 +149,7 @@ const distArt = path.join(process.cwd(), 'dist', 'words', 'cases', 'articles', '
 if (fs.existsSync(distArt)) {
   const content = fs.readFileSync(distArt, 'utf-8');
   assert(content.includes('data-cases-cube'), 'dist cases/articles/index.html has cases cube');
+  assert(content.includes('cases-face-tabs'), 'dist cases/articles/index.html has gender tabs');
   assert(content.includes('assets/js/cases-cube.js'), 'dist cases/articles/index.html includes cases-cube.js');
 }
 
