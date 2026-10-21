@@ -31,43 +31,67 @@
 
   const escapeHtml = window.GreekUtils ? window.GreekUtils.escapeHtml : (text) => String(text);
 
-  function indexFromCase(cType) {
-    if (cType === 'nominative') return -1;
-    if (cType === 'genitive') return 1;
-    return 0; // accusative
-  }
-
-  function caseFromIndex(index) {
-    if (index === -1) return 'nominative';
-    if (index === 1) return 'genitive';
-    return 'accusative';
-  }
-
-  let currentFaceIndex = indexFromCase(data.currentCase || 'nominative');
-  let titleTimer = 0;
-  let ready = false;
-
-  function rotationFor(index) {
-    return index * -90;
-  }
-
   function getActiveVariant() {
     const p = paradigms[currentParadigmId];
     if (!p || !p.variants) return null;
     return p.variants.find((v) => v.id === currentVariantId) || p.variants[0] || null;
   }
 
-  function getActiveFace(cType) {
+  function getFaceOrder() {
+    const v = getActiveVariant();
+    if (!v) return [];
+    return v.faceOrder || Object.keys(v.faces || {});
+  }
+
+  function getActiveFace(faceIdOrIndex) {
     const v = getActiveVariant();
     if (!v || !v.faces) return null;
-    const targetCase = cType || caseFromIndex(currentFaceIndex);
-    return v.faces[targetCase] || null;
+    const order = getFaceOrder();
+    if (typeof faceIdOrIndex === 'number') {
+      const id = order[faceIdOrIndex];
+      return v.faces[id] || null;
+    }
+    const target = faceIdOrIndex || order[currentFaceIndex];
+    return v.faces[target] || null;
+  }
+
+  let currentFaceIndex = 0;
+  const initialOrder = getFaceOrder();
+  if (data.currentFaceIndex != null && data.currentFaceIndex >= 0 && data.currentFaceIndex < initialOrder.length) {
+    currentFaceIndex = data.currentFaceIndex;
+  } else if (data.currentFace && initialOrder.indexOf(data.currentFace) >= 0) {
+    currentFaceIndex = initialOrder.indexOf(data.currentFace);
+  } else if (data.currentCase && initialOrder.indexOf(data.currentCase) >= 0) {
+    currentFaceIndex = initialOrder.indexOf(data.currentCase);
+  } else if (data.currentCase === 'nominative') {
+    currentFaceIndex = 0;
+  } else if (data.currentCase === 'accusative') {
+    currentFaceIndex = initialOrder.length === 3 ? 1 : 0;
+  } else if (data.currentCase === 'genitive') {
+    currentFaceIndex = initialOrder.length === 3 ? 2 : 0;
+  }
+
+  let titleTimer = 0;
+  let ready = false;
+
+  function rotationFor(index) {
+    const order = getFaceOrder();
+    const numFaces = order.length;
+    if (numFaces === 6) {
+      return index * -60;
+    }
+    return (1 - index) * 90;
   }
 
   function syncGeometry() {
     const width = scene.getBoundingClientRect().width;
     if (!width) return;
-    const tz = `${Math.round(width / 2)}px`;
+    const order = getFaceOrder();
+    const numFaces = order.length;
+    const tz = numFaces === 6
+      ? `${Math.round(width * 0.866025)}px`
+      : `${Math.round(width / 2)}px`;
+
     const prev = cube.style.getPropertyValue('--cases-tz');
     if (prev !== tz) {
       cube.style.transition = 'none';
@@ -129,10 +153,12 @@
   function updateFacesContent() {
     const v = getActiveVariant();
     if (!v) return;
+    const order = getFaceOrder();
 
-    ['nominative', 'accusative', 'genitive'].forEach((cType) => {
-      const face = v.faces[cType];
-      const faceEl = root.querySelector(`.cases-cube-face--${cType}`);
+    order.forEach((faceId, idx) => {
+      const face = v.faces[faceId];
+      const faceEl = root.querySelector(`.cases-cube-face--${faceId}`) ||
+                     root.querySelector(`.cases-cube-face--${idx}`);
       if (!face || !faceEl) return;
 
       const gridEl = faceEl.querySelector('.cases-cube-grid');
@@ -200,7 +226,7 @@
   }
 
   function updateTitle(animate) {
-    const face = getActiveFace();
+    const face = getActiveFace(currentFaceIndex);
     if (!face) return;
     const apply = () => {
       titleEl.textContent = face.title;
@@ -217,15 +243,33 @@
   }
 
   function paintChrome(index) {
-    if (btnPrev) btnPrev.disabled = index === -1;
-    if (btnNext) btnNext.disabled = index === 1;
+    const order = getFaceOrder();
+    const numFaces = order.length;
+    if (btnPrev) btnPrev.disabled = index === 0;
+    if (btnNext) btnNext.disabled = index === numFaces - 1;
 
-    const activeCase = caseFromIndex(index);
-    root.querySelectorAll('.cases-cube-dot').forEach((dot) => {
-      dot.classList.toggle('is-active', dot.getAttribute('data-dot') === activeCase);
+    const activeFaceId = order[index] || '';
+
+    root.querySelectorAll('.cases-face-tab').forEach((tab) => {
+      const tabIdx = Number(tab.getAttribute('data-face-index'));
+      const tabId = tab.getAttribute('data-face-id');
+      const active = tabIdx === index || tabId === activeFaceId;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+
+    root.querySelectorAll('.cases-cube-dot').forEach((dot) => {
+      const dotIdx = dot.getAttribute('data-dot-index');
+      const dotId = dot.getAttribute('data-dot');
+      const active = (dotIdx != null && Number(dotIdx) === index) || dotId === activeFaceId;
+      dot.classList.toggle('is-active', active);
+    });
+
     root.querySelectorAll('.cases-cube-face').forEach((face) => {
-      face.setAttribute('aria-hidden', face.getAttribute('data-case') === activeCase ? 'false' : 'true');
+      const faceIdx = Number(face.getAttribute('data-face-index'));
+      const faceId = face.getAttribute('data-face');
+      const active = faceIdx === index || faceId === activeFaceId;
+      face.setAttribute('aria-hidden', active ? 'false' : 'true');
     });
   }
 
@@ -244,22 +288,24 @@
     paintChrome(currentFaceIndex);
   }
 
-  function rotateCube(direction) {
-    let next = currentFaceIndex + direction;
-    if (next < -1) next = -1;
-    if (next > 1) next = 1;
+  function goToFace(index) {
+    const order = getFaceOrder();
+    const maxIdx = Math.max(0, order.length - 1);
+    const next = Math.max(0, Math.min(maxIdx, index));
     if (next === currentFaceIndex) return;
     currentFaceIndex = next;
     updateTitle(true);
     updateChrome();
   }
 
+  function rotateCube(direction) {
+    goToFace(currentFaceIndex + direction);
+  }
+
   function setCase(cType) {
-    const next = indexFromCase(cType);
-    if (next === currentFaceIndex) return;
-    currentFaceIndex = next;
-    updateTitle(true);
-    updateChrome();
+    const order = getFaceOrder();
+    const idx = order.indexOf(cType);
+    if (idx >= 0) goToFace(idx);
   }
 
   function setVariant(variantId) {
@@ -280,8 +326,14 @@
       });
     }
 
+    const order = getFaceOrder();
+    if (currentFaceIndex >= order.length) {
+      currentFaceIndex = 0;
+    }
+
     updateFacesContent();
     updateTitle(true);
+    updateChrome();
   }
 
   function rebuildVariantSwitcher(paradigm) {
@@ -321,8 +373,11 @@
 
     const p = paradigms[paradigmId];
     currentVariantId = p.defaultVariant || p.variants[0]?.id || 'endings';
-    if (p.defaultCase) {
-      currentFaceIndex = indexFromCase(p.defaultCase);
+    currentFaceIndex = 0;
+    if (p.defaultFace) {
+      const order = p.variants[0]?.faceOrder || Object.keys(p.variants[0]?.faces || {});
+      const fIdx = order.indexOf(p.defaultFace);
+      if (fIdx >= 0) currentFaceIndex = fIdx;
     }
 
     rebuildVariantSwitcher(p);
@@ -341,10 +396,22 @@
     tab.addEventListener('click', () => setParadigm(tab.getAttribute('data-paradigm')));
   });
 
+  root.querySelectorAll('.cases-face-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const idx = Number(tab.getAttribute('data-face-index'));
+      if (!Number.isNaN(idx)) goToFace(idx);
+    });
+  });
+
   root.querySelectorAll('.cases-cube-dot').forEach((dot) => {
     dot.addEventListener('click', () => {
-      const cType = dot.getAttribute('data-dot');
-      if (cType) setCase(cType);
+      const idx = dot.getAttribute('data-dot-index');
+      if (idx != null) {
+        goToFace(Number(idx));
+      } else {
+        const cType = dot.getAttribute('data-dot');
+        if (cType) setCase(cType);
+      }
     });
   });
 
@@ -395,16 +462,33 @@
   });
 
   function rubberBand(degrees) {
-    if (degrees > 90) return 90 + (degrees - 90) * 0.22;
-    if (degrees < -90) return -90 + (degrees + 90) * 0.22;
+    const order = getFaceOrder();
+    const numFaces = order.length;
+    const minRot = rotationFor(numFaces - 1);
+    const maxRot = rotationFor(0);
+    const lower = Math.min(minRot, maxRot);
+    const upper = Math.max(minRot, maxRot);
+    if (degrees > upper) return upper + (degrees - upper) * 0.22;
+    if (degrees < lower) return lower + (degrees - lower) * 0.22;
     return degrees;
   }
 
   function followFinger(dx) {
     const width = scene.getBoundingClientRect().width || 1;
-    const degrees = rubberBand(rotationFor(currentFaceIndex) + (dx / width) * 90);
+    const order = getFaceOrder();
+    const numFaces = order.length;
+    const step = numFaces === 6 ? 60 : 90;
+    const baseRot = rotationFor(currentFaceIndex);
+    const degrees = rubberBand(baseRot + (dx / width) * step);
     applyRotation(degrees, false);
-    const nearest = Math.max(-1, Math.min(1, Math.round(-degrees / 90)));
+
+    let nearest;
+    if (numFaces === 6) {
+      nearest = Math.max(0, Math.min(5, Math.round(-degrees / 60)));
+    } else {
+      nearest = Math.max(0, Math.min(2, 1 - Math.round(degrees / 90)));
+    }
+
     if (drag && nearest !== drag.shown) {
       drag.shown = nearest;
       const previous = currentFaceIndex;
@@ -429,9 +513,12 @@
     const width = scene.getBoundingClientRect().width || 1;
     const dx = event.clientX - state.startX;
     const ratio = dx / width;
+    const order = getFaceOrder();
+    const maxIdx = Math.max(0, order.length - 1);
+
     let next = currentFaceIndex;
-    if (ratio <= -0.22 || (state.vx < -0.45 && dx <= -16)) next = Math.min(1, currentFaceIndex + 1);
-    else if (ratio >= 0.22 || (state.vx > 0.45 && dx >= 16)) next = Math.max(-1, currentFaceIndex - 1);
+    if (ratio <= -0.20 || (state.vx < -0.4 && dx <= -16)) next = Math.min(maxIdx, currentFaceIndex + 1);
+    else if (ratio >= 0.20 || (state.vx > 0.4 && dx >= 16)) next = Math.max(0, currentFaceIndex - 1);
 
     if (next !== currentFaceIndex) {
       currentFaceIndex = next;

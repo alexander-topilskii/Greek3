@@ -38,17 +38,17 @@ assert(govTheme && govTheme.id === 'government', 'government theme paradigm foun
 
 const nom = getParadigmForCaseWordSlug('cases/именительный ονομαστική');
 assert(nom, 'nom found');
-assert(nom.initialCase === 'nominative', 'nom case is nominative');
+assert(nom.initialCase === 'masc_sg', 'nom initialCase is masc_sg');
 assert(nom.paradigm.id === 'nouns', 'nom paradigm is nouns');
 
 const acc = getParadigmForCaseWordSlug('cases/винительный αιτιατική');
 assert(acc, 'acc found');
-assert(acc.initialCase === 'accusative', 'acc case is accusative');
+assert(acc.initialCase === 'masc_sg', 'acc initialCase is masc_sg');
 assert(acc.paradigm.id === 'nouns', 'acc paradigm is nouns');
 
 const gen = getParadigmForCaseWordSlug('cases/родительный γενική');
 assert(gen, 'gen found');
-assert(gen.initialCase === 'genitive', 'gen case is genitive');
+assert(gen.initialCase === 'masc_sg', 'gen initialCase is masc_sg');
 assert(gen.paradigm.id === 'nouns', 'gen paradigm is nouns');
 
 const gov = getParadigmForCaseWordSlug('cases/управление глаголов verb government');
@@ -71,18 +71,17 @@ const mockWord = {
 const renderedWord = renderCasesCube(mockWord);
 assert(renderedWord.interactive, 'renderedWord is interactive');
 assert(renderedWord.html.includes('data-cases-cube'), 'has data-cases-cube');
-assert(renderedWord.html.includes('cases-cube-face--nominative'), 'has nominative face');
-assert(renderedWord.html.includes('cases-cube-face--accusative'), 'has accusative face');
-assert(renderedWord.html.includes('cases-cube-face--genitive'), 'has genitive face');
+assert(renderedWord.html.includes('cases-cube-face--masc_sg'), 'has masc_sg face');
+assert(renderedWord.html.includes('cases-cube-face--fem_sg'), 'has fem_sg face');
+assert(renderedWord.html.includes('cases-cube-face--neut_sg'), 'has neut_sg face');
+assert(renderedWord.html.includes('cases-face-tab'), 'has gender tabs');
 assert(renderedWord.html.includes('cases-section'), 'has cases-section');
 assert(renderedWord.html.includes('cases-section-head'), 'has cases-section-head');
 assert(renderedWord.html.includes('cases-item-main'), 'has cases-item-main');
 assert(renderedWord.html.includes('cases-item-sub'), 'has cases-item-sub');
-assert(renderedWord.html.includes('Мужской род'), 'has masculine section title');
-assert(renderedWord.html.includes('Женский род'), 'has feminine section title');
-assert(renderedWord.html.includes('Средний род'), 'has neuter section title');
-assert(renderedWord.html.includes('ед. число'), 'has singular badge');
-assert(renderedWord.html.includes('мн. число'), 'has plural badge');
+assert(renderedWord.html.includes('Именительный падеж'), 'has nominative section title on face');
+assert(renderedWord.html.includes('Винительный падеж'), 'has accusative section title on face');
+assert(renderedWord.html.includes('Родительный падеж'), 'has genitive section title on face');
 assert(renderedWord.html.includes('cases-item-trans'), 'has transformation markup');
 assert(renderedWord.html.includes('cases-trans-from'), 'has from form');
 assert(renderedWord.html.includes('cases-trans-to'), 'has to form');
@@ -94,6 +93,7 @@ const themeCubeHtml = renderCaseThemeCube(nounsTheme);
 assert(themeCubeHtml.includes('data-cases-cube'), 'theme cube has data-cases-cube');
 assert(themeCubeHtml.includes('cases-section'), 'theme cube has cases-section');
 assert(themeCubeHtml.includes('cases-item-trans'), 'theme cube has transformation markup');
+assert(themeCubeHtml.includes('cases-face-tabs'), 'nouns theme cube has gender face tabs');
 
 const themesHubHtml = renderCasesThemesHub();
 assert(themesHubHtml.includes('cases-themes-hub'), 'hub has cases-themes-hub');
@@ -101,6 +101,9 @@ assert(themesHubHtml.includes('words/cases/nouns/index.html'), 'hub links to nou
 assert(themesHubHtml.includes('words/cases/adjectives/index.html'), 'hub links to adjectives');
 assert(themesHubHtml.includes('words/cases/articles/index.html'), 'hub links to articles');
 assert(themesHubHtml.includes('words/cases/government/index.html'), 'hub links to government');
+assert(!themesHubHtml.includes('cases-theme-desc'), 'hub has no descriptions under theme cards');
+assert(!themesHubHtml.includes('Окончания и формы мужского'), 'hub does not contain noun description');
+assert(!themesHubHtml.includes('Согласование прилагательных'), 'hub does not contain adjective description');
 
 // 4. Verify generated dist files
 const distHub = path.join(process.cwd(), 'dist', 'words', 'cases', 'index.html');
@@ -109,6 +112,8 @@ if (fs.existsSync(distHub)) {
   assert(content.includes('cases-themes-hub'), 'dist cases/index.html has themes hub');
   assert(content.includes('cases-cheatsheet'), 'dist cases/index.html has cheatsheet');
   assert(content.includes('cases-practice-launch-btn'), 'dist cases/index.html has practice button');
+  assert(!content.includes('cases-theme-desc'), 'dist cases/index.html has no theme desc');
+  assert(!content.includes('Окончания и формы мужского'), 'dist cases/index.html has no noun description');
 }
 
 const distNouns = path.join(process.cwd(), 'dist', 'words', 'cases', 'nouns', 'index.html');
@@ -117,6 +122,7 @@ if (fs.existsSync(distNouns)) {
   assert(content.includes('data-cases-cube'), 'dist cases/nouns/index.html has cases cube');
   assert(content.includes('cases-item-trans'), 'dist cases/nouns/index.html has transformation markup');
   assert(content.includes('assets/js/cases-cube.js'), 'dist cases/nouns/index.html includes cases-cube.js');
+  assert(!content.includes('Формы и окончания мужского'), 'dist cases/nouns/index.html does not have формы и окончания text');
 }
 
 const distAdj = path.join(process.cwd(), 'dist', 'words', 'cases', 'adjectives', 'index.html');

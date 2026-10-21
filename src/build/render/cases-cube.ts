@@ -68,10 +68,18 @@ function renderCell(cell: CaseCell, highlightForm?: string): string {
 
 function renderFace(
   face: CaseFace,
-  activeCase: CaseType,
+  faceIdx: number,
+  activeFaceIdx: number,
+  numFaces: number,
   highlightForm?: string,
 ): string {
-  const hidden = face.case === activeCase ? 'false' : 'true';
+  const hidden = faceIdx === activeFaceIdx ? 'false' : 'true';
+  const faceId = face.id || face.case || String(faceIdx);
+  const rot = numFaces === 6
+    ? faceIdx * 60
+    : (faceIdx === 0 ? -90 : faceIdx === 1 ? 0 : 90);
+  const defaultTz = numFaces === 6 ? '260px' : '150px';
+
   let contentHtml = '';
 
   if (face.sections && face.sections.length > 0) {
@@ -109,7 +117,12 @@ function renderFace(
   }
 
   return `
-    <div class="cases-cube-face cases-cube-face--${face.case}" data-case="${face.case}" aria-hidden="${hidden}">
+    <div class="cases-cube-face cases-cube-face--${escapeHtml(faceId)} cases-cube-face--${faceIdx}"
+         data-face="${escapeHtml(faceId)}"
+         data-face-index="${faceIdx}"
+         data-case="${escapeHtml(faceId)}"
+         style="transform: rotateY(${rot}deg) translateZ(var(--cases-tz, ${defaultTz}));"
+         aria-hidden="${hidden}">
       <div class="cases-cube-grid">
         ${contentHtml}
       </div>
@@ -136,6 +149,77 @@ function renderVariantSwitcher(
     <div class="cases-aspect" data-cases-aspect style="--n: ${variants.length}; --i: ${index}">
       <div class="cases-aspect-slider" aria-hidden="true"></div>
       ${buttons}
+    </div>`;
+}
+
+function renderFaceTabs(faces: CaseFace[], faceOrder: string[], activeIndex: number): string {
+  if (faceOrder.length !== 6) return '';
+
+  const renderTab = (f: CaseFace, idx: number) => {
+    const active = idx === activeIndex;
+    return `
+      <button type="button" class="cases-face-tab${active ? ' is-active' : ''}" data-face-id="${escapeHtml(f.id || '')}" data-face-index="${idx}" role="tab" aria-selected="${active ? 'true' : 'false'}" title="${escapeHtml(f.title)}">
+        ${f.icon ? `<span class="cases-face-tab-icon" aria-hidden="true">${escapeHtml(f.icon)}</span>` : ''}
+        <span class="cases-face-tab-label">${escapeHtml(f.shortLabel || f.title)}</span>
+        ${f.badge ? `<span class="cases-face-tab-badge">${escapeHtml(f.badge)}</span>` : ''}
+      </button>`;
+  };
+
+  const sgTabs = faceOrder.slice(0, 3).map((fId, idx) => {
+    const face = faces.find((f) => f.id === fId) || faces[idx];
+    return renderTab(face, idx);
+  }).join('');
+
+  const plTabs = faceOrder.slice(3, 6).map((fId, idx) => {
+    const face = faces.find((f) => f.id === fId) || faces[idx + 3];
+    return renderTab(face, idx + 3);
+  }).join('');
+
+  return `
+    <div class="cases-face-tabs" role="tablist" aria-label="Род и число">
+      <div class="cases-face-tabs-group" data-group="sg">
+        ${sgTabs}
+      </div>
+      <div class="cases-face-tabs-divider" aria-hidden="true"></div>
+      <div class="cases-face-tabs-group" data-group="pl">
+        ${plTabs}
+      </div>
+    </div>`;
+}
+
+function renderTimeline(faceOrder: string[], faces: CaseFace[], activeIndex: number): string {
+  const numFaces = faceOrder.length;
+  if (numFaces === 6) {
+    const dotsSg = faceOrder.slice(0, 3).map((fId, idx) => {
+      const active = idx === activeIndex;
+      const face = faces.find((f) => f.id === fId) || faces[idx];
+      return `<span class="cases-cube-dot${active ? ' is-active' : ''}" data-dot-index="${idx}" data-dot="${escapeHtml(fId)}" title="${escapeHtml(face?.shortLabel || fId)}"></span>`;
+    }).join('');
+
+    const dotsPl = faceOrder.slice(3, 6).map((fId, idx) => {
+      const globalIdx = idx + 3;
+      const active = globalIdx === activeIndex;
+      const face = faces.find((f) => f.id === fId) || faces[globalIdx];
+      return `<span class="cases-cube-dot${active ? ' is-active' : ''}" data-dot-index="${globalIdx}" data-dot="${escapeHtml(fId)}" title="${escapeHtml(face?.shortLabel || fId)}"></span>`;
+    }).join('');
+
+    return `
+      <div class="cases-cube-timeline" aria-hidden="true">
+        <span class="cases-cube-timeline-label">Ед.</span>
+        ${dotsSg}
+        <span class="cases-cube-timeline-sep">·</span>
+        ${dotsPl}
+        <span class="cases-cube-timeline-label">Мн.</span>
+      </div>`;
+  }
+
+  return `
+    <div class="cases-cube-timeline" aria-hidden="true">
+      <span class="cases-cube-timeline-label">Им.</span>
+      <span class="cases-cube-dot${activeIndex === 0 ? ' is-active' : ''}" data-dot-index="0" data-dot="nominative" title="Именительный"></span>
+      <span class="cases-cube-dot${activeIndex === 1 ? ' is-active' : ''}" data-dot-index="1" data-dot="accusative" title="Винительный"></span>
+      <span class="cases-cube-dot${activeIndex === 2 ? ' is-active' : ''}" data-dot-index="2" data-dot="genitive" title="Родительный"></span>
+      <span class="cases-cube-timeline-label">Род.</span>
     </div>`;
 }
 
@@ -186,14 +270,28 @@ function renderCubeInner(
     paradigm.variants[0];
   if (!variant) return '';
 
-  const face = variant.faces[activeCase];
-  const initialRotation = rotationForCase(activeCase);
+  const faceOrder = variant.faceOrder || Object.keys(variant.faces);
+  const numFaces = faceOrder.length;
+  let activeFaceId = activeCase;
+  if (!faceOrder.includes(activeFaceId)) {
+    activeFaceId = paradigm.defaultFace || paradigm.defaultCase || faceOrder[0];
+  }
+  let activeIndex = faceOrder.indexOf(activeFaceId);
+  if (activeIndex < 0) activeIndex = 0;
+  activeFaceId = faceOrder[activeIndex];
+
+  const face = variant.faces[activeFaceId];
+  const initialRotation = numFaces === 6
+    ? activeIndex * -60
+    : rotationForCase(activeFaceId);
 
   const payload: Record<string, unknown> = {
     mode: hubParadigms ? 'hub' : 'word',
     currentParadigm: paradigm.id,
     currentVariant: variant.id,
-    currentCase: activeCase,
+    currentFace: activeFaceId,
+    currentFaceIndex: activeIndex,
+    currentCase: activeFaceId,
     highlightForm: highlightForm || '',
     paradigms: hubParadigms
       ? Object.fromEntries(hubParadigms.map((p) => [p.id, p]))
@@ -207,32 +305,31 @@ function renderCubeInner(
     paradigm.variants,
     variant.id,
   );
+  const faceTabsHtml = renderFaceTabs(Object.values(variant.faces), faceOrder, activeIndex);
+  const timelineHtml = renderTimeline(faceOrder, Object.values(variant.faces), activeIndex);
   const extraNotesHtml = renderExtraNotes(variant);
 
+  const defaultTz = numFaces === 6 ? '260px' : '150px';
+
   return `
-    <section class="cases-paradigm" data-cases-cube data-paradigm="${paradigm.id}" data-variant="${variant.id}" data-case="${activeCase}">
+    <section class="cases-paradigm" data-cases-cube data-paradigm="${paradigm.id}" data-variant="${variant.id}" data-case="${activeFaceId}" data-face="${activeFaceId}" data-face-index="${activeIndex}">
       <script type="application/json" data-cases-data>${embedJson(payload)}</script>
       ${hubTabsHtml}
       ${variantSwitcherHtml}
+      ${faceTabsHtml}
       <div class="cases-cube-toolbar">
-        <button type="button" class="cases-cube-nav" data-cube-dir="-1" aria-label="Предыдущий падеж">${chevron('prev')}</button>
+        <button type="button" class="cases-cube-nav" data-cube-dir="-1" aria-label="Предыдущий род/падеж"${activeIndex === 0 ? ' disabled' : ''}>${chevron('prev')}</button>
         <div class="cases-cube-heading">
           <h2 class="cases-cube-title">${escapeHtml(face.title)}</h2>
           <p class="cases-cube-subtitle">${escapeHtml(face.subtitle)}</p>
         </div>
-        <button type="button" class="cases-cube-nav" data-cube-dir="1" aria-label="Следующий падеж">${chevron('next')}</button>
+        <button type="button" class="cases-cube-nav" data-cube-dir="1" aria-label="Следующий род/падеж"${activeIndex === numFaces - 1 ? ' disabled' : ''}>${chevron('next')}</button>
       </div>
-      <div class="cases-cube-timeline" aria-hidden="true">
-        <span class="cases-cube-timeline-label">Им.</span>
-        <span class="cases-cube-dot${activeCase === 'nominative' ? ' is-active' : ''}" data-dot="nominative" title="Именительный"></span>
-        <span class="cases-cube-dot${activeCase === 'accusative' ? ' is-active' : ''}" data-dot="accusative" title="Винительный"></span>
-        <span class="cases-cube-dot${activeCase === 'genitive' ? ' is-active' : ''}" data-dot="genitive" title="Родительный"></span>
-        <span class="cases-cube-timeline-label">Род.</span>
-      </div>
+      ${timelineHtml}
       <div class="cases-cube-clip">
         <div class="cases-cube-scene">
-          <div class="cases-cube" style="transform: translateZ(calc(var(--cases-tz, 150px) * -1)) rotateY(${initialRotation}deg)">
-            ${CASE_ORDER.map((c) => renderFace(variant.faces[c], activeCase, highlightForm)).join('')}
+          <div class="cases-cube cases-cube--${numFaces}" style="transform: translateZ(calc(var(--cases-tz, ${defaultTz}) * -1)) rotateY(${initialRotation}deg)">
+            ${faceOrder.map((fId, idx) => renderFace(variant.faces[fId], idx, activeIndex, numFaces, highlightForm)).join('')}
           </div>
         </div>
       </div>
@@ -297,7 +394,6 @@ export function renderCasesThemesHub(): string {
           <span class="cases-theme-icon" aria-hidden="true">${theme.icon}</span>
         </div>
         <h3 class="cases-theme-title">${escapeHtml(theme.title)}</h3>
-        <p class="cases-theme-desc">${escapeHtml(theme.description)}</p>
         <div class="cases-theme-tags">${tagsHtml}</div>
         <div class="cases-theme-action">
           <span>Перейти к разделу</span>
