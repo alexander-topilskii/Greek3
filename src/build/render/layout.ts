@@ -1,4 +1,3 @@
-import { BUILD_VERSION } from '../build-version';
 import { pwaScope } from '../pwa';
 import { ASSET_VERSION, sitePath } from '../site-path';
 import { HOME_SECTIONS } from '../constants';
@@ -80,7 +79,7 @@ export function layout(
       </a>
       <nav class="site-nav">
         ${searchButtonMarkup()}
-        ${options.showSettings ? settingsButtonMarkup(BUILD_VERSION, options.settingsHref ?? sitePath('settings.html')) : ''}
+        ${options.showSettings ? settingsButtonMarkup(options.settingsHref ?? sitePath('settings.html')) : ''}
       </nav>
     </div>
   </header>
